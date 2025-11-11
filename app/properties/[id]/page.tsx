@@ -20,9 +20,10 @@ import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { supabase, Property } from '@/lib/supabase';
+
 import { PropertyCard } from '@/components/property-card';
 import { differenceInDays, format } from 'date-fns';
+import { Property } from '@/lib/type';
 
 export default function PropertyDetailsPage() {
   const params = useParams();
@@ -36,31 +37,31 @@ export default function PropertyDetailsPage() {
   const [guests, setGuests] = useState(2);
 
   useEffect(() => {
-    async function fetchProperty() {
-      const { data, error } = await supabase
-        .from('properties')
-        .select('*')
-        .eq('id', params.id)
-        .maybeSingle();
+    // async function fetchProperty() {
+    //   const { data, error } = await supabase
+    //     .from('properties')
+    //     .select('*')
+    //     .eq('id', params.id)
+    //     .maybeSingle();
 
-      if (!error && data) {
-        setProperty(data);
+    //   if (!error && data) {
+    //     setProperty(data);
 
-        const { data: similar } = await supabase
-          .from('properties')
-          .select('*')
-          .eq('city', data.city)
-          .neq('id', data.id)
-          .limit(3);
+    //     const { data: similar } = await supabase
+    //       .from('properties')
+    //       .select('*')
+    //       .eq('city', data.city)
+    //       .neq('id', data.id)
+    //       .limit(3);
 
-        if (similar) {
-          setSimilarProperties(similar);
-        }
-      }
-      setLoading(false);
-    }
+    //     if (similar) {
+    //       setSimilarProperties(similar);
+    //     }
+    //   }
+    //   setLoading(false);
+    // }
 
-    fetchProperty();
+    // fetchProperty();
   }, [params.id]);
 
   if (loading) {

@@ -4,10 +4,11 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Heart } from 'lucide-react';
 import { PropertyCard } from '@/components/property-card';
-import { supabase, Property } from '@/lib/supabase';
+// import { supabase, Property } from '@/lib/supabase';
 import { useFavoritesStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { Property } from '@/lib/type';
 
 export default function FavoritesPage() {
   const { favorites } = useFavoritesStore();
@@ -21,14 +22,14 @@ export default function FavoritesPage() {
         return;
       }
 
-      const { data, error } = await supabase
-        .from('properties')
-        .select('*')
-        .in('id', favorites);
+      // const { data, error } = await supabase
+      //   .from('properties')
+      //   .select('*')
+      //   .in('id', favorites);
 
-      if (!error && data) {
-        setProperties(data);
-      }
+      // if (!error && data) {
+      //   setProperties(data);
+      // }
       setLoading(false);
     }
 

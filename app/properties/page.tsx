@@ -9,8 +9,9 @@ import { Slider } from '@/components/ui/slider';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { PropertyCard } from '@/components/property-card';
-import { supabase, Property } from '@/lib/supabase';
+// import { supabase, Property } from '@/lib/supabase';
 import { useSearchStore } from '@/lib/store';
+import { Property } from '@/lib/type';
 
 export default function PropertiesPage() {
   const [properties, setProperties] = useState<Property[]>([]);
@@ -34,23 +35,23 @@ export default function PropertiesPage() {
   const amenitiesList = ['WiFi', 'Pool', 'Air Conditioning', 'Kitchen', 'Parking', 'Hot Tub', 'Beach Access', 'Gym Access', 'Fireplace'];
 
   useEffect(() => {
-    async function fetchProperties() {
-      let query = supabase.from('properties').select('*');
+    // async function fetchProperties() {
+    //   let query = supabase.from('properties').select('*');
 
-      if (location) {
-        query = query.or(`city.ilike.%${location}%,country.ilike.%${location}%,location.ilike.%${location}%`);
-      }
+    //   if (location) {
+    //     query = query.or(`city.ilike.%${location}%,country.ilike.%${location}%,location.ilike.%${location}%`);
+    //   }
 
-      const { data, error } = await query;
+    //   const { data, error } = await query;
 
-      if (!error && data) {
-        setProperties(data);
-        setFilteredProperties(data);
-      }
-      setLoading(false);
-    }
+    //   if (!error && data) {
+    //     setProperties(data);
+    //     setFilteredProperties(data);
+    //   }
+    //   setLoading(false);
+    // }
 
-    fetchProperties();
+    // fetchProperties();
   }, [location]);
 
   useEffect(() => {

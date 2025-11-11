@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { supabase, Booking } from '@/lib/supabase';
+// import { supabase, Booking } from '@/lib/supabase';
 import { useUserStore } from '@/lib/store';
 import { format } from 'date-fns';
 
@@ -27,38 +27,38 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (user) {
-      fetchProfile();
-      fetchBookings();
+      // fetchProfile();
+      // fetchBookings();
     }
   }, [user]);
 
-  const fetchProfile = async () => {
-    if (!user) return;
+  // const fetchProfile = async () => {
+  //   if (!user) return;
 
-    const { data } = await supabase
-      .from('user_profiles')
-      .select('*')
-      .eq('id', user.id)
-      .maybeSingle();
+  //   const { data } = await supabase
+  //     .from('user_profiles')
+  //     .select('*')
+  //     .eq('id', user.id)
+  //     .maybeSingle();
 
-    if (data) {
-      setProfile(data);
-    }
-  };
+  //   if (data) {
+  //     setProfile(data);
+  //   }
+  // };
 
-  const fetchBookings = async () => {
-    if (!user) return;
+  // const fetchBookings = async () => {
+  //   if (!user) return;
 
-    const { data } = await supabase
-      .from('bookings')
-      .select('*, properties(*)')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
+  //   const { data } = await supabase
+  //     .from('bookings')
+  //     .select('*, properties(*)')
+  //     .eq('user_id', user.id)
+  //     .order('created_at', { ascending: false });
 
-    if (data) {
-      setBookings(data);
-    }
-  };
+  //   if (data) {
+  //     setBookings(data);
+  //   }
+  // };
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,17 +66,17 @@ export default function ProfilePage() {
 
     setSaving(true);
     try {
-      const { error } = await supabase
-        .from('user_profiles')
-        .upsert({
-          id: user.id,
-          ...profile,
-          updated_at: new Date().toISOString(),
-        });
+      // const { error } = await supabase
+      //   .from('user_profiles')
+      //   .upsert({
+      //     id: user.id,
+      //     ...profile,
+      //     updated_at: new Date().toISOString(),
+      //   });
 
-      if (!error) {
-        alert('Profile updated successfully!');
-      }
+      // if (!error) {
+      //   alert('Profile updated successfully!');
+      // }
     } catch (error) {
       console.error('Error updating profile:', error);
     } finally {

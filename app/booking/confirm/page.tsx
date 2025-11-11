@@ -15,9 +15,10 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { supabase, Property } from '@/lib/supabase';
+// import { supabase, Property } from '@/lib/supabase';
 import { format } from 'date-fns';
 import Link from 'next/link';
+import { Property } from '@/lib/type';
 
 export default function BookingConfirmPage() {
   const router = useRouter();
@@ -39,18 +40,18 @@ export default function BookingConfirmPage() {
         return;
       }
 
-      const { data, error } = await supabase
-        .from('properties')
-        .select('*')
-        .eq('id', propertyId)
-        .maybeSingle();
+      // const { data, error } = await supabase
+      //   .from('properties')
+      //   .select('*')
+      //   .eq('id', propertyId)
+      //   .maybeSingle();
 
-      if (!error && data) {
-        setProperty(data);
+      // if (!error && data) {
+      //   setProperty(data);
 
-        const code = `SH${Date.now().toString(36).toUpperCase()}`;
-        setConfirmationCode(code);
-      }
+      //   const code = `SH${Date.now().toString(36).toUpperCase()}`;
+      //   setConfirmationCode(code);
+      // }
       setLoading(false);
     }
 

@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { supabase } from '@/lib/supabase';
+// import { supabase } from '@/lib/supabase';
 
 export default function SignupPage() {
   const router = useRouter();
@@ -39,26 +39,26 @@ export default function SignupPage() {
     setLoading(true);
 
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: fullName,
-          },
-        },
-      });
+      // const { data, error } = await supabase.auth.signUp({
+      //   email,
+      //   password,
+      //   options: {
+      //     data: {
+      //       full_name: fullName,
+      //     },
+      //   },
+      // });
 
-      if (error) throw error;
+      // if (error) throw error;
 
-      if (data.user) {
-        await supabase.from('user_profiles').insert({
-          id: data.user.id,
-          full_name: fullName,
-        });
+      // if (data.user) {
+      //   await supabase.from('user_profiles').insert({
+      //     id: data.user.id,
+      //     full_name: fullName,
+      //   });
 
-        router.push('/login');
-      }
+      //   router.push('/login');
+      // }
     } catch (err: any) {
       setError(err.message || 'Failed to create account');
     } finally {

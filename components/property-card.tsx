@@ -5,9 +5,10 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Heart, MapPin, Star, Users } from 'lucide-react';
-import { Property } from '@/lib/supabase';
+
 import { useFavoritesStore } from '@/lib/store';
 import { Badge } from '@/components/ui/badge';
+import { Property } from '@/lib/type';
 
 interface PropertyCardProps {
   property: Property;

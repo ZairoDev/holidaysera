@@ -8,7 +8,8 @@ import { Star, TrendingUp, Shield, Award, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { SearchBar } from '@/components/search-bar';
 import { PropertyCard } from '@/components/property-card';
-import { supabase, Property } from '@/lib/supabase';
+import { Property } from '@/lib/type';
+// import { supabase, Property } from '@/lib/supabase';
 
 export default function Home() {
   const [featuredProperties, setFeaturedProperties] = useState<Property[]>([]);
@@ -16,16 +17,16 @@ export default function Home() {
 
   useEffect(() => {
     async function fetchFeaturedProperties() {
-      const { data, error } = await supabase
-        .from('properties')
-        .select('*')
-        .eq('featured', true)
-        .limit(6);
+      // const { data, error } = await supabase
+      //   .from('properties')
+      //   .select('*')
+      //   .eq('featured', true)
+      //   .limit(6);
 
-      if (!error && data) {
-        setFeaturedProperties(data);
-      }
-      setLoading(false);
+      // if (!error && data) {
+      //   setFeaturedProperties(data);
+      // }
+      // setLoading(false);
     }
 
     fetchFeaturedProperties();
