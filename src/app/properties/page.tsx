@@ -1,114 +1,77 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Filter, X, SlidersHorizontal } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Slider } from '@/components/ui/slider';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { PropertyCard } from '@/components/property-card';
-// import { supabase, Property } from '@/lib/supabase';
-import { useSearchStore } from '@/lib/store';
-import { Property } from '@/lib/type';
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Filter, X, SlidersHorizontal } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Slider } from "@/components/ui/slider";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { PropertyCard } from "@/components/property-card";
+import { useSearchStore } from "@/lib/store";
+import { trpc } from "@/trpc/client";
 
 export default function PropertiesPage() {
-  const [properties, setProperties] = useState<Property[]>([]);
-  const [filteredProperties, setFilteredProperties] = useState<Property[]>([]);
-  const [loading, setLoading] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
   const { location } = useSearchStore();
 
   const [filters, setFilters] = useState({
-    priceRange: [0, 1000],
+    priceRange: [0, 1000] as [number, number],
     propertyTypes: [] as string[],
     minBedrooms: 0,
     minBathrooms: 0,
     minGuests: 0,
     minRating: 0,
     amenities: [] as string[],
-    sortBy: 'featured',
+    sortBy: "featured" as "featured" | "price-low" | "price-high" | "rating",
   });
 
-  const propertyTypes = ['Villa', 'Apartment', 'House', 'Cottage', 'Bungalow', 'Cabin', 'Chalet', 'Penthouse'];
-  const amenitiesList = ['WiFi', 'Pool', 'Air Conditioning', 'Kitchen', 'Parking', 'Hot Tub', 'Beach Access', 'Gym Access', 'Fireplace'];
+  const propertyTypes = [
+    "Villa",
+    "Apartment",
+    "House",
+    "Cottage",
+    "Bungalow",
+    "Cabin",
+    "Chalet",
+    "Penthouse",
+  ];
+  const amenitiesList = [
+    "WiFi",
+    "Pool",
+    "Air Conditioning",
+    "Kitchen",
+    "Parking",
+    "Hot Tub",
+    "Beach Access",
+    "Gym Access",
+    "Fireplace",
+  ];
 
-  useEffect(() => {
-    // async function fetchProperties() {
-    //   let query = supabase.from('properties').select('*');
+  // Fetch filtered properties from backend
+  const { data: propertiesData, isLoading } =
+    trpc.property.getFiltered.useQuery({
+      location,
+      priceRange: filters.priceRange,
+      propertyTypes:
+        filters.propertyTypes.length > 0 ? filters.propertyTypes : undefined,
+      minBedrooms: filters.minBedrooms > 0 ? filters.minBedrooms : undefined,
+      minBathrooms: filters.minBathrooms > 0 ? filters.minBathrooms : undefined,
+      minGuests: filters.minGuests > 0 ? filters.minGuests : undefined,
+      minRating: filters.minRating > 0 ? filters.minRating : undefined,
+      amenities: filters.amenities.length > 0 ? filters.amenities : undefined,
+      sortBy: filters.sortBy,
+    });
 
-    //   if (location) {
-    //     query = query.or(`city.ilike.%${location}%,country.ilike.%${location}%,location.ilike.%${location}%`);
-    //   }
-
-    //   const { data, error } = await query;
-
-    //   if (!error && data) {
-    //     setProperties(data);
-    //     setFilteredProperties(data);
-    //   }
-    //   setLoading(false);
-    // }
-
-    // fetchProperties();
-  }, [location]);
-
-  useEffect(() => {
-    let filtered = [...properties];
-
-    filtered = filtered.filter(
-      (p) =>
-        p.price_per_night >= filters.priceRange[0] &&
-        p.price_per_night <= filters.priceRange[1]
-    );
-
-    if (filters.propertyTypes.length > 0) {
-      filtered = filtered.filter((p) =>
-        filters.propertyTypes.includes(p.property_type)
-      );
-    }
-
-    if (filters.minBedrooms > 0) {
-      filtered = filtered.filter((p) => p.bedrooms >= filters.minBedrooms);
-    }
-
-    if (filters.minBathrooms > 0) {
-      filtered = filtered.filter((p) => p.bathrooms >= filters.minBathrooms);
-    }
-
-    if (filters.minGuests > 0) {
-      filtered = filtered.filter((p) => p.max_guests >= filters.minGuests);
-    }
-
-    if (filters.minRating > 0) {
-      filtered = filtered.filter((p) => p.rating >= filters.minRating);
-    }
-
-    if (filters.amenities.length > 0) {
-      filtered = filtered.filter((p) =>
-        filters.amenities.every((amenity) => p.amenities.includes(amenity))
-      );
-    }
-
-    switch (filters.sortBy) {
-      case 'price-low':
-        filtered.sort((a, b) => a.price_per_night - b.price_per_night);
-        break;
-      case 'price-high':
-        filtered.sort((a, b) => b.price_per_night - a.price_per_night);
-        break;
-      case 'rating':
-        filtered.sort((a, b) => b.rating - a.rating);
-        break;
-      case 'featured':
-      default:
-        filtered.sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0));
-        break;
-    }
-
-    setFilteredProperties(filtered);
-  }, [properties, filters]);
+  // Ensure we have an array
+  const properties = Array.isArray(propertiesData) ? propertiesData : [];
 
   const handlePropertyTypeToggle = (type: string) => {
     setFilters((prev) => ({
@@ -137,7 +100,7 @@ export default function PropertiesPage() {
       minGuests: 0,
       minRating: 0,
       amenities: [],
-      sortBy: 'featured',
+      sortBy: "featured",
     });
   };
 
@@ -158,7 +121,10 @@ export default function PropertiesPage() {
           step={10}
           value={filters.priceRange}
           onValueChange={(value) =>
-            setFilters((prev) => ({ ...prev, priceRange: value as [number, number] }))
+            setFilters((prev) => ({
+              ...prev,
+              priceRange: value as [number, number],
+            }))
           }
           className="mb-2"
         />
@@ -290,10 +256,10 @@ export default function PropertiesPage() {
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="mb-2 text-4xl font-bold text-gray-900">
-            {location ? `Properties in ${location}` : 'All Properties'}
+            {location ? `Properties in ${location}` : "All Properties"}
           </h1>
           <p className="text-gray-600">
-            {filteredProperties.length} properties available
+            {properties.length} properties available
           </p>
         </div>
 
@@ -310,7 +276,10 @@ export default function PropertiesPage() {
           <Select
             value={filters.sortBy}
             onValueChange={(value) =>
-              setFilters((prev) => ({ ...prev, sortBy: value }))
+              setFilters((prev) => ({
+                ...prev,
+                sortBy: value as typeof filters.sortBy,
+              }))
             }
           >
             <SelectTrigger className="w-48">
@@ -342,9 +311,9 @@ export default function PropertiesPage() {
                 onClick={() => setShowFilters(false)}
               >
                 <motion.div
-                  initial={{ x: '-100%' }}
+                  initial={{ x: "-100%" }}
                   animate={{ x: 0 }}
-                  exit={{ x: '-100%' }}
+                  exit={{ x: "-100%" }}
                   className="absolute left-0 top-0 h-full w-80 overflow-y-auto bg-white p-6"
                   onClick={(e) => e.stopPropagation()}
                 >
@@ -361,7 +330,7 @@ export default function PropertiesPage() {
           </AnimatePresence>
 
           <div className="flex-1">
-            {loading ? (
+            {isLoading ? (
               <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
                 {[...Array(9)].map((_, i) => (
                   <div
@@ -370,10 +339,10 @@ export default function PropertiesPage() {
                   />
                 ))}
               </div>
-            ) : filteredProperties.length > 0 ? (
+            ) : properties.length > 0 ? (
               <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-                {filteredProperties.map((property) => (
-                  <PropertyCard key={property.id} property={property} />
+                {properties.map((property) => (
+                  <PropertyCard key={property._id} property={property} />
                 ))}
               </div>
             ) : (

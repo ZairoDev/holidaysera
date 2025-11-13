@@ -1,4 +1,4 @@
-import mongoose, { Document, Schema } from "mongoose";
+import mongoose, { Schema } from "mongoose";
 import { customAlphabet } from "nanoid";
 
 const generateVSID = (length: number): string => {
@@ -7,25 +7,17 @@ const generateVSID = (length: number): string => {
   return generateUniqueId();
 };
 
-const PropertySchema: Schema = new Schema(
+const PropertySchema = new Schema(
   {
     VSID: {
       type: String,
       default: () => generateVSID(7),
     },
     commonId: String,
-    email: {
-      type: String,
-      required: true,
-    },
-    userId: {
-      type: String,
-      required: true,
-    },
-    rentalType: {
-      type: String,
-      default: "Short Term",
-    },
+    email: { type: String, required: true },
+    userId: { type: String, required: true },
+
+    rentalType: { type: String, default: "Short Term" },
     isInstantBooking: Boolean,
     propertyType: String,
     rentalForm: String,
@@ -39,10 +31,8 @@ const PropertySchema: Schema = new Schema(
     state: String,
     country: String,
     center: {
-      type: {
-        lat: Number,
-        lng: Number,
-      },
+      lat: Number,
+      lng: Number,
     },
 
     size: Number,
@@ -66,18 +56,10 @@ const PropertySchema: Schema = new Schema(
       of: String,
     },
 
-    generalAmenities: {
-      type: Map,
-      of: Boolean,
-    },
-    otherAmenities: {
-      type: Map,
-      of: Boolean,
-    },
-    safeAmenities: {
-      type: Map,
-      of: Boolean,
-    },
+    generalAmenities: { type: Map, of: Boolean },
+    otherAmenities: { type: Map, of: Boolean },
+    safeAmenities: { type: Map, of: Boolean },
+
     smoking: String,
     pet: String,
     party: String,
@@ -99,51 +81,32 @@ const PropertySchema: Schema = new Schema(
     subarea: String,
     neighbourhood: String,
     floor: String,
-    isTopFloor: {
-      type: Boolean,
-      default: false,
-    },
+    isTopFloor: { type: Boolean, default: false },
     orientation: String,
     levels: Number,
     zones: String,
     propertyStyle: String,
     constructionYear: Number,
-    isSuitableForStudents: {
-      type: Boolean,
-      default: true,
-    },
+    isSuitableForStudents: { type: Boolean, default: true },
+
     monthlyExpenses: Number,
     heatingType: String,
     heatingMedium: String,
     energyClass: String,
 
-    nearbyLocations: {
-      type: Map,
-      of: Schema.Types.Mixed,
-    },
+    nearbyLocations: { type: Map, of: Schema.Types.Mixed },
 
     hostedFrom: String,
     hostedBy: String,
-    listedOn: {
-      type: [String],
-      default: ["VacationSaga"],
-    },
-    lastUpdatedBy: {
-      type: [String],
-      default: [],
-    },
-    lastUpdates: {
-      type: [[String]],
-      default: [[]],
-    },
-    isLive: {
-      type: Boolean,
-      default: true,
-    },
+
+    listedOn: { type: [String], default: ["VacationSaga"] },
+    lastUpdatedBy: { type: [String], default: [] },
+    lastUpdates: { type: [[String]], default: [[]] },
+    isLive: { type: Boolean, default: true },
   },
   { timestamps: true }
 );
 
-// Property Model Export
+// ✅ FIXED MODEL NAME
 export const Properties =
-  mongoose.models?.properties || mongoose.model("properties", PropertySchema);
+  mongoose.models.Property || mongoose.model("Property", PropertySchema);

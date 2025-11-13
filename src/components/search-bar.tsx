@@ -32,7 +32,7 @@ export function SearchBar({ variant = 'compact' }: SearchBarProps) {
         className="w-full max-w-4xl"
       >
         <div className="rounded-2xl bg-white p-6 shadow-2xl">
-          <div className="grid gap-4 md:grid-cols-4">
+          <div className="grid gap-4 md:grid-cols-4 relative">
             <div className="md:col-span-1">
               <label className="mb-2 block text-sm font-medium text-gray-700">
                 Location
@@ -57,8 +57,10 @@ export function SearchBar({ variant = 'compact' }: SearchBarProps) {
                 <Calendar className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
                 <Input
                   type="date"
-                  value={checkIn ? format(checkIn, 'yyyy-MM-dd') : ''}
-                  onChange={(e) => setCheckIn(e.target.value ? new Date(e.target.value) : null)}
+                  value={checkIn ? format(checkIn, "yyyy-MM-dd") : ""}
+                  onChange={(e) =>
+                    setCheckIn(e.target.value ? new Date(e.target.value) : null)
+                  }
                   className="pl-10"
                 />
               </div>
@@ -72,8 +74,12 @@ export function SearchBar({ variant = 'compact' }: SearchBarProps) {
                 <Calendar className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
                 <Input
                   type="date"
-                  value={checkOut ? format(checkOut, 'yyyy-MM-dd') : ''}
-                  onChange={(e) => setCheckOut(e.target.value ? new Date(e.target.value) : null)}
+                  value={checkOut ? format(checkOut, "yyyy-MM-dd") : ""}
+                  onChange={(e) =>
+                    setCheckOut(
+                      e.target.value ? new Date(e.target.value) : null
+                    )
+                  }
                   className="pl-10"
                 />
               </div>
@@ -95,16 +101,16 @@ export function SearchBar({ variant = 'compact' }: SearchBarProps) {
                 />
               </div>
             </div>
+            <div className="absolute -right-16 top-1/2 -translate-y-1/2">
+              <Button
+                onClick={handleSearch}
+                className="h-14 w-14  rounded-full bg-sky-600 shadow-lg hover:bg-sky-700 hover:shadow-xl transition-all duration-200"
+                aria-label="Search"
+              >
+                <Search className="h-6 w-6 text-white" />
+              </Button>
+            </div>
           </div>
-
-          <Button
-            onClick={handleSearch}
-            size="lg"
-            className="mt-6 w-full bg-sky-600 text-lg hover:bg-sky-700"
-          >
-            <Search className="mr-2 h-5 w-5" />
-            Search Properties
-          </Button>
         </div>
       </motion.div>
     );

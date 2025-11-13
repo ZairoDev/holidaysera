@@ -1,68 +1,86 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
-import { Home, Mail, Lock, User, Facebook, Chrome, Eye, EyeOff } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
-// import { supabase } from '@/lib/supabase';
+import { useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
+import {
+  Home,
+  Mail,
+  Lock,
+  User,
+  Facebook,
+  Chrome,
+  Eye,
+  EyeOff,
+  Phone,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { trpc } from "@/trpc/client";
 
 export default function SignupPage() {
   const router = useRouter();
-  const [fullName, setFullName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [role, setRole] = useState<"Owner" | "Traveller">("Traveller");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
+
+  const signupMutation = trpc.auth.signup.useMutation({
+    onSuccess: () => {
+      router.push("/login?signup=success");
+    },
+    onError: (error) => {
+      setError(error.message);
+      setLoading(false);
+    },
+  });
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
 
     if (password !== confirmPassword) {
-      setError('Passwords do not match');
+      setError("Passwords do not match");
       return;
     }
 
     if (password.length < 6) {
-      setError('Password must be at least 6 characters');
+      setError("Password must be at least 6 characters");
+      return;
+    }
+
+    if (!fullName.trim()) {
+      setError("Please provide your full name");
+      return;
+    }
+
+    if (!phoneNumber.trim()) {
+      setError("Please provide your phone number");
       return;
     }
 
     setLoading(true);
 
     try {
-      // const { data, error } = await supabase.auth.signUp({
-      //   email,
-      //   password,
-      //   options: {
-      //     data: {
-      //       full_name: fullName,
-      //     },
-      //   },
-      // });
-
-      // if (error) throw error;
-
-      // if (data.user) {
-      //   await supabase.from('user_profiles').insert({
-      //     id: data.user.id,
-      //     full_name: fullName,
-      //   });
-
-      //   router.push('/login');
-      // }
+      await signupMutation.mutateAsync({
+        fullName,
+        email,
+        password,
+        phoneNumber,
+        confirmPassword,
+        role,
+      });
     } catch (err: any) {
-      setError(err.message || 'Failed to create account');
-    } finally {
-      setLoading(false);
+      // Error handled by onError
     }
   };
 
@@ -97,6 +115,7 @@ export default function SignupPage() {
           )}
 
           <form onSubmit={handleSignup} className="space-y-4">
+            {/* Full Name */}
             <div>
               <label className="mb-2 block text-sm font-medium text-gray-700">
                 Full Name
@@ -114,6 +133,7 @@ export default function SignupPage() {
               </div>
             </div>
 
+            {/* Email */}
             <div>
               <label className="mb-2 block text-sm font-medium text-gray-700">
                 Email
@@ -131,6 +151,25 @@ export default function SignupPage() {
               </div>
             </div>
 
+            {/* Phone Number */}
+            <div>
+              <label className="mb-2 block text-sm font-medium text-gray-700">
+                Phone Number
+              </label>
+              <div className="relative">
+                <Phone className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
+                <Input
+                  type="tel"
+                  placeholder="+1 234 567 8901"
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
+                  className="pl-10"
+                  required
+                />
+              </div>
+            </div>
+
+            {/* Password */}
             <div>
               <label className="mb-2 block text-sm font-medium text-gray-700">
                 Password
@@ -138,7 +177,7 @@ export default function SignupPage() {
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
                 <Input
-                  type={showPassword ? 'text' : 'password'}
+                  type={showPassword ? "text" : "password"}
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -159,6 +198,7 @@ export default function SignupPage() {
               </div>
             </div>
 
+            {/* Confirm Password */}
             <div>
               <label className="mb-2 block text-sm font-medium text-gray-700">
                 Confirm Password
@@ -166,7 +206,7 @@ export default function SignupPage() {
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
                 <Input
-                  type={showConfirmPassword ? 'text' : 'password'}
+                  type={showConfirmPassword ? "text" : "password"}
                   placeholder="••••••••"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
@@ -187,32 +227,74 @@ export default function SignupPage() {
               </div>
             </div>
 
+            {/* Role Selection */}
+            <div>
+              <label className="mb-2 block text-sm font-medium text-gray-700">
+                Role
+              </label>
+              <div className="flex items-center gap-6">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="role"
+                    value="owner"
+                    checked={role === "Owner"}
+                    onChange={() => setRole("Owner")}
+                    className="text-sky-600 focus:ring-sky-500"
+                  />
+                  <span className="text-gray-700">Owner</span>
+                </label>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="role"
+                    value="traveller"
+                    checked={role === "Traveller"}
+                    onChange={() => setRole("Traveller")}
+                    className="text-sky-600 focus:ring-sky-500"
+                  />
+                  <span className="text-gray-700">Traveller</span>
+                </label>
+              </div>
+            </div>
+
+            {/* Terms Agreement */}
             <div className="text-sm">
               <label className="flex items-start gap-2">
                 <input type="checkbox" className="mt-1 rounded" required />
                 <span className="text-gray-600">
-                  I agree to the{' '}
-                  <Link href="/terms" className="text-sky-600 hover:text-sky-700">
+                  I agree to the{" "}
+                  <Link
+                    href="/terms"
+                    className="text-sky-600 hover:text-sky-700"
+                  >
                     Terms of Service
-                  </Link>{' '}
-                  and{' '}
-                  <Link href="/privacy" className="text-sky-600 hover:text-sky-700">
+                  </Link>{" "}
+                  and{" "}
+                  <Link
+                    href="/privacy"
+                    className="text-sky-600 hover:text-sky-700"
+                  >
                     Privacy Policy
                   </Link>
                 </span>
               </label>
             </div>
 
+            {/* Submit */}
             <Button
               type="submit"
-              disabled={loading}
+              disabled={loading || signupMutation.isPending}
               className="w-full bg-sky-600 hover:bg-sky-700"
               size="lg"
             >
-              {loading ? 'Creating account...' : 'Sign Up'}
+              {loading || signupMutation.isPending
+                ? "Creating account..."
+                : "Sign Up"}
             </Button>
           </form>
 
+          {/* Separator */}
           <div className="my-6">
             <div className="relative">
               <Separator />
@@ -222,6 +304,7 @@ export default function SignupPage() {
             </div>
           </div>
 
+          {/* Social Buttons */}
           <div className="grid gap-3 sm:grid-cols-2">
             <Button variant="outline" className="w-full">
               <Chrome className="mr-2 h-5 w-5" />
@@ -235,8 +318,11 @@ export default function SignupPage() {
         </Card>
 
         <p className="mt-6 text-center text-sm text-gray-600">
-          Already have an account?{' '}
-          <Link href="/login" className="font-medium text-sky-600 hover:text-sky-700">
+          Already have an account?{" "}
+          <Link
+            href="/login"
+            className="font-medium text-sky-600 hover:text-sky-700"
+          >
             Log in
           </Link>
         </p>

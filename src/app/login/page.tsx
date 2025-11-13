@@ -1,5 +1,4 @@
 'use client';
-
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -9,8 +8,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { supabase } from '@/lib/supabase';
+// import { supabase } from '@/lib/supabase';
 import { useUserStore } from '@/lib/store';
+import { trpc } from '@/trpc/client';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -20,30 +20,37 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const { data, isLoading,error:trpcError } = trpc.property.all.useQuery();
 
+  if (isLoading) console.log("Loading...")
+  else {console.log("Data fetched",data);
+  }
+
+  const signInMutation = trpc.auth.login.useMutation({
+    onSuccess: () => {
+      router.push('/');
+    },
+    onError: (error) => {
+      setError(error.message);
+      setLoading(false);
+    },
+  })
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) throw error;
-
-      if (data.user) {
-        setUser(data.user);
-        router.push('/');
-      }
+     const res = await signInMutation.mutateAsync({ email, password });
+     localStorage.setItem("token", res.token);
+     setUser(res.user);
     } catch (err: any) {
       setError(err.message || 'Failed to login');
     } finally {
       setLoading(false);
     }
   };
+  console.log(data);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-sky-50 to-blue-100 px-4 py-12">
