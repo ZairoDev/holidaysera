@@ -165,100 +165,125 @@ export const propertyRouter = router({
     }
   }),
   getFiltered: publicProcedure
-    .input(
-      z.object({
-        location: z.string().optional(),
-        priceRange: z.tuple([z.number(), z.number()]).optional(),
-        propertyTypes: z.array(z.string()).optional(),
-        minBedrooms: z.number().optional(),
-        minBathrooms: z.number().optional(),
-        minGuests: z.number().optional(),
-        minRating: z.number().optional(),
-        amenities: z.array(z.string()).optional(),
-        sortBy: z
-          .enum(["featured", "price-low", "price-high", "rating"])
-          .default("featured"),
-      })
-    )
-    .query(async ({ input }) => {
-      try {
-        const filter: Record<string, any> = { isLive: true };
+  .input(
+    z.object({
+      location: z.string().optional(),
+      priceRange: z.tuple([z.number(), z.number()]).optional(),
+      propertyTypes: z.array(z.string()).optional(),
+      minBedrooms: z.number().optional(),
+      minBathrooms: z.number().optional(),
+      minGuests: z.number().optional(),
+      minRating: z.number().optional(),
+      amenities: z.array(z.string()).optional(),
+      sortBy: z
+        .enum(["featured", "price-low", "price-high", "rating"])
+        .default("featured"),
 
-        // Location search
-        if (input.location) {
-          const regex = new RegExp(input.location, "i");
-          filter.$or = [
-            { city: regex },
-            { country: regex },
-            { placeName: regex },
-            { propertyName: regex },
-          ];
-        }
+      // 👇 NEW FOR INFINITE SCROLL
+      cursor: z.string().nullish(),
+      limit: z.number().default(12),
+    })
+  )
+  .query(async ({ input }) => {
+    try {
+      const { cursor, limit } = input;
 
-        // Price range
-        if (input.priceRange) {
-          filter.basePrice = {
-            $gte: input.priceRange[0],
-            $lte: input.priceRange[1],
-          };
-        }
+      const filter: Record<string, any> = { isLive: true };
 
-        // Property type
-        if (input.propertyTypes?.length) {
-          filter.propertyType = { $in: input.propertyTypes };
-        }
-
-        // Bedrooms / bathrooms / guests
-        if (input.minBedrooms) filter.bedrooms = { $gte: input.minBedrooms };
-        if (input.minBathrooms) filter.bathroom = { $gte: input.minBathrooms };
-        if (input.minGuests) filter.guests = { $gte: input.minGuests };
-
-        // Rating
-        if (input.minRating) filter.rating = { $gte: input.minRating };
-
-        // Amenities
-        if (input.amenities?.length) {
-          for (const amenity of input.amenities) {
-            filter[`generalAmenities.${amenity}`] = true;
-          }
-        }
-
-        // Base query
-        let query = Properties.find(filter).lean();
-
-        // Sorting
-        switch (input.sortBy) {
-          case "price-low":
-            query = query.sort({ basePrice: 1 });
-            break;
-          case "price-high":
-            query = query.sort({ basePrice: -1 });
-            break;
-          case "rating":
-            query = query.sort({ rating: -1 });
-            break;
-          case "featured":
-          default:
-            query = query.sort({ featured: -1, _id: -1 });
-            break;
-        }
-
-        const docs = await query.limit(60);
-
-        // Map and filter out any null results (documents with missing _id)
-        const mappedProperties = docs
-          .map(mapPropertyDocument)
-          .filter((prop): prop is NonNullable<typeof prop> => prop !== null);
-
-        return mappedProperties;
-      } catch (e) {
-        console.error("Error in getFiltered:", e);
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "Failed to fetch filtered properties",
-        });
+      // Location search
+      if (input.location) {
+        const regex = new RegExp(input.location, "i");
+        filter.$or = [
+          { city: regex },
+          { country: regex },
+          { placeName: regex },
+          { propertyName: regex },
+        ];
       }
-    }),
+
+      // Price range
+      if (input.priceRange) {
+        filter.basePrice = {
+          $gte: input.priceRange[0],
+          $lte: input.priceRange[1],
+        };
+      }
+
+      filter.rentalType = "Short Term";
+
+      // Property type
+      if (input.propertyTypes?.length) {
+        filter.propertyType = { $in: input.propertyTypes };
+      }
+
+      // Bedrooms / bathrooms / guests
+      if (input.minBedrooms) filter.bedrooms = { $gte: input.minBedrooms };
+      if (input.minBathrooms) filter.bathroom = { $gte: input.minBathrooms };
+      if (input.minGuests) filter.guests = { $gte: input.minGuests };
+
+      // Rating
+      if (input.minRating) filter.rating = { $gte: input.minRating };
+
+      // Amenities
+      if (input.amenities?.length) {
+        for (const amenity of input.amenities) {
+          filter[`generalAmenities.${amenity}`] = true;
+        }
+      }
+
+      // Sorting
+      let sort: any = {};
+      switch (input.sortBy) {
+        case "price-low":
+          sort = { basePrice: 1, _id: -1 };
+          break;
+        case "price-high":
+          sort = { basePrice: -1, _id: -1 };
+          break;
+        case "rating":
+          sort = { rating: -1, _id: -1 };
+          break;
+        default:
+        case "featured":
+          sort = { featured: -1, _id: -1 };
+          break;
+      }
+
+      // Cursor pagination
+      if (cursor) {
+        filter._id = { $lt: cursor }; // Fetch next batch older than cursor
+      }
+
+      const docs = await Properties.find(filter)
+        .sort(sort)
+        .limit(limit + 1) // fetch 1 extra to detect next page
+        .lean();
+
+      const mapped = docs
+        .slice(0, limit)
+        .map(mapPropertyDocument)
+        .filter(Boolean);
+
+      // next cursor
+      const nextCursor =
+        docs[limit] && docs[limit]._id ? docs[limit]._id.toString() : null;
+      
+      const totalCount = await Properties.countDocuments(filter);
+
+      return {
+        items: mapped,
+        totalCount,
+        nextCursor,
+      };
+    } catch (e) {
+      console.error("Error in getFiltered:", e);
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Failed to fetch filtered properties",
+      });
+    }
+  }),
+
 
   // ========================================
   // GET PROPERTY BY ID
@@ -307,6 +332,9 @@ export const propertyRouter = router({
         console.error("Error in getPropertyById:", e);
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
+
+
+          
           message: "Failed to fetch property",
         });
       }

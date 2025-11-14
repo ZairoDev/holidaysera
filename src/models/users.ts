@@ -65,9 +65,11 @@ const userSchema = new mongoose.Schema(
       enum: ["Owner", "Traveller"],
       default: "Owner", // Optional: you can set a default role if needed
     },
-
+    favouriteProperties: {
+      type: [String],
+      default: [],
+    },
     Payment: Object,
-
     forgotPasswordToken: String,
     forgotPasswordTokenExpiry: Date,
     verifyToken: String,

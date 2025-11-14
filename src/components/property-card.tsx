@@ -5,39 +5,53 @@ import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Heart, MapPin, Star, Users } from "lucide-react";
-
-import { useFavoritesStore } from "@/lib/store";
+;
 import { Badge } from "@/components/ui/badge";
 import { Property } from "@/lib/type";
+import { trpc } from "@/trpc/client";
 
 interface PropertyCardProps {
   property: Property;
 }
 
 export function PropertyCard({ property }: PropertyCardProps) {
-  const { isFavorite, addFavorite, removeFavorite } = useFavoritesStore();
+  /** 👉 Fetch user's favorite list */
+  const { data: favorites = [], refetch } =
+    trpc.favorite.getMyFavorites.useQuery(undefined, {
+      staleTime: 5 * 60 * 1000,
+    });
+
+  /** 👉 Mutation for toggle */
+  const toggleMutation = trpc.favorite.toggle.useMutation({
+    onSuccess: () => refetch(), // Refresh favorites after toggling
+  });
+
   const [imageIndex, setImageIndex] = useState(0);
   const [imageError, setImageError] = useState(false);
-  const favorite = isFavorite(property._id);
 
+  /** Determine if THIS property is in favorites */
+  const favorite = favorites.includes(property._id);
+
+  /** Handle favorite toggle */
   const handleFavoriteClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    favorite ? removeFavorite(property._id) : addFavorite(property._id);
+
+    toggleMutation.mutate({ propertyId: property._id });
   };
 
-  // Get all available images with better fallback handling
-  // Filter out empty strings from propertyPictureUrls
-  const pictureUrls = property.propertyPictureUrls?.filter(url => url && url.trim() !== '') || [];
-  const propertyImages = property.propertyImages || [];
-  
-  const allImages = pictureUrls.length > 0 ? pictureUrls : propertyImages;
+  /** Build image list safely */
+  const pictureUrls =
+    property.propertyPictureUrls?.filter((url) => url && url.trim() !== "") ||
+    [];
 
-  const activeImage = allImages[imageIndex] || "/placeholder.jpg";
+  const fallbackImages = property.propertyImages || [];
+  const allImages = pictureUrls.length > 0 ? pictureUrls : fallbackImages;
 
-  console.log("Property:", property.propertyName);
-  console.log("All images:", allImages);
-  console.log("Active image:", activeImage);
+  const activeImage =
+    !imageError && allImages.length > 0
+      ? allImages[imageIndex]
+      : "/placeholder.jpg";
 
   return (
     <Link href={`/properties/${property._id}`}>
@@ -49,44 +63,39 @@ export function PropertyCard({ property }: PropertyCardProps) {
         className="group cursor-pointer"
       >
         <div className="relative overflow-hidden rounded-xl bg-white shadow-lg transition-shadow duration-300 group-hover:shadow-xl">
+          {/* IMAGE */}
           <div className="relative h-64 w-full overflow-hidden bg-gray-200">
-            {!imageError && activeImage !== "/placeholder.jpg" ? (
+            {activeImage !== "/placeholder.jpg" ? (
               <Image
                 src={activeImage}
-                alt={property.propertyName || "Property Image"}
+                alt={property.propertyName || "Property"}
                 fill
+                unoptimized
+                onError={() => setImageError(true)}
                 className="object-cover transition-transform duration-500 group-hover:scale-110"
                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                onError={(e) => {
-                  console.error("Image failed to load:", activeImage);
-                  setImageError(true);
-                }}
-                unoptimized // Temporarily add this to bypass Next.js image optimization
               />
             ) : (
-              <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
-                <div className="text-center">
-                  <MapPin className="mx-auto h-12 w-12 text-gray-400" />
-                  <p className="mt-2 text-sm text-gray-500">
-                    No image available
-                  </p>
-                </div>
+              <div className="flex h-full w-full flex-col items-center justify-center bg-gray-100">
+                <MapPin className="h-10 w-10 text-gray-400" />
+                <p className="mt-2 text-sm text-gray-500">No Image Available</p>
               </div>
             )}
 
             {/* Favorite Button */}
             <button
               onClick={handleFavoriteClick}
-              className="absolute right-3 top-3 z-10 rounded-full bg-white/90 p-2 backdrop-blur-sm transition-all hover:bg-white hover:scale-110"
+              // disabled={toggleMutation.isLoading}
+              className="absolute right-3 top-3 z-10 rounded-full bg-white/90 p-2 backdrop-blur-md hover:bg-white hover:scale-110 transition-all"
             >
               <Heart
-                className={`h-5 w-5 transition-colors ${
-                  favorite ? "fill-red-500 text-red-500" : "text-gray-600"
+                className={`h-5 w-5 ${
+                  favorite ? "text-red-500 fill-red-500" : "text-gray-600"
                 }`}
               />
             </button>
 
-            {/* Image Pagination Dots */}
+            {/* Pagination Dots */}
             {allImages.length > 1 && (
               <div className="absolute bottom-3 left-3 flex gap-1">
                 {allImages.map((_, idx) => (
@@ -99,7 +108,7 @@ export function PropertyCard({ property }: PropertyCardProps) {
                       setImageError(false);
                     }}
                     className={`h-1.5 w-1.5 rounded-full transition-all ${
-                      idx === imageIndex ? "w-6 bg-white" : "bg-white/60"
+                      idx === imageIndex ? "w-6 bg-white" : "bg-white/50"
                     }`}
                   />
                 ))}
@@ -107,13 +116,13 @@ export function PropertyCard({ property }: PropertyCardProps) {
             )}
           </div>
 
-          {/* Content */}
+          {/* CONTENT */}
           <div className="p-4">
-            {/* Title and Rating */}
             <div className="mb-2 flex items-start justify-between">
               <h3 className="text-lg font-semibold text-gray-900 line-clamp-1">
                 {property.propertyName || "Untitled Property"}
               </h3>
+
               {property.reviews && (
                 <div className="flex items-center gap-1">
                   <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
@@ -122,7 +131,6 @@ export function PropertyCard({ property }: PropertyCardProps) {
               )}
             </div>
 
-            {/* Location */}
             <div className="mb-3 flex items-center gap-1 text-sm text-gray-600">
               <MapPin className="h-4 w-4" />
               <span className="line-clamp-1">
@@ -130,9 +138,8 @@ export function PropertyCard({ property }: PropertyCardProps) {
               </span>
             </div>
 
-            {/* Details */}
             <div className="mb-3 flex flex-wrap gap-2 text-xs text-gray-600">
-              {property.guests && property.guests > 0 && (
+              {property.guests && (
                 <>
                   <div className="flex items-center gap-1">
                     <Users className="h-4 w-4" />
@@ -141,7 +148,8 @@ export function PropertyCard({ property }: PropertyCardProps) {
                   <span>•</span>
                 </>
               )}
-              {property.bedrooms !== undefined && property.bedrooms > 0 && (
+
+              {property.bedrooms && (
                 <>
                   <span>
                     {property.bedrooms} bed{property.bedrooms > 1 ? "s" : ""}
@@ -149,18 +157,18 @@ export function PropertyCard({ property }: PropertyCardProps) {
                   <span>•</span>
                 </>
               )}
-              {property.bathroom !== undefined && property.bathroom > 0 && (
+
+              {property.bathroom && (
                 <span>
                   {property.bathroom} bath{property.bathroom > 1 ? "s" : ""}
                 </span>
               )}
             </div>
 
-            {/* Price */}
             <div className="flex items-baseline justify-between border-t pt-3">
               <div>
                 <span className="text-2xl font-bold text-sky-600">
-                  ${property.basePrice ?? 0}
+                  ${property.basePrice || 0}
                 </span>
                 <span className="text-sm text-gray-600"> / night</span>
               </div>

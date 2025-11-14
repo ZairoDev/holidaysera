@@ -1,40 +1,57 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import { Heart } from 'lucide-react';
-import { PropertyCard } from '@/components/property-card';
-// import { supabase, Property } from '@/lib/supabase';
-import { useFavoritesStore } from '@/lib/store';
-import { Button } from '@/components/ui/button';
-import Link from 'next/link';
-import { Property } from '@/lib/type';
+import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
+import { Heart } from "lucide-react";
+import { PropertyCard } from "@/components/property-card";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
+
+import { trpc } from "@/trpc/client";
+import { Property } from "@/lib/type";
 
 export default function FavoritesPage() {
-  const { favorites } = useFavoritesStore();
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // 🔥 Fetch IDs of favorite properties
+  const { data: favoriteIds, isLoading: favLoading } =
+    trpc.favorite.getMyFavorites.useQuery();
+
+  // 🔥 tRPC caller for fetching property by ID
+  const utils = trpc.useUtils();
+
   useEffect(() => {
-    async function fetchFavorites() {
-      if (favorites.length === 0) {
+    async function loadFavoriteProperties() {
+      if (!favoriteIds || favoriteIds.length === 0) {
+        setProperties([]);
         setLoading(false);
         return;
       }
 
-      // const { data, error } = await supabase
-      //   .from('properties')
-      //   .select('*')
-      //   .in('id', favorites);
+      try {
+        // Fetch all properties in parallel
+        const results = await Promise.all(
+          favoriteIds.map((id: string) =>
+            utils.property.getPropertyById.fetch({ _id: id })
+          )
+        );
 
-      // if (!error && data) {
-      //   setProperties(data);
-      // }
+        // Remove null values if any property not found
+        const validProperties = results.filter(Boolean) as Property[];
+
+        setProperties(validProperties);
+      } catch (err) {
+        console.error("Error loading favorite properties:", err);
+      }
+
       setLoading(false);
     }
 
-    fetchFavorites();
-  }, [favorites]);
+    if (!favLoading) {
+      loadFavoriteProperties();
+    }
+  }, [favoriteIds, favLoading, utils]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -48,26 +65,30 @@ export default function FavoritesPage() {
               My Favorites
             </h1>
             <p className="text-gray-600">
-              {properties.length} saved {properties.length === 1 ? 'property' : 'properties'}
+              {properties.length} saved{" "}
+              {properties.length === 1 ? "property" : "properties"}
             </p>
           </div>
 
           {loading ? (
+            // 🌙 Loading skeleton
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {[...Array(6)].map((_, i) => (
                 <div
                   key={i}
                   className="h-96 animate-pulse rounded-xl bg-gray-200"
-                />
+                ></div>
               ))}
             </div>
           ) : properties.length > 0 ? (
+            // 🌟 Favorites Grid
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {properties.map((property) => (
-                <PropertyCard key={property.id} property={property} />
+                <PropertyCard key={property._id} property={property} />
               ))}
             </div>
           ) : (
+            // ❌ No Favorites
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -76,13 +97,16 @@ export default function FavoritesPage() {
               <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-gray-100">
                 <Heart className="h-12 w-12 text-gray-400" />
               </div>
+
               <h2 className="mb-3 text-2xl font-bold text-gray-900">
                 No favorites yet
               </h2>
+
               <p className="mb-6 max-w-md text-gray-600">
-                Start exploring amazing properties and save your favorites by clicking
-                the heart icon
+                Start exploring amazing properties and save your favorites by
+                clicking the heart icon.
               </p>
+
               <Link href="/properties">
                 <Button className="bg-sky-600 hover:bg-sky-700">
                   Browse Properties

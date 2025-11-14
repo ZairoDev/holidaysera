@@ -191,6 +191,34 @@ export interface Property {
   updatedAt?: Date;
 }
 
+
+export interface IUser extends Document {
+  name: string;
+  email: string;
+  profilePic: string;
+  nationality: string;
+  gender: "Male" | "Female" | "Other";
+  spokenLanguage: string;
+  bankDetails: Record<string, any> | string; // since default is ""
+  phone: string;
+  myRequests: string[];
+  myUpcommingRequests: string[];
+  declinedRequests: Record<string, any>[]; // array of objects
+  address: string;
+  password: string;
+  isVerified: boolean;
+  role: "Owner" | "Traveller";
+  favouriteProperties: string[];
+  Payment?: Record<string, any>;
+  forgotPasswordToken?: string;
+  forgotPasswordTokenExpiry?: Date;
+  verifyToken?: string;
+  verifyTokenExpiry?: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+
 export type Booking = {
   id: string;
   property_id: string;

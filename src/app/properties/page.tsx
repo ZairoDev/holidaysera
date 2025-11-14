@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Filter, X, SlidersHorizontal } from "lucide-react";
+import { Filter, X, SlidersHorizontal, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
@@ -17,6 +17,8 @@ import {
 import { PropertyCard } from "@/components/property-card";
 import { useSearchStore } from "@/lib/store";
 import { trpc } from "@/trpc/client";
+import { useInView } from "react-intersection-observer";
+import { Property } from "@/lib/type";
 
 export default function PropertiesPage() {
   const [showFilters, setShowFilters] = useState(false);
@@ -55,25 +57,46 @@ export default function PropertiesPage() {
     "Fireplace",
   ];
 
-  // Fetch filtered properties from backend
-  const { data: propertiesData, isLoading } =
-    trpc.property.getFiltered.useQuery({
-      location,
-      priceRange: filters.priceRange,
-      propertyTypes:
-        filters.propertyTypes.length > 0 ? filters.propertyTypes : undefined,
-      minBedrooms: filters.minBedrooms > 0 ? filters.minBedrooms : undefined,
-      minBathrooms: filters.minBathrooms > 0 ? filters.minBathrooms : undefined,
-      minGuests: filters.minGuests > 0 ? filters.minGuests : undefined,
-      minRating: filters.minRating > 0 ? filters.minRating : undefined,
-      amenities: filters.amenities.length > 0 ? filters.amenities : undefined,
-      sortBy: filters.sortBy,
-    });
+  // Infinite scroll query
+  const { data, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage } =
+    trpc.property.getFiltered.useInfiniteQuery(
+      {
+        location,
+        priceRange: filters.priceRange,
+        propertyTypes:
+          filters.propertyTypes.length > 0 ? filters.propertyTypes : undefined,
+        minBedrooms: filters.minBedrooms > 0 ? filters.minBedrooms : undefined,
+        minBathrooms:
+          filters.minBathrooms > 0 ? filters.minBathrooms : undefined,
+        minGuests: filters.minGuests > 0 ? filters.minGuests : undefined,
+        minRating: filters.minRating > 0 ? filters.minRating : undefined,
+        amenities: filters.amenities.length > 0 ? filters.amenities : undefined,
+        sortBy: filters.sortBy,
+        limit: 20,
+      },
+      {
+        getNextPageParam: (lastPage) => lastPage.nextCursor,
+      }
+    );
 
-  // Ensure we have an array
-  const properties = Array.isArray(propertiesData) ? propertiesData : [];
+  // Intersection observer for infinite scroll
+  const { ref: loadMoreRef, inView } = useInView({
+    threshold: 0,
+    rootMargin: "100px",
+  });
 
-  const handlePropertyTypeToggle = (type: string) => {
+  // Auto-fetch when scrolled to bottom
+  useEffect(() => {
+    if (inView && hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+  }, [inView, hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+  // Flatten all pages into a single array
+  const properties = data?.pages.flatMap((page) => page.items) ?? [];
+  const totalCount = data?.pages[0]?.totalCount ?? 0;
+
+    const handlePropertyTypeToggle = (type: string) => {
     setFilters((prev) => ({
       ...prev,
       propertyTypes: prev.propertyTypes.includes(type)
@@ -259,7 +282,8 @@ export default function PropertiesPage() {
             {location ? `Properties in ${location}` : "All Properties"}
           </h1>
           <p className="text-gray-600">
-            {properties.length} properties available
+            {totalCount} {totalCount === 1 ? "property" : "properties"} found
+
           </p>
         </div>
 
@@ -340,11 +364,28 @@ export default function PropertiesPage() {
                 ))}
               </div>
             ) : properties.length > 0 ? (
-              <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-                {properties.map((property) => (
-                  <PropertyCard key={property._id} property={property} />
-                ))}
-              </div>
+              <>
+                <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+                  {properties.map((property) => (
+                    <PropertyCard key={property?._id} property={property as Property} />
+                  ))}
+                </div>
+
+                {/* Infinite scroll trigger */}
+                <div ref={loadMoreRef} className="mt-8 flex justify-center">
+                  {isFetchingNextPage && (
+                    <div className="flex items-center gap-2 text-gray-600">
+                      <Loader2 className="h-6 w-6 animate-spin" />
+                      <span>Loading more properties...</span>
+                    </div>
+                  )}
+                  {!hasNextPage && properties.length > 0 && (
+                    <p className="text-gray-600">
+                      You've reached the end of the list
+                    </p>
+                  )}
+                </div>
+              </>
             ) : (
               <div className="flex min-h-[400px] flex-col items-center justify-center text-center">
                 <Filter className="mb-4 h-16 w-16 text-gray-400" />
