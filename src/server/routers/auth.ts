@@ -1,9 +1,9 @@
 import { z } from 'zod';
 import { router, publicProcedure, TRPCError, protectedProcedure } from '../trpc';
 import { signToken } from '../utils/jwt';
-import Travellers from '@/models/users';
 import Users from '@/models/users';
 import bcrypt from "bcrypt";
+import Travellers from '@/models/traveller';
 
 export const authRouter = router({
   signup: publicProcedure
@@ -48,6 +48,7 @@ export const authRouter = router({
         const token = signToken({
           id: user._id.toString(),
           email: user.email,
+          role: user.role,
         });
 
         // Return user without password
@@ -80,42 +81,55 @@ export const authRouter = router({
         });
       }
     }),
-  login: publicProcedure
+    login: publicProcedure
     .input(
       z.object({
         email: z.string().email("Invalid email address"),
         password: z.string().min(6, "Password must be at least 6 characters"),
+        role: z.enum(["traveller", "owner"], {
+          errorMap: () => ({ message: "Please select a valid role" }),
+        }),
       })
     )
     .mutation(async ({ input }) => {
       try {
-        const user = await Travellers.findOne({ email: input.email });
+        // Choose the correct model based on role
+        const UserModel = input.role === "traveller" ? Travellers : Users;
+        
+        const user = await UserModel.findOne({ email: input.email });
+        
         if (!user) {
           throw new TRPCError({
             code: "NOT_FOUND",
-            message: "User not found",
+            message: `No ${input.role} account found with this email`,
           });
         }
+        
         const isPasswordValid = await bcrypt.compare(
           input.password,
           user.password
         );
+        
         if (!isPasswordValid) {
           throw new TRPCError({
             code: "UNAUTHORIZED",
             message: "Invalid credentials",
           });
         }
+        
         const token = signToken({
           id: user._id.toString(),
           email: user.email,
+          role: input.role, // Include role in token
         });
+        
         return {
           token,
           user: {
             id: user._id,
             fullName: user.fullName,
             email: user.email,
+            role: input.role,
             createdAt: user.createdAt,
           },
         };

@@ -124,8 +124,8 @@ export default function BookingConfirmPage() {
                 <div className="flex items-start gap-3">
                   <Home className="mt-1 h-5 w-5 text-gray-600" />
                   <div>
-                    <p className="font-medium text-gray-900">{property.title}</p>
-                    <p className="text-sm text-gray-600">{property.property_type}</p>
+                    <p className="font-medium text-gray-900">{property.placeName}</p>
+                    <p className="text-sm text-gray-600">{property.area}</p>
                   </div>
                 </div>
 
@@ -133,7 +133,7 @@ export default function BookingConfirmPage() {
                   <MapPin className="mt-1 h-5 w-5 text-gray-600" />
                   <div>
                     <p className="font-medium text-gray-900">Location</p>
-                    <p className="text-sm text-gray-600">{property.location}</p>
+                    <p className="text-sm text-gray-600">{property.area}</p>
                   </div>
                 </div>
 

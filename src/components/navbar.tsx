@@ -22,7 +22,7 @@ export function Navbar() {
   const [isClient, setIsClient] = useState(false);
   const [hasToken, setHasToken] = useState(false);
 
-  const { user, setUser, logout } = useUserStore();
+  const { user, setUser } = useUserStore();
 
   // Initialize client state and check for token
   useEffect(() => {
@@ -47,9 +47,9 @@ export function Navbar() {
 
   useEffect(() => {
     if (meQuery.error) {
-      logout();
+
     }
-  }, [meQuery.error, logout]);
+  }, [meQuery.error]);
 
   // Close mobile menu when route changes
   useEffect(() => {
@@ -196,43 +196,140 @@ export function Navbar() {
         </div>
       </div>
 
-      {/* Mobile Menu */}
+      {/* Mobile Menu - Redesigned Sidebar */}
       <AnimatePresence>
         {mobileMenuOpen && (
-          <motion.div
-            id="mobile-menu"
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.2 }}
-            className="border-t bg-white md:hidden"
-          >
-            <div className="space-y-1 px-4 py-3">
-              {NAV_LINKS.map((link) => {
-                const Icon = link.icon;
-                const isActive = pathname === link.href;
-                return (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    onClick={() => setMobileMenuOpen(false)}
-                    aria-current={isActive ? "page" : undefined}
-                    className={`flex items-center gap-3 rounded-lg px-3 py-2 text-base font-medium transition-colors ${
-                      isActive
-                        ? "bg-sky-50 text-sky-600"
-                        : "text-gray-700 hover:bg-gray-50"
-                    }`}
-                  >
-                    <Icon className="h-5 w-5" />
-                    {link.label}
-                  </Link>
-                );
-              })}
+          <>
+            {/* Backdrop overlay */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 top-16 z-40 bg-black/20 backdrop-blur-sm md:hidden"
+              onClick={() => setMobileMenuOpen(false)}
+            />
 
-              {/* Mobile Auth Buttons */}
-              <div className="border-t pt-3">{mobileAuthButtons}</div>
-            </div>
-          </motion.div>
+            {/* Sidebar */}
+            <motion.div
+              id="mobile-menu"
+              initial={{ x: "-100%", opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: "-100%", opacity: 0 }}
+              transition={{ type: "spring", stiffness: 400, damping: 40 }}
+              className="fixed left-0 top-16 z-50 h-[calc(100vh-64px)] w-72 overflow-y-auto bg-white dark:bg-slate-900 shadow-2xl md:hidden"
+            >
+              <div className="flex flex-col p-6">
+                {/* Header Section */}
+                <div className="mb-8">
+                  <h2 className="text-sm font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                    Navigation
+                  </h2>
+                </div>
+
+                {/* Navigation Links */}
+                <nav className="space-y-2">
+                  {NAV_LINKS.map((link) => {
+                    const Icon = link.icon;
+                    const isActive = pathname === link.href;
+                    return (
+                      <motion.div
+                        key={link.href}
+                        whileHover={{ x: 4 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        <Link
+                          href={link.href}
+                          onClick={() => setMobileMenuOpen(false)}
+                          aria-current={isActive ? "page" : undefined}
+                          className={`flex items-center gap-4 rounded-xl px-4 py-3 transition-all duration-200 ${
+                            isActive
+                              ? "bg-gradient-to-r from-sky-500 to-sky-600 text-white shadow-lg shadow-sky-500/20"
+                              : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800"
+                          }`}
+                        >
+                          <Icon className={`h-5 w-5 transition-transform ${isActive ? "scale-110" : ""}`} />
+                          <span className="font-medium">{link.label}</span>
+                          {isActive && (
+                            <motion.div
+                              layoutId="mobileSidebarActive"
+                              className="ml-auto h-2 w-2 rounded-full bg-white"
+                              transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                            />
+                          )}
+                        </Link>
+                      </motion.div>
+                    );
+                  })}
+                </nav>
+
+                {/* Divider */}
+                <div className="my-8 h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent dark:via-gray-700" />
+
+                {/* Account Section */}
+                <div className="mb-4">
+                  <h2 className="text-sm font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                    Account
+                  </h2>
+                </div>
+
+                {/* Auth Buttons */}
+                <div className="space-y-3">
+                  {user ? (
+                    <motion.div
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      <Link
+                        href="/profile"
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="flex items-center gap-3 rounded-xl bg-gradient-to-r from-sky-50 to-sky-100 px-4 py-3 font-medium text-sky-700 shadow-sm transition-all hover:shadow-md dark:from-sky-900/30 dark:to-sky-800/30 dark:text-sky-300"
+                      >
+                        <User className="h-5 w-5" />
+                        <span>My Profile</span>
+                      </Link>
+                    </motion.div>
+                  ) : (
+                    <>
+                      <motion.div
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        <Link
+                          href="/login"
+                          onClick={() => setMobileMenuOpen(false)}
+                          className="flex items-center justify-center rounded-xl border-2 border-gray-300 px-4 py-3 font-medium text-gray-700 transition-all hover:border-sky-500 hover:bg-sky-50 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-sky-900/20"
+                        >
+                          Log in
+                        </Link>
+                      </motion.div>
+                      <motion.div
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        <Link
+                          href="/signup"
+                          onClick={() => setMobileMenuOpen(false)}
+                          className="flex items-center justify-center rounded-xl bg-gradient-to-r from-sky-600 to-sky-700 px-4 py-3 font-medium text-white shadow-lg shadow-sky-600/30 transition-all hover:shadow-xl hover:shadow-sky-600/40 dark:from-sky-500 dark:to-sky-600"
+                        >
+                          Create Account
+                        </Link>
+                      </motion.div>
+                    </>
+                  )}
+                </div>
+
+                {/* Info Section */}
+                <div className="mt-auto pt-8">
+                  <div className="rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 p-4 dark:from-blue-900/20 dark:to-indigo-900/20">
+                    <p className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                      💡 <span className="ml-2">Browse properties and book your next stay with StayHaven</span>
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </>
         )}
       </AnimatePresence>
     </nav>

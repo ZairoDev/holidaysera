@@ -165,125 +165,124 @@ export const propertyRouter = router({
     }
   }),
   getFiltered: publicProcedure
-  .input(
-    z.object({
-      location: z.string().optional(),
-      priceRange: z.tuple([z.number(), z.number()]).optional(),
-      propertyTypes: z.array(z.string()).optional(),
-      minBedrooms: z.number().optional(),
-      minBathrooms: z.number().optional(),
-      minGuests: z.number().optional(),
-      minRating: z.number().optional(),
-      amenities: z.array(z.string()).optional(),
-      sortBy: z
-        .enum(["featured", "price-low", "price-high", "rating"])
-        .default("featured"),
+    .input(
+      z.object({
+        location: z.string().optional(),
+        priceRange: z.tuple([z.number(), z.number()]).optional(),
+        propertyTypes: z.array(z.string()).optional(),
+        minBedrooms: z.number().optional(),
+        minBathrooms: z.number().optional(),
+        minGuests: z.number().optional(),
+        minRating: z.number().optional(),
+        amenities: z.array(z.string()).optional(),
+        sortBy: z
+          .enum(["featured", "price-low", "price-high", "rating"])
+          .default("featured"),
 
-      // 👇 NEW FOR INFINITE SCROLL
-      cursor: z.string().nullish(),
-      limit: z.number().default(12),
-    })
-  )
-  .query(async ({ input }) => {
-    try {
-      const { cursor, limit } = input;
+        // 👇 NEW FOR INFINITE SCROLL
+        cursor: z.string().nullish(),
+        limit: z.number().default(12),
+      })
+    )
+    .query(async ({ input }) => {
+      try {
+        const { cursor, limit } = input;
 
-      const filter: Record<string, any> = { isLive: true };
+        const filter: Record<string, any> = { isLive: true };
 
-      // Location search
-      if (input.location) {
-        const regex = new RegExp(input.location, "i");
-        filter.$or = [
-          { city: regex },
-          { country: regex },
-          { placeName: regex },
-          { propertyName: regex },
-        ];
-      }
-
-      // Price range
-      if (input.priceRange) {
-        filter.basePrice = {
-          $gte: input.priceRange[0],
-          $lte: input.priceRange[1],
-        };
-      }
-
-      filter.rentalType = "Short Term";
-
-      // Property type
-      if (input.propertyTypes?.length) {
-        filter.propertyType = { $in: input.propertyTypes };
-      }
-
-      // Bedrooms / bathrooms / guests
-      if (input.minBedrooms) filter.bedrooms = { $gte: input.minBedrooms };
-      if (input.minBathrooms) filter.bathroom = { $gte: input.minBathrooms };
-      if (input.minGuests) filter.guests = { $gte: input.minGuests };
-
-      // Rating
-      if (input.minRating) filter.rating = { $gte: input.minRating };
-
-      // Amenities
-      if (input.amenities?.length) {
-        for (const amenity of input.amenities) {
-          filter[`generalAmenities.${amenity}`] = true;
+        // Location search
+        if (input.location) {
+          const regex = new RegExp(input.location, "i");
+          filter.$or = [
+            { city: regex },
+            { country: regex },
+            { placeName: regex },
+            { propertyName: regex },
+          ];
         }
+
+        // Price range
+        if (input.priceRange) {
+          filter.basePrice = {
+            $gte: input.priceRange[0],
+            $lte: input.priceRange[1],
+          };
+        }
+
+        filter.rentalType = "Short Term";
+
+        // Property type
+        if (input.propertyTypes?.length) {
+          filter.propertyType = { $in: input.propertyTypes };
+        }
+
+        // Bedrooms / bathrooms / guests
+        if (input.minBedrooms) filter.bedrooms = { $gte: input.minBedrooms };
+        if (input.minBathrooms) filter.bathroom = { $gte: input.minBathrooms };
+        if (input.minGuests) filter.guests = { $gte: input.minGuests };
+
+        // Rating
+        if (input.minRating) filter.rating = { $gte: input.minRating };
+
+        // Amenities
+        if (input.amenities?.length) {
+          for (const amenity of input.amenities) {
+            filter[`generalAmenities.${amenity}`] = true;
+          }
+        }
+
+        // Sorting
+        let sort: any = {};
+        switch (input.sortBy) {
+          case "price-low":
+            sort = { basePrice: 1, _id: -1 };
+            break;
+          case "price-high":
+            sort = { basePrice: -1, _id: -1 };
+            break;
+          case "rating":
+            sort = { rating: -1, _id: -1 };
+            break;
+          default:
+          case "featured":
+            sort = { featured: -1, _id: -1 };
+            break;
+        }
+
+        // Cursor pagination
+        if (cursor) {
+          filter._id = { $lt: cursor }; // Fetch next batch older than cursor
+        }
+
+        const docs = await Properties.find(filter)
+          .sort(sort)
+          .limit(limit + 1) // fetch 1 extra to detect next page
+          .lean();
+
+        const mapped = docs
+          .slice(0, limit)
+          .map(mapPropertyDocument)
+          .filter(Boolean);
+
+        // next cursor
+        const nextCursor =
+          docs[limit] && docs[limit]._id ? docs[limit]._id.toString() : null;
+
+        const totalCount = await Properties.countDocuments(filter);
+
+        return {
+          items: mapped,
+          totalCount,
+          nextCursor,
+        };
+      } catch (e) {
+        console.error("Error in getFiltered:", e);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to fetch filtered properties",
+        });
       }
-
-      // Sorting
-      let sort: any = {};
-      switch (input.sortBy) {
-        case "price-low":
-          sort = { basePrice: 1, _id: -1 };
-          break;
-        case "price-high":
-          sort = { basePrice: -1, _id: -1 };
-          break;
-        case "rating":
-          sort = { rating: -1, _id: -1 };
-          break;
-        default:
-        case "featured":
-          sort = { featured: -1, _id: -1 };
-          break;
-      }
-
-      // Cursor pagination
-      if (cursor) {
-        filter._id = { $lt: cursor }; // Fetch next batch older than cursor
-      }
-
-      const docs = await Properties.find(filter)
-        .sort(sort)
-        .limit(limit + 1) // fetch 1 extra to detect next page
-        .lean();
-
-      const mapped = docs
-        .slice(0, limit)
-        .map(mapPropertyDocument)
-        .filter(Boolean);
-
-      // next cursor
-      const nextCursor =
-        docs[limit] && docs[limit]._id ? docs[limit]._id.toString() : null;
-      
-      const totalCount = await Properties.countDocuments(filter);
-
-      return {
-        items: mapped,
-        totalCount,
-        nextCursor,
-      };
-    } catch (e) {
-      console.error("Error in getFiltered:", e);
-      throw new TRPCError({
-        code: "INTERNAL_SERVER_ERROR",
-        message: "Failed to fetch filtered properties",
-      });
-    }
-  }),
-
+    }),
 
   // ========================================
   // GET PROPERTY BY ID
@@ -333,10 +332,40 @@ export const propertyRouter = router({
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
 
-
-          
           message: "Failed to fetch property",
         });
       }
     }),
+    getOwnerProperties: protectedProcedure.query(async ({ ctx }) => {
+      const properties = await Properties.find({
+        userId: ctx.user.id,
+      }).sort({ createdAt: -1 });
+
+      return properties;
+    }),
+
+    deleteProperty: protectedProcedure
+      .input(z.object({ propertyId: z.string() }))
+      .mutation(async ({ input, ctx }) => {
+        const property = await Properties.findById(input.propertyId);
+
+        if (!property) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Property not found",
+          });
+        }
+
+        // Verify ownership
+        if (property.userId !== ctx.user.id) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "You don't have permission to delete this property",
+          });
+        }
+
+        await Properties.findByIdAndDelete(input.propertyId);
+
+        return { success: true };
+      }),
 });

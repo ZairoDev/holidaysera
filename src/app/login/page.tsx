@@ -1,56 +1,67 @@
-'use client';
-import { useState } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
-import { Home, Mail, Lock, Facebook, Chrome, Eye, EyeOff } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
-// import { supabase } from '@/lib/supabase';
-import { useUserStore } from '@/lib/store';
-import { trpc } from '@/trpc/client';
+"use client";
+import { useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
+import {
+  Home,
+  Mail,
+  Lock,
+  Facebook,
+  Chrome,
+  Eye,
+  EyeOff,
+  User,
+  Building2,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { useUserStore } from "@/lib/store";
+import { trpc } from "@/trpc/client";
 
 export default function LoginPage() {
   const router = useRouter();
   const { setUser } = useUserStore();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [role, setRole] = useState<"traveller" | "owner">("traveller");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const { data, isLoading,error:trpcError } = trpc.property.all.useQuery();
-
-  if (isLoading) console.log("Loading...")
-  else {console.log("Data fetched",data);
-  }
+  const [error, setError] = useState("");
 
   const signInMutation = trpc.auth.login.useMutation({
-    onSuccess: () => {
-      router.push('/');
+    onSuccess: (data) => {
+      // Store token
+      localStorage.setItem("token", data.token);
+
+      // Store complete user data including role
+      setUser(data.user);
+
+      router.push("/");
     },
     onError: (error) => {
       setError(error.message);
       setLoading(false);
     },
-  })
+  });
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
     setLoading(true);
 
     try {
-     const res = await signInMutation.mutateAsync({ email, password });
-     localStorage.setItem("token", res.token);
-     setUser(res.user);
+      const res = await signInMutation.mutateAsync({ email, password, role });
+      localStorage.setItem("token", res.token);
+      setUser(res.user);
     } catch (err: any) {
-      setError(err.message || 'Failed to login');
+      setError(err.message || "Failed to login");
     } finally {
       setLoading(false);
     }
   };
-  console.log(data);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-sky-50 to-blue-100 px-4 py-12">
@@ -83,6 +94,39 @@ export default function LoginPage() {
           )}
 
           <form onSubmit={handleLogin} className="space-y-4">
+            {/* Role Selection */}
+            <div>
+              <label className="mb-3 block text-sm font-medium text-gray-700">
+                I am a
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setRole("traveller")}
+                  className={`flex flex-col items-center gap-2 rounded-lg border-2 p-4 transition-all ${
+                    role === "traveller"
+                      ? "border-sky-600 bg-sky-50 text-sky-700"
+                      : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"
+                  }`}
+                >
+                  <User className="h-6 w-6" />
+                  <span className="text-sm font-medium">Traveller</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRole("owner")}
+                  className={`flex flex-col items-center gap-2 rounded-lg border-2 p-4 transition-all ${
+                    role === "owner"
+                      ? "border-sky-600 bg-sky-50 text-sky-700"
+                      : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"
+                  }`}
+                >
+                  <Building2 className="h-6 w-6" />
+                  <span className="text-sm font-medium">Owner</span>
+                </button>
+              </div>
+            </div>
+
             <div>
               <label className="mb-2 block text-sm font-medium text-gray-700">
                 Email
@@ -107,7 +151,7 @@ export default function LoginPage() {
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
                 <Input
-                  type={showPassword ? 'text' : 'password'}
+                  type={showPassword ? "text" : "password"}
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -147,7 +191,7 @@ export default function LoginPage() {
               className="w-full bg-sky-600 hover:bg-sky-700"
               size="lg"
             >
-              {loading ? 'Logging in...' : 'Log In'}
+              {loading ? "Logging in..." : "Log In"}
             </Button>
           </form>
 
@@ -173,8 +217,11 @@ export default function LoginPage() {
         </Card>
 
         <p className="mt-6 text-center text-sm text-gray-600">
-          Don't have an account?{' '}
-          <Link href="/signup" className="font-medium text-sky-600 hover:text-sky-700">
+          Don't have an account?{" "}
+          <Link
+            href="/signup"
+            className="font-medium text-sky-600 hover:text-sky-700"
+          >
             Sign up
           </Link>
         </p>

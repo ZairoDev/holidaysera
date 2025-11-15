@@ -52,24 +52,30 @@ export const useFavoritesStore = create<FavoritesState>()(
   )
 );
 
+
 interface User {
   id: string;
   fullName: string;
   email: string;
-  createdAt: string;
+  role: "traveller" | "owner";
+  createdAt: Date;
 }
 
-interface UserState {
+interface UserStore {
   user: User | null;
   setUser: (user: User | null) => void;
-  logout: () => void;
+  clearUser: () => void;
 }
 
-export const useUserStore = create<UserState>((set) => ({
-  user: null,
-  setUser: (user) => set({ user }),
-  logout: () => {
-    localStorage.removeItem("token");
-    set({ user: null });
-  },
-}));
+export const useUserStore = create<UserStore>()(
+  persist(
+    (set) => ({
+      user: null,
+      setUser: (user) => set({ user }),
+      clearUser: () => set({ user: null }),
+    }),
+    {
+      name: "user-storage", // unique name for localStorage key
+    }
+  )
+);
