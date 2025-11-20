@@ -4,6 +4,7 @@ import { FC } from "react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 
 export interface CommonLayoutProps {
   children: React.ReactNode;
@@ -26,9 +27,15 @@ const stepTitles = [
 ];
 
 const CommonLayout: FC<CommonLayoutProps> = ({ children, params }) => {
+  const searchParams = useSearchParams();
   const index = Number(params.stepIndex) || 1;
-  const nextHref = index < 10 ? `/add-listing/${index + 1}` : `/add-listing/${1}`;
-  const backHref = index > 1 ? `/add-listing/${index - 1}` : `/add-listing/${1}`;
+  
+  // Build query string from searchParams (preserve ?edit=<id>)
+  const editParam = searchParams?.get("edit");
+  const queryString = editParam ? `?edit=${editParam}` : "";
+  
+  const nextHref = index < 10 ? `/add-listing/${index + 1}${queryString}` : `/add-listing/${1}${queryString}`;
+  const backHref = index > 1 ? `/add-listing/${index - 1}${queryString}` : `/add-listing/${1}${queryString}`;
   const nextBtnText = index > 9 ? "Publish listing" : "Continue";
   const progressPercentage = (index / 10) * 100;
 

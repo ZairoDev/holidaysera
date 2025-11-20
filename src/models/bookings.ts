@@ -35,8 +35,35 @@ const bookingsSchema = new mongoose.Schema(
     },
     bookingStatus: {
       type: String,
-      enum: ["confirmed", "pending", "cancelled"],
-      default: "confirmed",
+      enum: ["pending", "approved", "rejected", "completed", "cancelled"],
+      default: "pending",
+    },
+    // New fields for approval and payment
+    ownerApprovalStatus: {
+      type: String,
+      enum: ["pending", "approved", "rejected"],
+      default: "pending",
+    },
+    paymentStatus: {
+      type: String,
+      enum: ["awaiting", "paid", "failed", "refunded"],
+      default: "awaiting",
+    },
+    // Service charge (12% of price)
+    serviceCharge: {
+      type: Number,
+      default: function() {
+        return (this.price as number) * 0.12;
+      },
+    },
+    // Stripe/payment related fields
+    paymentIntentId: {
+      type: String,
+      default: null,
+    },
+    transactionId: {
+      type: String,
+      default: null,
     },
   },
   { timestamps: true }

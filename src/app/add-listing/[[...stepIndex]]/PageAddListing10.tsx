@@ -5,8 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
+import { trpc } from "@/trpc/client";
+import { useRouter } from "next/navigation";
+import { useToast } from "@/hooks/use-toast";
 
-export interface PageAddListing10Props {}
+export interface PageAddListing10Props {
+  searchParams?: { [key: string]: string | string[] | undefined };
+}
 
 interface Page3State {
   portionName: string[];
@@ -85,7 +90,9 @@ interface CombinedData {
   isLive?: boolean;
 }
 
-const PageAddListing10: FC<PageAddListing10Props> = () => {
+const PageAddListing10: FC<PageAddListing10Props> = ({ searchParams }) => {
+  const router = useRouter();
+  const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [propertyCoverFileUrl, setPropertyCoverFileUrl] = useState<string>("");
   const [page3, setPage3] = useState<Page3State | null>(null);
@@ -93,6 +100,81 @@ const PageAddListing10: FC<PageAddListing10Props> = () => {
   const [basePrice, setBasePrice] = useState<number>(0);
   const [beds, setBeds] = useState<number>(0);
   const [bathrooms, setBathrooms] = useState<number>(0);
+
+  // TRPC mutation for adding listing
+  const addListingMutation = trpc.property.addListing.useMutation({
+    onSuccess: (data) => {
+      toast({
+        title: "Success! 🎉",
+        description: "Your property listing has been published successfully!",
+      });
+      
+      // Clear localStorage
+      for (let i = 1; i <= 10; i++) {
+        localStorage.removeItem(`page${i}`);
+      }
+      localStorage.removeItem("propertyCoverFileUrl");
+      localStorage.removeItem("propertyPictureUrls");
+      localStorage.removeItem("portionCoverFileUrls");
+      localStorage.removeItem("portionPictureUrls");
+      localStorage.removeItem("isImages");
+      localStorage.removeItem("isPropertyPictures");
+      localStorage.removeItem("isPortionPictures");
+      
+      // Redirect to properties page
+      setTimeout(() => {
+        router.push("/profile");
+      }, 1000);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to publish property. Please try again.",
+        variant: "destructive",
+      });
+      setIsLoading(false);
+    },
+  });
+
+  // TRPC mutation for updating listing (edit flow)
+  const updateListingMutation = trpc.property.updateListing.useMutation({
+    onSuccess: (data) => {
+      toast({
+        title: "Updated! 🎉",
+        description: "Your property listing has been updated successfully!",
+      });
+
+      // Clear localStorage (same cleanup)
+      for (let i = 1; i <= 10; i++) {
+        localStorage.removeItem(`page${i}`);
+      }
+      localStorage.removeItem("propertyCoverFileUrl");
+      localStorage.removeItem("propertyPictureUrls");
+      localStorage.removeItem("portionCoverFileUrls");
+      localStorage.removeItem("portionPictureUrls");
+      localStorage.removeItem("isImages");
+      localStorage.removeItem("isPropertyPictures");
+      localStorage.removeItem("isPortionPictures");
+
+      // Redirect to the property page
+      setTimeout(() => {
+        if (data?.property?._id) {
+          router.push(`/properties/${data.property._id}`);
+        } else {
+          router.push("/profile");
+        }
+      }, 600);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update property. Please try again.",
+        variant: "destructive",
+      });
+      setIsLoading(false);
+    },
+  });
+
 
   useEffect(() => {
     const fetchDataFromLocalStorage = () => {
@@ -140,32 +222,121 @@ const PageAddListing10: FC<PageAddListing10Props> = () => {
     setIsLoading(true);
     try {
       // Collect all data from localStorage
-      const allData: any = {};
-      for (let i = 1; i <= 10; i++) {
-        const data = localStorage.getItem(`page${i}`);
-        if (data) {
-          Object.assign(allData, JSON.parse(data));
-        }
-      }
+      const page1 = localStorage.getItem("page1")
+        ? JSON.parse(localStorage.getItem("page1")!)
+        : {};
+      const page2Data = localStorage.getItem("page2")
+        ? JSON.parse(localStorage.getItem("page2")!)
+        : {};
+      const page3Data = localStorage.getItem("page3")
+        ? JSON.parse(localStorage.getItem("page3")!)
+        : {};
+      const page4 = localStorage.getItem("page4")
+        ? JSON.parse(localStorage.getItem("page4")!)
+        : {};
+      const page5 = localStorage.getItem("page5")
+        ? JSON.parse(localStorage.getItem("page5")!)
+        : {};
+      const page6 = localStorage.getItem("page6")
+        ? JSON.parse(localStorage.getItem("page6")!)
+        : {};
+      const page7 = localStorage.getItem("page7")
+        ? JSON.parse(localStorage.getItem("page7")!)
+        : {};
+      const page8 = localStorage.getItem("page8")
+        ? JSON.parse(localStorage.getItem("page8")!)
+        : {};
+      const page9 = localStorage.getItem("page9")
+        ? JSON.parse(localStorage.getItem("page9")!)
+        : {};
 
-      // TODO: Send listing data to backend using tRPC or API
-      console.log("Publishing property:", allData);
-      
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      
-      // Clear localStorage after successful submission
-      for (let i = 1; i <= 10; i++) {
-        localStorage.removeItem(`page${i}`);
+      // Build listing object with all necessary fields
+      // Update the handleGoLive function to send correct data types
+      const listingData = {
+        // Basic Info (Page 1)
+        propertyType: page1.propertyType || "House",
+        propertyName: page1.placeName || "Untitled Property",
+        placeName: page1.placeName || "",
+        rentalType: page1.rentalType || "Short Term",
+        rentalForm: page1.rentalForm || "",
+
+        // Location (Page 2)
+        street: page2Data.street || "",
+        postalCode: page2Data.postalCode || "",
+        city: page2Data.city || "",
+        state: page2Data.state || "",
+        country: page2Data.country || "",
+        center: page2Data.center,
+
+        // Spaces (Page 3) - EXTRACT FIRST VALUE FROM ARRAYS
+        guests: page3Data.guests?.[0] || 1,
+        bedrooms: page3Data.bedrooms?.[0] || 0,
+        beds: page3Data.beds?.[0] || 0,
+        bathroom: page3Data.bathroom?.[0] || 0,
+        kitchen: page3Data.kitchen?.[0] || 0,
+        size: page3Data.portionSize?.[0] || 0,
+
+        // Amenities (Page 4)
+        generalAmenities: page4.generalAmenities || {},
+        otherAmenities: page4.otherAmenities || {},
+        safeAmenities: page4.safeAmenities || {},
+
+        // House Rules (Page 5)
+        smoking: page5.smoking || "",
+        pet: page5.pet || "",
+        party: page5.party || "",
+        cooking: page5.cooking || "",
+        additionalRules: page5.additionalRules || [],
+
+        // Description (Page 6) - JOIN ARRAY TO STRING
+        reviews: page6.reviews?.join("\n\n") || "",
+
+        // Images (Page 7)
+        propertyCoverFileUrl:
+          localStorage.getItem("propertyCoverFileUrl") || "",
+        propertyPictureUrls: page7.propertyPictureUrls || [],
+
+        // Pricing (Page 8) - EXTRACT FIRST VALUES
+        basePrice: page8.basePrice?.[0] || 0,
+        weekendPrice: page8.weekendPrice?.[0],
+        weeklyDiscount: page8.weeklyDiscount?.[0],
+        basePriceLongTerm: page8.basePriceLongTerm?.[0],
+        monthlyDiscount: page8.monthlyDiscount?.[0],
+        currency: page8.currency || "USD",
+
+        // Availability (Page 9) - CONVERT datesPerPortion TO STRINGS
+        night: page9.night || [],
+        time: page9.time || [],
+        datesPerPortion: (page9.datesPerPortion || [])
+          .map((dates: number[]) => dates.map((d) => d.toString()))
+          .flat(),
+        icalLinks: page9.icalLinks || {},
+
+        // Additional
+        isInstantBooking: false,
+        isLive: true,
+      };
+
+      console.log("Publishing property with data:", listingData);
+
+      // Check searchParams for edit mode (wrapper forwards searchParams to all steps)
+      const editParam = searchParams?.edit;
+      const editId = Array.isArray(editParam) ? editParam[0] : editParam;
+
+      if (editId) {
+        // Update existing property
+        await updateListingMutation.mutateAsync({ propertyId: String(editId), updates: listingData });
+      } else {
+        // Create new property
+        await addListingMutation.mutateAsync(listingData);
       }
-      localStorage.removeItem("propertyCoverFileUrl");
-      localStorage.removeItem("propertyPictureUrls");
-      localStorage.removeItem("portionCoverFileUrls");
-      localStorage.removeItem("portionPictureUrls");
-      
     } catch (error) {
       console.error("Error publishing property:", error);
-    } finally {
+      toast({
+        title: "Error",
+        description: "Failed to publish property. Please check all fields and try again.",
+        variant: "destructive",
+      });
       setIsLoading(false);
     }
   };

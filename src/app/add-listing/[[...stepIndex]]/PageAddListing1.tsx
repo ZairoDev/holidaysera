@@ -14,7 +14,9 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Home, Building2, Waves } from "lucide-react";
 
-export interface PageAddListing1Props {}
+export interface PageAddListing1Props {
+  searchParams?: { [key: string]: string | string[] | undefined };
+}
 
 interface Page1State {
   propertyType: string;
@@ -25,7 +27,73 @@ interface Page1State {
   rentalType: string;
 }
 
-const PageAddListing1: FC<PageAddListing1Props> = () => {
+import { trpc } from "@/trpc/client";
+import propertyToPages from "@/lib/propertyToPages";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+
+const PageAddListing1: FC<PageAddListing1Props> = ({ searchParams }) => {
+  // If opened with ?edit=<propertyId>, fetch property and prefill page1
+  const editParam = searchParams?.edit;
+  const editId = Array.isArray(editParam) ? editParam[0] : editParam;
+  const getPropertyQuery = trpc.property.getPropertyById.useQuery(
+    { _id: String(editId) },
+    { enabled: !!editId }
+  );
+
+  useEffect(() => {
+    if (getPropertyQuery.data) {
+      // Only hydrate once per edit open
+      if ((window as any).__editHydrated) return;
+      (window as any).__editHydrated = true;
+      const existing = [1,2,3,4,5,6,7,8,9].some((i) => {
+        const v = localStorage.getItem(`page${i}`);
+        return v && v !== "";
+      });
+
+      const prop = getPropertyQuery.data as any;
+      const pages = propertyToPages(prop);
+
+      if (existing) {
+        // Show confirmation dialog before overwriting
+        // We'll set a tiny prompt in the DOM via window since this is client-only
+        // Use native confirm as a fallback for simplicity
+        const confirmOverwrite = window.confirm(
+          "A draft already exists in your browser. Do you want to overwrite it with the saved property data?"
+        );
+        if (!confirmOverwrite) return;
+      }
+
+      // Persist all pages to localStorage
+      for (const key of Object.keys(pages)) {
+        try {
+          localStorage.setItem(key, JSON.stringify(pages[key]));
+        } catch (e) {
+          console.error("Failed to write page to localStorage", key, e);
+        }
+      }
+
+      // Also persist images if present
+      if (pages.page7?.propertyCoverFileUrl) {
+        localStorage.setItem("propertyCoverFileUrl", pages.page7.propertyCoverFileUrl);
+      }
+      if (pages.page7?.propertyPictureUrls) {
+        localStorage.setItem("propertyPictureUrls", JSON.stringify(pages.page7.propertyPictureUrls));
+      }
+
+  // Update local UI state from page1 mapping
+  const prefill = pages.page1;
+      // Save to localStorage so the wizard reads it
+      localStorage.setItem("page1", JSON.stringify(prefill));
+      // Update local state values
+      setPropertyType(prefill.propertyType);
+      setPlaceName(prefill.placeName);
+      setRentalForm(prefill.rentalForm);
+      setNumberOfPortions(prefill.numberOfPortions);
+      setShowPortionsInput(prefill.showPortionsInput);
+      setRentalType(prefill.rentalType);
+    }
+  }, [getPropertyQuery.data]);
   const [propertyType, setPropertyType] = useState<string>(() => {
     const savedPage = localStorage.getItem("page1") || "";
     if (!savedPage) {

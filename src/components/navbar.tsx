@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Home, Heart, User, Menu, X, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { NotificationDropdown } from "@/components/notification-dropdown";
 import { useUserStore } from "@/lib/store";
 import { trpc } from "@/trpc/client";
 
@@ -177,7 +178,10 @@ export function Navbar() {
           </div>
 
           {/* Desktop Auth Buttons */}
-          <div className="hidden items-center gap-3 md:flex">{authButtons}</div>
+          <div className="hidden items-center gap-3 md:flex">
+            {user && <NotificationDropdown />}
+            {authButtons}
+          </div>
 
           {/* Mobile Menu Button */}
           <button
@@ -272,6 +276,20 @@ export function Navbar() {
                     Account
                   </h2>
                 </div>
+
+                {/* Notifications (Mobile) */}
+                {user && (
+                  <div className="mb-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-sm font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                        Notifications
+                      </span>
+                    </div>
+                    <div className="mb-4">
+                      <NotificationDropdown />
+                    </div>
+                  </div>
+                )}
 
                 {/* Auth Buttons */}
                 <div className="space-y-3">

@@ -1,5 +1,8 @@
 'use client';
 
+export const dynamicParams = false;
+export const dynamic = 'force-dynamic';
+
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
@@ -20,18 +23,26 @@ import { format } from 'date-fns';
 import Link from 'next/link';
 import { Property } from '@/lib/type';
 
-export default function BookingConfirmPage() {
+import { Suspense } from 'react';
+
+function BookingConfirmContent() {
+  return (
+    <BookingConfirmPageContent />
+  );
+}
+
+function BookingConfirmPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [property, setProperty] = useState<Property | null>(null);
   const [loading, setLoading] = useState(true);
   const [confirmationCode, setConfirmationCode] = useState('');
 
-  const propertyId = searchParams.get('propertyId');
-  const checkIn = searchParams.get('checkIn');
-  const checkOut = searchParams.get('checkOut');
-  const guests = searchParams.get('guests');
-  const total = searchParams.get('total');
+  const propertyId = searchParams?.get('propertyId');
+  const checkIn = searchParams?.get('checkIn');
+  const checkOut = searchParams?.get('checkOut');
+  const guests = searchParams?.get('guests');
+  const total = searchParams?.get('total');
 
   useEffect(() => {
     async function fetchProperty() {
@@ -219,5 +230,13 @@ export default function BookingConfirmPage() {
         </motion.div>
       </div>
     </div>
+  );
+}
+
+export default function BookingConfirmPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <BookingConfirmContent />
+    </Suspense>
   );
 }

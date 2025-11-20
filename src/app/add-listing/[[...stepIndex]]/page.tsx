@@ -56,7 +56,9 @@ const Page = ({
   }
 
 
-  return <ContentComponent />;
+  // Pass searchParams to the step component so query params like ?edit=... are available
+  // Components may read searchParams from props or via useSearchParams in client components.
+  return <ContentComponent {...(searchParams ? { searchParams } : {})} />;
 };
 
 export default Page;

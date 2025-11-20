@@ -1,12 +1,12 @@
 "use client";
 import { useEffect, useState } from "react";
 import React, { FC } from "react";
-// import ImageUpload from "./uploadImage";
-import axios from "axios";
-import { MdCancel } from "react-icons/md";
-// import { Value } from "sass";
+import { useBunnyUpload } from "@/utils/bunnyUpload";
+import { Upload, X, Image as ImageIcon, Loader2, Check } from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import Image from "next/image";
-// import { RotatingLines } from "react-loader-spinner";
 
 export interface PageAddListing7Props {}
 
@@ -21,23 +21,17 @@ const PageAddListing7: FC<PageAddListing7Props> = () => {
   }
   let checkPortion = portions > 1 ? portions : 0;
 
-  // const [myArray, setMyArray] = useState<number[]>(Array(portions).fill(1));
-  const [myArray, setMyArray] = useState<number[]>(Array(checkPortion).fill(1));
-  // if (portions > 1) {
-  //   setMyArray(Array(portions).fill(1));
-  // }
-
   const booleanArray = Array.from({ length: portions }, () => false);
   const emptyStringArrayGenerator = (size: number) => {
     const emptyStringArray = Array.from({ length: size }, () => "");
     return emptyStringArray;
   };
 
-  // TODO: States for property and portion images
+  // States for property and portion images
   const [portionCoverFileUrls, setPortionCoverFileUrls] = useState<string[]>(
     () => {
       const savedUrls = localStorage.getItem("portionCoverFileUrls");
-      if (savedUrls?.length != portions){
+      if (savedUrls?.length != portions) {
         return emptyStringArrayGenerator(portions);
       }
       return savedUrls
@@ -88,635 +82,446 @@ const PageAddListing7: FC<PageAddListing7Props> = () => {
     return savedFlag ? JSON.parse(savedFlag) : booleanArray;
   });
 
+  // Loading states
+  const [propertyCoverFileLoading, setPropertyCoverFileLoading] = useState(false);
+  const [propertyPicturesLoading, setPropertyPicturesLoading] = useState(false);
+  const [portionCoverFileLoading, setPortionCoverFileLoading] = useState<boolean[]>(
+    Array.from({ length: checkPortion }, () => false)
+  );
+  const [portionPicturesLoading, setPortionPicturesLoading] = useState<boolean[]>(
+    Array.from({ length: checkPortion }, () => false)
+  );
 
+  // Use Bunny upload hook
+  const { uploadFiles, loading: bunnyLoading } = useBunnyUpload();
+
+  // Get place name for folder structure
+  let placeName = JSON.parse(localStorage.getItem("page1") || "").placeName;
+  placeName = placeName.toLowerCase().split(" ").join("_");
+
+  // Persist to localStorage
   useEffect(() => {
     localStorage.setItem("propertyCoverFileUrl", propertyCoverFileUrl);
   }, [propertyCoverFileUrl]);
 
   useEffect(() => {
-    localStorage.setItem(
-      "portionPictureUrls",
-      JSON.stringify(portionPictureUrls)
-    );
+    localStorage.setItem("portionPictureUrls", JSON.stringify(portionPictureUrls));
   }, [portionPictureUrls]);
 
   useEffect(() => {
-    localStorage.setItem(
-      "isPortionPictures",
-      JSON.stringify(isPortionPictures)
-    );
+    localStorage.setItem("isPortionPictures", JSON.stringify(isPortionPictures));
   }, [isPortionPictures]);
 
   useEffect(() => {
-    localStorage.setItem(
-      "propertyPictureUrls",
-      JSON.stringify(propertyPictureUrls)
-    );
+    localStorage.setItem("propertyPictureUrls", JSON.stringify(propertyPictureUrls));
   }, [propertyPictureUrls]);
 
   useEffect(() => {
-    localStorage.setItem(
-      "isPropertyPictures",
-      JSON.stringify(isPropertyPictures)
-    );
+    localStorage.setItem("isPropertyPictures", JSON.stringify(isPropertyPictures));
   }, [isPropertyPictures]);
 
   useEffect(() => {
-    localStorage.setItem(
-      "portionCoverFileUrls",
-      JSON.stringify(portionCoverFileUrls)
-    );
+    localStorage.setItem("portionCoverFileUrls", JSON.stringify(portionCoverFileUrls));
   }, [portionCoverFileUrls]);
 
   useEffect(() => {
     localStorage.setItem("isImages", JSON.stringify(isImages));
   }, [isImages]);
 
-  // TODO: File upload to BUNNY
-  const [propertyCoverFileLoading, setPropertyCoverFileLoading] =
-    useState(false);
-  const [propertyPicturesLoading, setPropertyPicturesLoading] = useState(false);
-  const [portionCoverFileLoading, setPortionCoverFileLoading] = useState<
-    boolean[]
-  >(Array.from({ length: checkPortion }, () => false));
-  const [portionPicturesLoading, setPortionPicturesLoading] = useState<
-    boolean[]
-  >(Array.from({ length: checkPortion }, () => false));
+  // Upload property cover image
+  const uploadPropertyCoverFile = async (event: any) => {
+    const file = event?.target.files[0];
+    if (!file) return;
 
-  let placeName = JSON.parse(localStorage.getItem("page1") || "").placeName;
-  placeName = placeName.toLowerCase();
-  placeName = placeName.split(" ");
-  placeName = placeName.join("_");
+    if (
+      !(
+        file.type === "image/jpeg" ||
+        file.type === "image/png" ||
+        file.type === "image/webp"
+      )
+    ) {
+      alert("Error: Only PNG, JPEG, and WEBP files are allowed.");
+      return;
+    }
 
-  const uploadFile = async (event: any, index: number) => {
+    setPropertyCoverFileLoading(true);
+    try {
+      const { imageUrls, error } = await uploadFiles(file, `${placeName}/property-cover`);
+      if (error) {
+        alert(`Upload error: ${error}`);
+      } else if (imageUrls.length > 0) {
+        setPropertyCoverFileUrl(imageUrls[0]);
+      }
+    } catch (error) {
+      alert("Error uploading image. Please try again.");
+    } finally {
+      setPropertyCoverFileLoading(false);
+    }
+  };
+
+  // Upload property pictures
+  const uploadPropertyPictures = async (event: any) => {
+    const files = event?.target.files;
+    if (!files || files.length === 0) return;
+
+    for (let i = 0; i < files.length; i++) {
+      if (
+        !(
+          files[i].type === "image/png" ||
+          files[i].type === "image/jpeg" ||
+          files[i].type === "image/webp"
+        )
+      ) {
+        alert("Error: Only PNG, JPEG, and WEBP files are allowed.");
+        return;
+      }
+    }
+
+    setPropertyPicturesLoading(true);
+    try {
+      const fileArray = Array.from(files).slice(0, 5);
+      const { imageUrls, error } = await uploadFiles(fileArray as File[], `${placeName}/property-pictures`);
+      if (error) {
+        alert(`Upload error: ${error}`);
+      } else if (imageUrls.length > 0) {
+        const savedUrls = [...propertyPictureUrls];
+        imageUrls.forEach((url, i) => {
+          if (i < 5) savedUrls[i] = url;
+        });
+        setPropertyPictureUrls(savedUrls);
+        setIsPropertyPictures(true);
+      }
+    } catch (error) {
+      alert("Error uploading images. Please try again.");
+    } finally {
+      setPropertyPicturesLoading(false);
+    }
+  };
+
+  // Upload portion cover image
+  const uploadPortionCoverFile = async (event: any, index: number) => {
+    const file = event?.target.files[0];
+    if (!file) return;
+
+    if (
+      !(
+        file.type === "image/jpeg" ||
+        file.type === "image/png" ||
+        file.type === "image/webp"
+      )
+    ) {
+      alert("Error: Only PNG, JPEG, and WEBP files are allowed.");
+      return;
+    }
+
     setPortionCoverFileLoading((prev) => {
       const newArray = [...prev];
       newArray[index] = true;
       return newArray;
     });
-    const file = event?.target.files[0];
-
-    if (
-      !file ||
-      !(
-        file.type === "image/jpeg" ||
-        file.type === "image/png" ||
-        file.type === "image/webp"
-      )
-    ) {
-      alert("Error: Only PNG and JPEG files are allowed.");
-      return;
-    }
-
-    const storageZoneName = process.env.NEXT_PUBLIC_BUNNY_STORAGE_ZONE;
-    const accessKey = process.env.NEXT_PUBLIC_BUNNY_ACCESS_KEY;
-    const storageUrl = process.env.NEXT_PUBLIC_BUNNY_STORAGE_URL;
-
-    const formData = new FormData();
-    formData.append("file", file);
 
     try {
-      const response = await axios.put(
-        // `${storageUrl}/${storageZoneName}/Cover_Image/${file.name}`,
-        `${storageUrl}/${storageZoneName}/${placeName}/${file.name}`,
-        file,
-        {
-          headers: {
-            AccessKey: accessKey,
-            "Content-Type": file.type,
-          },
-        }
-      );
-
-      console.log("response: ", response);
-      // const imageUrl = `https://imagepicker.b-cdn.net/${placeName}/${file.name}`;
-      const imageUrl = `https://vacationsaga.b-cdn.net/${placeName}/${file.name}`;
-
-      setPortionCoverFileUrls((prevState) => {
-        const newUrls = [...prevState];
-        newUrls[index] = imageUrl;
-        return newUrls;
-      });
-
-      setIsImages((prevState) => {
-        const newImages = [...prevState];
-        newImages[index] = true;
-        return newImages;
-      });
+      const { imageUrls, error } = await uploadFiles(file, `${placeName}/portion-${index + 1}-cover`);
+      if (error) {
+        alert(`Upload error: ${error}`);
+      } else if (imageUrls.length > 0) {
+        setPortionCoverFileUrls((prevState) => {
+          const newUrls = [...prevState];
+          newUrls[index] = imageUrls[0];
+          return newUrls;
+        });
+        setIsImages((prevState) => {
+          const newImages = [...prevState];
+          newImages[index] = true;
+          return newImages;
+        });
+      }
     } catch (error) {
-      console.error("Error uploading image to Bunny CDN:", error);
       alert("Error uploading image. Please try again.");
+    } finally {
+      setPortionCoverFileLoading((prev) => {
+        const newArray = [...prev];
+        newArray[index] = false;
+        return newArray;
+      });
     }
-
-    setPortionCoverFileLoading((prev) => {
-      const newArray = [...prev];
-      newArray[index] = false;
-      return newArray;
-    });
   };
 
-  const uploadPropertyCoverFile = async (event: any) => {
-    setPropertyCoverFileLoading(true);
-    const file = event?.target.files[0];
-
-    if (
-      !file ||
-      !(
-        file.type === "image/jpeg" ||
-        file.type === "image/png" ||
-        file.type === "image/webp"
-      )
-    ) {
-      alert("Error: Only PNG and JPEG files are allowed.");
-      return;
-    }
-
-    const storageZoneName = process.env.NEXT_PUBLIC_BUNNY_STORAGE_ZONE;
-    const accessKey = process.env.NEXT_PUBLIC_BUNNY_ACCESS_KEY;
-    const storageUrl = process.env.NEXT_PUBLIC_BUNNY_STORAGE_URL;
-
-    const formData = new FormData();
-    formData.append("file", file);
-
-    try {
-      const response = await axios.put(
-        `${storageUrl}/${storageZoneName}/${placeName}/${file.name}`,
-        file,
-        {
-          headers: {
-            AccessKey: accessKey,
-            "Content-Type": file.type,
-          },
-        }
-      );
-
-      console.log("response: ", response);
-      // const imageUrl = `https://imagepicker.b-cdn.net/${placeName}/${file.name}`;
-      const imageUrl = `https://vacationsaga.b-cdn.net/${placeName}/${file.name}`;
-
-      setPropertyCoverFileUrl(imageUrl);
-    } catch (error) {
-      console.error("Error uploading image to Bunny CDN:", error);
-      alert("Error uploading image. Please try again.");
-    }
-    setPropertyCoverFileLoading(false);
-  };
-
+  // Upload portion pictures
   const uploadPortionPictures = async (event: any, index: number) => {
+    const files = event?.target.files;
+    if (!files || files.length === 0) return;
+
+    for (let i = 0; i < files.length; i++) {
+      if (
+        !(
+          files[i].type === "image/png" ||
+          files[i].type === "image/jpeg" ||
+          files[i].type === "image/webp"
+        )
+      ) {
+        alert("Error: Only PNG, JPEG, and WEBP files are allowed.");
+        return;
+      }
+    }
+
     setPortionPicturesLoading((prevState) => {
       const newLoading = [...prevState];
       newLoading[index] = true;
       return newLoading;
     });
-    const files = event?.target.files;
 
-    for (let i = 0; i < files.length; i++) {
-      if (
-        !(
-          files[i].type === "image/png" ||
-          files[i].type === "image/jpeg" ||
-          files[i].type === "image/webp"
-        )
-      ) {
-        alert("Error: Only PNG and JPEG files are allowed.");
-        return;
+    try {
+      const fileArray = Array.from(files).slice(0, 5);
+      const { imageUrls, error } = await uploadFiles(fileArray as File[], `${placeName}/portion-${index + 1}-pictures`);
+      if (error) {
+        alert(`Upload error: ${error}`);
+      } else if (imageUrls.length > 0) {
+        setPortionPictureUrls((prevState) => {
+          const newUrls = [...prevState];
+          newUrls[index] = imageUrls;
+          return newUrls;
+        });
+        setIsPortionPictures((prevState) => {
+          const newPictures = [...prevState];
+          newPictures[index] = true;
+          return newPictures;
+        });
       }
+    } catch (error) {
+      alert("Error uploading images. Please try again.");
+    } finally {
+      setPortionPicturesLoading((prevState) => {
+        const newLoading = [...prevState];
+        newLoading[index] = false;
+        return newLoading;
+      });
     }
-
-    const storageZoneName = process.env.NEXT_PUBLIC_BUNNY_STORAGE_ZONE;
-    const accessKey = process.env.NEXT_PUBLIC_BUNNY_ACCESS_KEY;
-    const storageUrl = process.env.NEXT_PUBLIC_BUNNY_STORAGE_URL;
-
-    const formData = new FormData();
-
-    const updatedUrls = [...portionPictureUrls];
-    const newImages = [...isPortionPictures];
-
-    for (let i = 0; i < 5; i++) {
-      formData.append("file", files[i]);
-      try {
-        const response = await axios.put(
-          `${storageUrl}/${storageZoneName}/${placeName}/${files[i].name}`,
-          files[i],
-          {
-            headers: {
-              AccessKey: accessKey,
-              "Content-Type": files[i].type,
-            },
-          }
-        );
-
-        console.log("response: ", response);
-        const imageUrl = `https://vacationsaga.b-cdn.net/${placeName}/${files[i].name}`;
-
-        updatedUrls[index] = [...updatedUrls[index]];
-        updatedUrls[index][i] = imageUrl;
-      } catch (error) {
-        console.error("Error uploading image to Bunny CDN:", error);
-        alert("Error uploading image. Please try again.");
-      }
-    }
-    newImages[index] = true;
-    setPortionPictureUrls(updatedUrls);
-    setIsPortionPictures(newImages);
-
-    setPortionPicturesLoading((prevState) => {
-      const newLoading = [...prevState];
-      newLoading[index] = false;
-      return newLoading;
-    });
   };
 
-  const uploadPropertyPictures = async (event: any) => {
-    setPropertyPicturesLoading(true);
-    const files = event?.target.files;
+  // Generate stable unique ID for file inputs
+  const propertyUploadId = "property-upload";
+  const propertyGalleryId = "property-gallery";
 
-    for (let i = 0; i < files.length; i++) {
-      if (
-        !(
-          files[i].type === "image/png" ||
-          files[i].type === "image/jpeg" ||
-          files[i].type === "image/webp"
-        )
-      ) {
-        alert("Error: Only PNG and JPEG files are allowed.");
-        return;
-      }
-    }
-
-    const storageZoneName = process.env.NEXT_PUBLIC_BUNNY_STORAGE_ZONE;
-    const accessKey = process.env.NEXT_PUBLIC_BUNNY_ACCESS_KEY;
-    const storageUrl = process.env.NEXT_PUBLIC_BUNNY_STORAGE_URL;
-
-    const formData = new FormData();
-
-    const savedUrls = [...propertyPictureUrls];
-
-    for (let i = 0; i < files.length; i++) {
-      formData.append("file", files[i]);
-      try {
-        const response = await axios.put(
-          `${storageUrl}/${storageZoneName}/${placeName}/${files[i].name}`,
-          files[i],
-          {
-            headers: {
-              AccessKey: accessKey,
-              "Content-Type": files[i].type,
-            },
-          }
-        );
-
-        console.log("response: ", response);
-        const imageUrl = `https://vacationsaga.b-cdn.net/${placeName}/${files[i].name}`;
-
-        savedUrls[i] = imageUrl;
-      } catch (error) {
-        console.error("Error uploading image to Bunny CDN:", error);
-        alert("Error uploading image. Please try again.");
-      }
-    }
-
-    setPropertyPictureUrls(savedUrls);
-    setIsPropertyPictures(true);
-    setPropertyPicturesLoading(false);
-  };
+  // Upload area component
+  const UploadArea = ({
+    isLoading,
+    isUploaded,
+    imageUrl,
+    onUpload,
+    onDelete,
+    isMultiple = false,
+    images = [],
+    uploadId,
+  }: {
+    isLoading: boolean;
+    isUploaded: boolean;
+    imageUrl?: string;
+    images?: string[];
+    onUpload: (e: any) => void;
+    onDelete: () => void;
+    isMultiple?: boolean;
+    uploadId: string;
+  }) => (
+    <div className="rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 p-6">
+      {!isUploaded ? (
+        <div className="flex flex-col items-center gap-4">
+          {isLoading ? (
+            <>
+              <Loader2 className="w-12 h-12 text-sky-600 animate-spin" />
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Uploading...</p>
+            </>
+          ) : (
+            <>
+              <Upload className="w-12 h-12 text-gray-400" />
+              <div className="text-center">
+                <label htmlFor={uploadId} className="cursor-pointer">
+                  <span className="font-medium text-sky-600 hover:text-sky-700">Click to upload</span>
+                  <input
+                    id={uploadId}
+                    type="file"
+                    className="sr-only"
+                    multiple={isMultiple}
+                    accept="image/*"
+                    onChange={onUpload}
+                  />
+                </label>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">PNG, JPG, WEBP up to 10MB</p>
+              </div>
+            </>
+          )}
+        </div>
+      ) : (
+        <div className="flex flex-col items-center gap-4">
+          <Check className="w-10 h-10 text-emerald-600" />
+          {!isMultiple ? (
+            <img
+              src={imageUrl}
+              alt="Uploaded"
+              className="w-48 h-48 rounded-lg object-cover border border-gray-200"
+            />
+          ) : (
+            <div className="flex flex-wrap gap-3">
+              {images.map((img, i) => (
+                img && (
+                  <img
+                    key={i}
+                    src={img}
+                    alt={`Image ${i + 1}`}
+                    className="w-28 h-28 rounded-lg object-cover border border-gray-200"
+                  />
+                )
+              ))}
+            </div>
+          )}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onDelete}
+            className="mt-2"
+          >
+            <X className="w-4 h-4 mr-2" />
+            Remove
+          </Button>
+        </div>
+      )}
+    </div>
+  );
 
   return (
-    <div className="flex flex-col gap-20">
-      <div className="space-y-8">
-        <div>
-          <span className="text-2xl font-semibold">
-            Cover image Of the Property
-          </span>
-          {/* <div>
-                <h1>Image Upload</h1>
-              </div> */}
-          <div className="mt-5 ">
-            <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-neutral-300 dark:border-neutral-6000 border-dashed rounded-md">
-              <div className="space-y-1 text-center flex flex-col items-center">
-                {propertyCoverFileUrl.length < 1 ? (
-                  <svg
-                    className="mx-auto h-12 w-12 text-neutral-400"
-                    stroke="currentColor"
-                    fill="none"
-                    viewBox="0 0 48 48"
-                    aria-hidden="true"
-                  >
-                    <path
-                      d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    ></path>
-                  </svg>
-                ) : (
-                  <div>
-                    <MdCancel
-                      className=" text-right ml-auto text-xl cursor-pointer"
-                      onClick={() => setPropertyCoverFileUrl("")}
-                    />
-                    <div className="flex flex-wrap gap-2">
-                     
-                      <img
-                        src={propertyCoverFileUrl}
-                        alt="Cover Image"
-                        className="w-48 h-48 rounded-lg"
-                      />
-                    </div>
-                  </div>
-                )}
+    <div className="space-y-12">
+      {/* Property Images Section */}
+      <div className="space-y-6">
+        {/* Property Cover Image */}
+        <Card className="p-8 border-2">
+          <div className="flex items-center gap-3 mb-6">
+            <ImageIcon className="w-6 h-6 text-sky-600" />
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                Property Cover Image
+              </h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                This image will be the first impression of your property
+              </p>
+            </div>
+          </div>
 
-                <div className="flex text-sm text-neutral-6000 dark:text-neutral-300">
-                  <label
-                    htmlFor={`file-upload`}
-                    className="relative cursor-pointer  rounded-md font-medium text-primary-6000 hover:text-primary-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-primary-500"
-                  >
-                    <span className="text-center">Upload a file</span>
-                    <input
-                      id={`file-upload`}
-                      name={`file-upload`}
-                      type="file"
-                      className="sr-only"
-                      accept="image/*"
-                      
-                      onChange={(e) => uploadPropertyCoverFile(e)}
-                    />
-                  </label>
-                 
-                </div>
-                <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                  PNG, JPG, GIF up to 10MB
-                </p>
-              </div>
+          <UploadArea
+            isLoading={propertyCoverFileLoading}
+            isUploaded={propertyCoverFileUrl.length > 0}
+            imageUrl={propertyCoverFileUrl}
+            onUpload={uploadPropertyCoverFile}
+            onDelete={() => setPropertyCoverFileUrl("")}
+            uploadId={propertyUploadId}
+          />
+        </Card>
+
+        {/* Property Pictures */}
+        <Card className="p-8 border-2">
+          <div className="flex items-center gap-3 mb-6">
+            <ImageIcon className="w-6 h-6 text-emerald-600" />
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                Property Gallery
+              </h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                Upload up to 5 images showcasing your property
+              </p>
             </div>
           </div>
-        </div>
-        {/* ---------------- */}
-        <div>
-          <span className="text-lg font-semibold">
-            Pictures of the Property
-          </span>
-          <div className="mt-5 ">
-            <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-neutral-300 dark:border-neutral-6000 border-dashed rounded-md">
-              <div className="space-y-1 text-center">
-                {!isPropertyPictures ? (
-                  <svg
-                    className="mx-auto h-12 w-12 text-neutral-400"
-                    stroke="currentColor"
-                    fill="none"
-                    viewBox="0 0 48 48"
-                    aria-hidden="true"
-                  >
-                    <path
-                      d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    ></path>
-                  </svg>
-                ) : (
-                  <div className="flex flex-col items-center">
-                    <MdCancel
-                      className=" text-center text-2xl cursor-pointer mb-2"
-                      onClick={() => {
-                        const emptyArray = emptyStringArrayGenerator(5);
-                        setPropertyPictureUrls(emptyArray);
-                        setIsPropertyPictures(false);
-                      }}
-                    />
-                    <div className=" flex gap-2 w-full">
-                      {Array.from({ length: 5 }, () => "").map((_, i) => (
-                        <div className="flex flex-wrap gap-4 mx-2" key={i}>
-                          
-                          <img
-                            src={propertyPictureUrls[i]}
-                            alt="Property Pictures"
-                            className="w-28 h-28 object-contain rounded-lg  border border-gray-500"
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                
-                <div className="flex text-sm text-neutral-6000 dark:text-neutral-300 justify-center">
-                  <label
-                    htmlFor="file-upload-2"
-                    className="relative cursor-pointer  rounded-md font-medium text-primary-6000 hover:text-primary-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-primary-500"
-                  >
-                    <span className=" text-center ">Upload a file</span>
-                    <input
-                      id="file-upload-2"
-                      name="file-upload-2"
-                      type="file"
-                      className="sr-only"
-                      multiple
-                      accept="image/*"
-                      onChange={(e) => uploadPropertyPictures(e)}
-                    />
-                  </label>
-                  
-                </div>
-                <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                  PNG, JPG, GIF up to 10MB
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
+
+          <UploadArea
+            isLoading={propertyPicturesLoading}
+            isUploaded={isPropertyPictures}
+            images={propertyPictureUrls.filter(Boolean)}
+            onUpload={uploadPropertyPictures}
+            onDelete={() => {
+              setPropertyPictureUrls(emptyStringArrayGenerator(5));
+              setIsPropertyPictures(false);
+            }}
+            isMultiple
+            uploadId={propertyGalleryId}
+          />
+        </Card>
       </div>
-      {myArray.map((item, index) => (
-        <div key={index}>
-          <div>
-            <h2 className="text-2xl font-semibold">
-              
-              <span>Portion {index + 1}</span>
-            </h2>
-            <span className="block mt-2 text-neutral-500 dark:text-neutral-400">
-              A few beautiful photos will help customers have more sympathy for
-              your property.
-            </span>
+
+      {/* Portions Images Section */}
+      {Array.from({ length: checkPortion }, (_, index) => (
+        <div key={index} className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                Portion {index + 1}
+              </h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                Beautiful photos help guests connect with your space
+              </p>
+            </div>
+            <Badge variant="outline" className="text-sm">
+              Unit {index + 1}
+            </Badge>
           </div>
 
-          <div className="w-14 border-b border-neutral-200 dark:border-neutral-700"></div>
-          
-          <div className="space-y-8">
-            <div>
-              <span className="text-lg font-semibold">Cover image</span>
-              
-              <div className="mt-5 ">
-                <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-neutral-300 dark:border-neutral-6000 border-dashed rounded-md">
-                  <div className="space-y-1 text-center flex flex-col items-center">
-                    {!isImages[index] ? (
-                      <svg
-                        className="mx-auto h-12 w-12 text-neutral-400"
-                        stroke="currentColor"
-                        fill="none"
-                        viewBox="0 0 48 48"
-                        aria-hidden="true"
-                      >
-                        <path
-                          d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        ></path>
-                      </svg>
-                    ) : (
-                      <div>
-                        <MdCancel
-                          className=" text-right ml-auto text-xl cursor-pointer"
-                          onClick={() => {
-                            setIsImages((prev) => [
-                              ...prev.slice(0, index),
-                              false,
-                              ...prev.slice(index + 1, prev.length),
-                            ]);
-                            setPortionCoverFileUrls((prev) => {
-                              const newCoverFileUrls = [...prev];
-                              newCoverFileUrls[index] = "";
-                              return newCoverFileUrls;
-                            });
-                          }}
-                          
-                        />
-                        <div className="flex flex-wrap gap-2">
-                          
-                          <img
-                            src={portionCoverFileUrls[index]}
-                            alt="Portion Cover Image"
-                            className="w-408 h-48 object-contain rounded-lg"
-                          />
-                        </div>
-                      </div>
-                    )}
-                    
-                    <div className="flex text-sm text-neutral-6000 dark:text-neutral-300">
-                      <label
-                        htmlFor={`file-upload-${index}`}
-                        className="relative cursor-pointer  rounded-md font-medium text-primary-6000 hover:text-primary-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-primary-500"
-                      >
-                        <span className="text-center">Upload a file</span>
-                        <input
-                          id={`file-upload-${index}`}
-                          name={`file-upload-${index}`}
-                          type="file"
-                          className="sr-only"
-                          accept="image/*"
-                          onChange={(e) => uploadFile(e, index)}
-                          // onClick={(e) => uploadFile(e, index)}
-                        />
-                      </label>
-                      {/* <p className="pl-1">or drag and drop</p> */}
-                    </div>
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                      PNG, JPG, GIF up to 10MB
-                    </p>
-                  </div>
-                </div>
-              </div>
+          {/* Portion Cover Image */}
+          <Card className="p-8 border-2 border-sky-200 dark:border-sky-900/30">
+            <div className="flex items-center gap-3 mb-6">
+              <ImageIcon className="w-5 h-5 text-sky-600" />
+              <h3 className="font-semibold text-gray-900 dark:text-white">
+                Cover Image
+              </h3>
             </div>
-            {/* ---------------- */}
-            <div>
-              <span className="text-lg font-semibold">
-                Pictures of the Portions
-              </span>
-              <div className="mt-5">
-                <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-neutral-300 dark:border-neutral-6000 border-dashed rounded-md">
-                  <div className="space-y-1 text-center">
-                    {!isPortionPictures[index] ? (
-                      <svg
-                        className="mx-auto h-12 w-12 text-neutral-400"
-                        stroke="currentColor"
-                        fill="none"
-                        viewBox="0 0 48 48"
-                        aria-hidden="true"
-                      >
-                        <path
-                          d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        ></path>
-                      </svg>
-                    ) : (
-                      <div className="flex flex-col items-center">
-                        <MdCancel
-                          className=" text-center text-2xl cursor-pointer mb-2"
-                          onClick={() => {
-                            setPortionPictureUrls((prev) => {
-                              const newPortionPictureUrls = [...prev];
-                              newPortionPictureUrls[index] =
-                                emptyStringArrayGenerator(5);
-                              return newPortionPictureUrls;
-                            });
-                            setIsPortionPictures((prev) => {
-                              const newPortionArray = [...prev];
-                              newPortionArray[index] = false;
-                              return newPortionArray;
-                            });
-                          }}
-                        />
-                        <div className=" flex gap-2 w-full">
-                          {Array.from({ length: 5 }, () => "").map((_, i) => (
-                            <div className="flex flex-wrap gap-4 mx-2" key={i}>
-                              {/* <MdCancel className=" text-right ml-auto text-xl cursor-pointer mt-12"/> */}
-                              {/* <img
-                                src={portionPictureUrls[index][i]}
-                                className="w-28 h-28 object-contain rounded-lg  border border-gray-500"
-                              /> */}
-                              {/* <Image src={portionPictureUrls[index][i]} alt="No-image" className="w-28 h-28 object-contain rounded-lg  border border-gray-500" width={200} height={200}/> */}
-                              <img
-                                src={portionPictureUrls[index][i]}
-                                alt="Portion Pictures"
-                                className="w-28 h-28 object-contain rounded-lg  border border-gray-500"
-                              />
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    {/* {portionPicturesLoading[index] && (
-                      <div className=" w-full flex justify-center">
-                        <RotatingLines
-                          visible={true}
-                          // height="96"
-                          width="96"
-                          // color="grey"
-                          strokeWidth="5"
-                          animationDuration="0.75"
-                          ariaLabel="rotating-lines-loading"
-                          // wrapperStyle={{}}
-                          // wrapperClass=""
-                        />
-                      </div>
-                    )} */}
-                    <div className="flex text-sm text-neutral-6000 dark:text-neutral-300 justify-center">
-                      <label
-                        htmlFor="file-upload-2"
-                        className="relative cursor-pointer  rounded-md font-medium text-primary-6000 hover:text-primary-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-primary-500"
-                      >
-                        <span className=" text-center">Upload a file</span>
-                        <input
-                          id="file-upload-2"
-                          name="file-upload-2"
-                          type="file"
-                          className="sr-only"
-                          multiple
-                          accept="image/*"
-                          onChange={(e) => uploadPortionPictures(e, index)}
-                        />
-                      </label>
-                      {/* <p className="pl-1">or drag and drop</p> */}
-                    </div>
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                      PNG, JPG, GIF up to 10MB
-                    </p>
-                  </div>
-                </div>
-              </div>
+
+            <UploadArea
+              isLoading={portionCoverFileLoading[index]}
+              isUploaded={isImages[index]}
+              imageUrl={portionCoverFileUrls[index]}
+              onUpload={(e) => uploadPortionCoverFile(e, index)}
+              onDelete={() => {
+                setIsImages((prev) => {
+                  const newImages = [...prev];
+                  newImages[index] = false;
+                  return newImages;
+                });
+                setPortionCoverFileUrls((prev) => {
+                  const newUrls = [...prev];
+                  newUrls[index] = "";
+                  return newUrls;
+                });
+              }}
+              uploadId={`portion-${index}-cover`}
+            />
+          </Card>
+
+          {/* Portion Pictures */}
+          <Card className="p-8 border-2 border-emerald-200 dark:border-emerald-900/30">
+            <div className="flex items-center gap-3 mb-6">
+              <ImageIcon className="w-5 h-5 text-emerald-600" />
+              <h3 className="font-semibold text-gray-900 dark:text-white">
+                Gallery Images
+              </h3>
             </div>
-          </div>
+
+            <UploadArea
+              isLoading={portionPicturesLoading[index]}
+              isUploaded={isPortionPictures[index]}
+              images={portionPictureUrls[index]?.filter(Boolean) || []}
+              onUpload={(e) => uploadPortionPictures(e, index)}
+              onDelete={() => {
+                setPortionPictureUrls((prev) => {
+                  const newUrls = [...prev];
+                  newUrls[index] = emptyStringArrayGenerator(5);
+                  return newUrls;
+                });
+                setIsPortionPictures((prev) => {
+                  const newPictures = [...prev];
+                  newPictures[index] = false;
+                  return newPictures;
+                });
+              }}
+              isMultiple
+              uploadId={`portion-${index}-gallery`}
+            />
+          </Card>
         </div>
       ))}
     </div>

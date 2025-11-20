@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import { motion } from "framer-motion";
+import { toast } from "sonner";
 import {
   MapPin,
   Star,
@@ -31,6 +32,7 @@ import { Separator } from "@/components/ui/separator";
 import { PropertyCard } from "@/components/property-card";
 import { differenceInDays, format } from "date-fns";
 import { trpc } from "@/trpc/client";
+import { Toast } from "@/components/ui/toast";
 
 export default function PropertyDetailsPage() {
   const params = useParams();
@@ -39,6 +41,7 @@ export default function PropertyDetailsPage() {
   const [checkIn, setCheckIn] = useState("");
   const [checkOut, setCheckOut] = useState("");
   const [guests, setGuests] = useState(2);
+  const [isBookingLoading, setIsBookingLoading] = useState(false);
 
   // Fetch property by ID
   const {
@@ -46,9 +49,27 @@ export default function PropertyDetailsPage() {
     isLoading,
     error,
   } = trpc.property.getPropertyById.useQuery(
-    { _id: params.id as string },
-    { enabled: !!params.id }
+    { _id: params?.id as string },
+    { enabled: !!params?.id }
   );
+
+  // TRPC mutation for creating booking request
+  const createBookingMutation = trpc.booking.createBookingRequest.useMutation({
+    onSuccess: (result) => {
+      toast.success("Booking Request Sent! ✨", {
+        description:
+          "The owner will review your request. You'll be notified once they respond.",
+        duration: 5000,
+      });
+      // Navigate to payment page where user will wait for approval
+      router.push(`/booking/payment?id=${result.bookingId}`);
+    },
+    onError: (error) => {
+      toast.error("Booking Failed", {
+        description: error.message || "Failed to create booking request",
+      });
+    },
+  });
 
   // Fetch similar properties based on city
   const { data: similarPropertiesData } = trpc.property.getFiltered.useQuery(
@@ -113,12 +134,29 @@ export default function PropertyDetailsPage() {
     return days > 0 ? days * property.basePrice : 0;
   };
 
-  const handleBooking = () => {
+  const handleBooking = async () => {
     const total = calculateTotal();
-    if (total > 0) {
-      router.push(
-        `/booking/confirm?propertyId=${property._id}&checkIn=${checkIn}&checkOut=${checkOut}&guests=${guests}&total=${total}`
-      );
+    if (total <= 0) return;
+
+    if (!property) {
+      Toast( { title: "Property not found"});
+      return;
+    }
+
+    setIsBookingLoading(true);
+    try {
+      await createBookingMutation.mutateAsync({
+        propertyId: String(property._id),
+        startDate: new Date(checkIn),
+        endDate: new Date(checkOut),
+        guests,
+        price: total,
+      });
+      // onSuccess of mutation will handle toast and navigation
+    } catch (e) {
+      // onError of mutation shows toast
+    } finally {
+      setIsBookingLoading(false);
     }
   };
 
