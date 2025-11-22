@@ -10,7 +10,7 @@ import { createContext } from "@/server/trpc";
 
 
 export default async function Home() {
-  const caller = appRouter.createCaller(await createContext({req: new Request("http://localhost:3000")}));
+  const caller = appRouter.createCaller(await createContext({req: new Request("http://localhost:3001")}));
   const featured:Property[] = await caller.property.getFeatured();
   console.log("featured");
   return (

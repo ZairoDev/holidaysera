@@ -1,15 +1,18 @@
+
 import './globals.css';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import { Navbar } from '@/components/navbar';
 import { Footer } from '@/components/footer';
 import Providers from './providers';
+import LayoutClient from './layout-client';
 
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'StayHaven - Find Your Perfect Holiday Home',
-  description: 'Discover unique properties and unforgettable experiences around the world. Book your dream vacation rental with StayHaven.',
+  title: "HolidaySera - Find Your Perfect Holiday Home",
+  description:
+    "Discover unique properties and unforgettable experiences around the world. Book your dream vacation rental with HolidaySera.",
 };
 
 export default function RootLayout({
@@ -19,11 +22,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={inter.className}>
+      <body>
         <Providers>
-          <Navbar />
-          <main className="pt-16">{children}</main>
-          <Footer />
+          <LayoutClient>
+            <Navbar />
+            <main className="pt-16">{children}</main>
+            <Footer />
+          </LayoutClient>
         </Providers>
       </body>
     </html>

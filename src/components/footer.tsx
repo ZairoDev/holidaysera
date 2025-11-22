@@ -77,7 +77,7 @@ export function Footer() {
                 <Twitter className="h-5 w-5" />
               </a>
               <a
-                href="mailto:contact@stayhaven.com"
+                href="mailto:contact@HolidaySera.com"
                 className="text-gray-400 transition-colors hover:text-sky-600"
               >
                 <Mail className="h-5 w-5" />
@@ -109,7 +109,7 @@ export function Footer() {
         <div className="mt-8 border-t pt-8">
           <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
             <p className="text-sm text-gray-600">
-              © {new Date().getFullYear()} StayHaven. All rights reserved.
+              © {new Date().getFullYear()} HolidaySera. All rights reserved.
             </p>
             <div className="flex gap-6 text-sm text-gray-600">
               <Link href="/privacy" className="hover:text-sky-600">

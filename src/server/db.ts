@@ -1,6 +1,6 @@
 import mongoose, { mongo } from "mongoose";
 
-const mongoUrl = process.env.MONGO_URL ;
+const mongoUrl = process.env.MONGO_URL     ;
 
 if(!mongoUrl) {
   throw new Error("MONGO_URL is not defined");

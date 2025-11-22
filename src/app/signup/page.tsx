@@ -100,7 +100,7 @@ export default function SignupPage() {
           <h1 className="mb-2 text-3xl font-bold text-gray-900">
             Create Account
           </h1>
-          <p className="text-gray-600">Join StayHaven and start exploring</p>
+          <p className="text-gray-600">Join HolidaySera and start exploring</p>
         </div>
 
         <Card className="p-8">

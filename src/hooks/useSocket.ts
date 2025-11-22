@@ -1,54 +1,84 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import io, { Socket } from "socket.io-client";
+import { useEffect, useState, useRef } from 'react';
+import { socket } from '@/lib/socket';
 
-export function useSocket(userId?: string, userType?: "owner" | "traveller") {
-  const [socket, setSocket] = useState<Socket | null>(null);
+export function useSocket(userId?: string, userType?: 'owner' | 'traveller') {
   const [isConnected, setIsConnected] = useState(false);
+  const roomJoinedRef = useRef(false);
+  const currentRoomRef = useRef<string | null>(null);
 
   useEffect(() => {
-    // Initialize socket connection
-    const socketUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-    
-    const newSocket = io(socketUrl, {
-      path: "/api/socket",
-      // allow polling fallback to improve reliability during dev / proxies
-      transports: ["polling", "websocket"],
-      reconnection: true,
-      reconnectionDelay: 1000,
-      reconnectionDelayMax: 5000,
-      reconnectionAttempts: 5,
-    });
+    // Join appropriate room based on user type (only once per userId)
+    const joinRoom = () => {
+      if (!userId || !userType) return;
 
-    newSocket.on("connect", () => {
-      console.log("Socket connected:", newSocket.id);
-      setIsConnected(true);
+      const roomId = userType === 'owner' ? `owner-${userId}` : `traveller-${userId}`;
 
-      // Join appropriate room based on user type
-      if (userId && userType === "owner") {
-        newSocket.emit("join-owner-room", userId);
-      } else if (userId && userType === "traveller") {
-        newSocket.emit("join-traveller-room", userId);
+      // Skip if already joined this exact room
+      if (roomJoinedRef.current && currentRoomRef.current === roomId) {
+        console.log(`[Socket] Already in room: ${roomId}`);
+        return;
       }
-    });
 
-    newSocket.on("disconnect", () => {
-      console.log("Socket disconnected");
-      setIsConnected(false);
-    });
-
-    newSocket.on("connect_error", (error) => {
-      console.error("Socket connection error:", error);
-    });
-
-    setSocket(newSocket);
-
-    // Cleanup on unmount
-    return () => {
-      newSocket.disconnect();
+      const eventName = userType === 'owner' ? 'join-owner-room' : 'join-traveller-room';
+      socket.emit(eventName, userId);
+      
+      roomJoinedRef.current = true;
+      currentRoomRef.current = roomId;
+      console.log(`[Socket] ✅ Joined ${userType} room: ${roomId}`);
     };
+
+    // If already connected, join immediately
+    if (socket.connected && !roomJoinedRef.current) {
+      joinRoom();
+    } else if (!socket.connected) {
+      // Otherwise join when connected
+      const onConnect = () => {
+        console.log(`[Socket] 🔌 Socket connected: ${socket.id}`);
+        joinRoom();
+      };
+      socket.once('connect', onConnect);
+      
+      return () => {
+        socket.off('connect', onConnect);
+      };
+    }
   }, [userId, userType]);
+
+  // Handle connection state separately
+  useEffect(() => {
+    const handleConnect = () => {
+      console.log('[Socket] ✅ Connected:', socket.id);
+      setIsConnected(true);
+    };
+
+    const handleDisconnect = () => {
+      console.log('[Socket] 🔴 Disconnected');
+      setIsConnected(false);
+      roomJoinedRef.current = false;  // Reset room state on disconnect
+    };
+
+    const handleError = (error: any) => {
+      console.error('[Socket] ❌ Connection error:', error);
+    };
+
+    socket.on('connect', handleConnect);
+    socket.on('disconnect', handleDisconnect);
+    socket.on('connect_error', handleError);
+
+    // Set initial connection state
+    if (socket.connected) {
+      setIsConnected(true);
+    }
+
+    // Cleanup listeners
+    return () => {
+      socket.off('connect', handleConnect);
+      socket.off('disconnect', handleDisconnect);
+      socket.off('connect_error', handleError);
+    };
+  }, []);
 
   return { socket, isConnected };
 }

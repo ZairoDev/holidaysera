@@ -100,7 +100,7 @@ function BookingConfirmPageContent() {
             <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
-              transition={{ delay: 0.2, type: 'spring' }}
+              transition={{ delay: 0.2, type: "spring" }}
               className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-green-100"
             >
               <CheckCircle className="h-12 w-12 text-green-600" />
@@ -135,7 +135,9 @@ function BookingConfirmPageContent() {
                 <div className="flex items-start gap-3">
                   <Home className="mt-1 h-5 w-5 text-gray-600" />
                   <div>
-                    <p className="font-medium text-gray-900">{property.placeName}</p>
+                    <p className="font-medium text-gray-900">
+                      {property.placeName}
+                    </p>
                     <p className="text-sm text-gray-600">{property.area}</p>
                   </div>
                 </div>
@@ -153,8 +155,8 @@ function BookingConfirmPageContent() {
                   <div>
                     <p className="font-medium text-gray-900">Dates</p>
                     <p className="text-sm text-gray-600">
-                      {format(new Date(checkIn), 'MMMM dd, yyyy')} -{' '}
-                      {format(new Date(checkOut), 'MMMM dd, yyyy')}
+                      {format(new Date(checkIn), "MMMM dd, yyyy")} -{" "}
+                      {format(new Date(checkOut), "MMMM dd, yyyy")}
                     </p>
                   </div>
                 </div>
@@ -178,7 +180,9 @@ function BookingConfirmPageContent() {
               <div className="space-y-3 rounded-lg bg-gray-50 p-4">
                 <div className="flex justify-between">
                   <span className="text-gray-600">Total Amount</span>
-                  <span className="text-2xl font-bold text-sky-600">${total}</span>
+                  <span className="text-2xl font-bold text-sky-600">
+                    ${total}
+                  </span>
                 </div>
                 <p className="text-xs text-gray-500">
                   Payment processed successfully
@@ -224,7 +228,7 @@ function BookingConfirmPageContent() {
           </div>
 
           <div className="mt-8 text-center text-sm text-gray-600">
-            <p>Need help? Contact us at support@stayhaven.com</p>
+            <p>Need help? Contact us at support@HolidaySera.com</p>
             <p className="mt-1">or call +1 (555) 123-4567</p>
           </div>
         </motion.div>

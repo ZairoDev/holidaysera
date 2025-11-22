@@ -38,7 +38,7 @@ export function TrustIndicators() {
       <div className="container mx-auto px-4">
         <div className="mb-12 text-center">
           <h2 className="mb-4 text-4xl font-bold text-gray-900">
-            Why Choose StayHaven?
+            Why Choose HolidaySera?
           </h2>
           <p className="text-lg text-gray-600">
             Your peace of mind is our priority

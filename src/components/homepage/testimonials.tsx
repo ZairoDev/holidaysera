@@ -35,7 +35,7 @@ const testimonials: Testimonial[] = [
     location: "Singapore",
     rating: 5,
     comment:
-      "The attention to detail was impressive. Everything we needed was provided. Highly recommend StayHaven!",
+      "The attention to detail was impressive. Everything we needed was provided. Highly recommend HolidaySera!",
     avatar:
       "https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg",
   },

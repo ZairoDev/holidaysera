@@ -1,7 +1,7 @@
 // This file handles Socket.io initialization in Next.js
 // It's called from the layout or providers file
 
-import { getSocketIO, initializeSocketIO } from "./socket";
+import { getSocketIO } from "./socket";
 
 let isInitialized = false;
 

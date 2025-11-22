@@ -32,7 +32,7 @@ export default function PropertiesPage() {
     minGuests: 0,
     minRating: 0,
     amenities: [] as string[],
-    sortBy: "featured" as "featured" | "price-low" | "price-high" | "rating",
+    sortBy: "rating" as  "price-low" | "price-high" | "rating",
   });
 
   const propertyTypes = [
@@ -123,7 +123,7 @@ export default function PropertiesPage() {
       minGuests: 0,
       minRating: 0,
       amenities: [],
-      sortBy: "featured",
+      sortBy: "rating",
     });
   };
 
@@ -283,44 +283,46 @@ export default function PropertiesPage() {
           </h1>
           <p className="text-gray-600">
             {totalCount} {totalCount === 1 ? "property" : "properties"} found
-
           </p>
-        </div>
-
-        <div className="mb-6 flex items-center justify-between gap-4">
-          <Button
-            variant="outline"
-            onClick={() => setShowFilters(!showFilters)}
-            className="lg:hidden"
-          >
-            <SlidersHorizontal className="mr-2 h-4 w-4" />
-            Filters
-          </Button>
-
-          <Select
-            value={filters.sortBy}
-            onValueChange={(value) =>
-              setFilters((prev) => ({
-                ...prev,
-                sortBy: value as typeof filters.sortBy,
-              }))
-            }
-          >
-            <SelectTrigger className="w-48">
-              <SelectValue placeholder="Sort by" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="featured">Featured</SelectItem>
-              <SelectItem value="price-low">Price: Low to High</SelectItem>
-              <SelectItem value="price-high">Price: High to Low</SelectItem>
-              <SelectItem value="rating">Highest Rated</SelectItem>
-            </SelectContent>
-          </Select>
         </div>
 
         <div className="flex gap-8">
           <aside className="hidden w-80 shrink-0 lg:block">
-            <div className="sticky top-24 rounded-xl border bg-white p-6 shadow-sm">
+            <div className="sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto rounded-xl border bg-white p-6 shadow-sm">
+              <div className="mb-6 flex items-center justify-between gap-4">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowFilters(!showFilters)}
+                  className="lg:hidden"
+                >
+                  <SlidersHorizontal className="mr-2 h-4 w-4" />
+                  Filters
+                </Button>
+
+                <Select
+                  value={filters.sortBy}
+                  onValueChange={(value) =>
+                    setFilters((prev) => ({
+                      ...prev,
+                      sortBy: value as typeof filters.sortBy,
+                    }))
+                  }
+                >
+                  <SelectTrigger className="w-48">
+                    <SelectValue placeholder="Sort by" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {/* <SelectItem value="featured">Featured</SelectItem> */}
+                    <SelectItem value="price-low">
+                      Price: Low to High
+                    </SelectItem>
+                    <SelectItem value="price-high">
+                      Price: High to Low
+                    </SelectItem>
+                    <SelectItem value="rating">Highest Rated</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               <FilterSection />
             </div>
           </aside>
@@ -367,7 +369,10 @@ export default function PropertiesPage() {
               <>
                 <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
                   {properties.map((property) => (
-                    <PropertyCard key={property?._id} property={property as Property} />
+                    <PropertyCard
+                      key={property?._id}
+                      property={property as Property}
+                    />
                   ))}
                 </div>
 

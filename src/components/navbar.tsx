@@ -130,10 +130,10 @@ export function Navbar() {
               className="flex items-center gap-2"
             >
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-sky-500 to-sky-600 text-white shadow-lg">
-                <Home className="h-6 w-6" />
+                <Home className="h-6 w-6" />    
               </div>
               <span className="text-2xl font-bold text-gray-900">
-                Stay<span className="text-sky-600">Haven</span>
+                Holiday<span className="text-sky-600">Sera</span>
               </span>
             </motion.div>
           </Link>
@@ -341,7 +341,7 @@ export function Navbar() {
                 <div className="mt-auto pt-8">
                   <div className="rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 p-4 dark:from-blue-900/20 dark:to-indigo-900/20">
                     <p className="text-xs font-medium text-gray-700 dark:text-gray-300">
-                      💡 <span className="ml-2">Browse properties and book your next stay with StayHaven</span>
+                      💡 <span className="ml-2">Browse properties and book your next stay with HolidaySera</span>
                     </p>
                   </div>
                 </div>

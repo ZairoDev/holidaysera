@@ -113,6 +113,21 @@ function BookingPaymentContent() {
   }, [socket, bookingId]);
 
   const completePaymentMutation = trpc.booking.completePayment.useMutation();
+  const createOrderMutation = trpc.booking.createPaymentOrder.useMutation();
+
+  // helper to load Razorpay script
+  function loadRazorpayScript(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (typeof window === "undefined") return reject(new Error("No window"));
+      if ((window as any).Razorpay) return resolve();
+      const script = document.createElement("script");
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.async = true;
+      script.onload = () => resolve();
+      script.onerror = () => reject(new Error("Failed to load Razorpay script"));
+      document.body.appendChild(script);
+    });
+  }
 
   const handlePayment = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -122,31 +137,56 @@ function BookingPaymentContent() {
     setIsProcessing(true);
 
     try {
-      // Validate card details
-      if (
-        !cardDetails.cardNumber ||
-        !cardDetails.expiryDate ||
-        !cardDetails.cvv ||
-        !cardDetails.name
-      ) {
-        alert("Please fill in all payment details");
-        setIsProcessing(false);
-        return;
-      }
+      // Create a Razorpay order on the server
+      const orderResp = await createOrderMutation.mutateAsync({ bookingId });
 
-      // In a real application, this would integrate with Stripe or another payment processor
-      // For now, we'll simulate a successful payment
-      const transactionId = `TXN-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      // Load Razorpay checkout script
+      await loadRazorpayScript();
 
-      await completePaymentMutation.mutateAsync({
-        bookingId,
-        transactionId,
-        paymentIntentId: `intent_${Date.now()}`,
-      });
+      const options: any = {
+        key: orderResp.key,
+        amount: orderResp.amount,
+        currency: orderResp.currency,
+        name: "Holidaysera",
+        description: `Payment for booking ${bookingId}`,
+        order_id: orderResp.orderId,
+        // Additional Razorpay options
+        image: "/logo192.png",
+        notes: {
+          bookingId: bookingId,
+        },
+        modal: {
+          // called when user closes the checkout without paying
+          ondismiss: () => {
+            console.log("Razorpay modal closed by user");
+          },
+        },
+        handler: async (response: any) => {
+          try {
+            // response contains razorpay_payment_id, razorpay_order_id, razorpay_signature
+            await completePaymentMutation.mutateAsync({
+              bookingId,
+              transactionId: response.razorpay_payment_id,
+              paymentIntentId: response.razorpay_order_id,
+              razorpayOrderId: response.razorpay_order_id,
+              razorpaySignature: response.razorpay_signature,
+            });
 
-      alert("Payment completed successfully!");
-      // Redirect to booking confirmation page
-      window.location.href = `/booking/confirm?id=${bookingId}`;
+            window.location.href = `/booking/confirm?id=${bookingId}`;
+          } catch (err) {
+            console.error("Payment verification failed", err);
+            alert("Payment verification failed. Please contact support.");
+          }
+        },
+        prefill: {
+          name: authUser?.fullName || cardDetails.name,
+          email: (authUser as any)?.email || undefined,
+        },
+        theme: { color: "#3399cc" },
+      };
+
+      const rzp = new (window as any).Razorpay(options);
+      rzp.open();
     } catch (error) {
       console.error("Error processing payment:", error);
       alert("Payment failed. Please try again.");

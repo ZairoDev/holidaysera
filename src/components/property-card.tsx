@@ -4,100 +4,106 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Heart, MapPin, Star, Users } from "lucide-react";
-;
-import { Badge } from "@/components/ui/badge";
-import { Property } from "@/lib/type";
+import { Heart, MapPin, Star, Users, Bath, Bed, Crown } from "lucide-react";
 import { trpc } from "@/trpc/client";
+import { Property } from "@/lib/type";
 
 interface PropertyCardProps {
   property: Property;
 }
 
 export function PropertyCard({ property }: PropertyCardProps) {
-  /** 👉 Fetch user's favorite list */
   const { data: favorites = [], refetch } =
     trpc.favorite.getMyFavorites.useQuery(undefined, {
       staleTime: 5 * 60 * 1000,
     });
 
-  /** 👉 Mutation for toggle */
   const toggleMutation = trpc.favorite.toggle.useMutation({
-    onSuccess: () => refetch(), // Refresh favorites after toggling
+    onSuccess: () => refetch(),
   });
 
   const [imageIndex, setImageIndex] = useState(0);
   const [imageError, setImageError] = useState(false);
 
-  /** Determine if THIS property is in favorites */
   const favorite = favorites.includes(property._id);
 
-  /** Handle favorite toggle */
+  const pictureUrls =
+    property.propertyPictureUrls
+      ?.filter(Boolean)
+      .filter((url) => url.trim() !== "") || [];
+  const fallbackImages = property.propertyImages || [];
+  const allImages = pictureUrls.length ? pictureUrls : fallbackImages;
+  const activeImage =
+    !imageError && allImages.length
+      ? allImages[imageIndex]
+      : "/placeholder.jpg";
+
   const handleFavoriteClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-
     toggleMutation.mutate({ propertyId: property._id });
   };
-
-  /** Build image list safely */
-  const pictureUrls =
-    property.propertyPictureUrls?.filter((url) => url && url.trim() !== "") ||
-    [];
-
-  const fallbackImages = property.propertyImages || [];
-  const allImages = pictureUrls.length > 0 ? pictureUrls : fallbackImages;
-
-  const activeImage =
-    !imageError && allImages.length > 0
-      ? allImages[imageIndex]
-      : "/placeholder.jpg";
 
   return (
     <Link href={`/properties/${property._id}`}>
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
         whileHover={{ y: -4 }}
+        transition={{ duration: 0.2 }}
         className="group cursor-pointer"
       >
-        <div className="relative overflow-hidden rounded-xl bg-white shadow-lg transition-shadow duration-300 group-hover:shadow-xl">
+        <div
+          className="
+          relative overflow-hidden rounded-2xl border 
+          bg-white dark:bg-gray-900 shadow-md 
+          transition-all duration-300 hover:shadow-2xl
+        "
+        >
           {/* IMAGE */}
-          <div className="relative h-64 w-full overflow-hidden bg-gray-200">
-            {activeImage !== "/placeholder.jpg" ? (
+          <div className="relative h-64 w-full overflow-hidden bg-gray-200 dark:bg-gray-700">
+            {activeImage ? (
               <Image
                 src={activeImage}
                 alt={property.propertyName || "Property"}
                 fill
                 unoptimized
                 onError={() => setImageError(true)}
-                className="object-cover transition-transform duration-500 group-hover:scale-110"
-                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                className="object-cover transition-transform duration-700 group-hover:scale-110"
               />
             ) : (
-              <div className="flex h-full w-full flex-col items-center justify-center bg-gray-100">
-                <MapPin className="h-10 w-10 text-gray-400" />
-                <p className="mt-2 text-sm text-gray-500">No Image Available</p>
+              <div className="flex h-full w-full flex-col items-center justify-center text-gray-400 dark:text-gray-500">
+                <MapPin className="h-10 w-10" />
+                <p>No Image</p>
               </div>
             )}
 
-            {/* Favorite Button */}
+            {/* GLASS FAVORITE */}
             <button
               onClick={handleFavoriteClick}
-              // disabled={toggleMutation.isLoading}
-              className="absolute right-3 top-3 z-10 rounded-full bg-white/90 p-2 backdrop-blur-md hover:bg-white hover:scale-110 transition-all"
+              className="
+                absolute right-3 top-3 z-10 rounded-full p-2
+                bg-white/60 dark:bg-black/60 backdrop-blur-md 
+                transition-transform hover:scale-110 shadow-md
+              "
             >
               <Heart
                 className={`h-5 w-5 ${
-                  favorite ? "text-red-500 fill-red-500" : "text-gray-600"
+                  favorite
+                    ? "text-red-500 fill-red-500"
+                    : "text-gray-700 dark:text-gray-200"
                 }`}
               />
             </button>
 
-            {/* Pagination Dots */}
+            {/* Mini Hover Gallery */}
             {allImages.length > 1 && (
-              <div className="absolute bottom-3 left-3 flex gap-1">
+              <div
+                className="
+                absolute bottom-3 left-1/2 -translate-x-1/2 
+                hidden group-hover:flex gap-1 bg-black/40 px-2 py-1 rounded-full backdrop-blur-sm
+              "
+              >
                 {allImages.map((_, idx) => (
                   <button
                     key={idx}
@@ -107,8 +113,8 @@ export function PropertyCard({ property }: PropertyCardProps) {
                       setImageIndex(idx);
                       setImageError(false);
                     }}
-                    className={`h-1.5 w-1.5 rounded-full transition-all ${
-                      idx === imageIndex ? "w-6 bg-white" : "bg-white/50"
+                    className={`h-2 w-2 rounded-full ${
+                      idx === imageIndex ? "bg-white" : "bg-white/50"
                     }`}
                   />
                 ))}
@@ -117,61 +123,59 @@ export function PropertyCard({ property }: PropertyCardProps) {
           </div>
 
           {/* CONTENT */}
-          <div className="p-4">
-            <div className="mb-2 flex items-start justify-between">
-              <h3 className="text-lg font-semibold text-gray-900 line-clamp-1">
+          <div className="p-4 space-y-2">
+            <div className="flex justify-between items-start">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 line-clamp-1">
                 {property.propertyName || "Untitled Property"}
               </h3>
 
-              {property.reviews && (
-                <div className="flex items-center gap-1">
-                  <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
-                  <span className="font-medium text-gray-900">5.0</span>
-                </div>
-              )}
+              {/* Rating or Superhost */}
+              <div className="flex items-center gap-1 text-sm">
+                {property.reviews ? (
+                  <>
+                    <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+                    <span className="font-medium">5.0</span>
+                  </>
+                ) : (
+                  <div className="flex items-center gap-1 bg-purple-500 text-white px-2 py-[1px] rounded-md text-xs shadow">
+                    <Crown className="h-3 w-3" /> Superhost
+                  </div>
+                )}
+              </div>
             </div>
 
-            <div className="mb-3 flex items-center gap-1 text-sm text-gray-600">
+            {/* Location Tag */}
+            <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-300">
               <MapPin className="h-4 w-4" />
               <span className="line-clamp-1">
-                {property.city || "Unknown"}, {property.country || "Unknown"}
+                {property.city}, {property.country}
               </span>
             </div>
 
-            <div className="mb-3 flex flex-wrap gap-2 text-xs text-gray-600">
-              {property.guests && (
-                <>
-                  <div className="flex items-center gap-1">
-                    <Users className="h-4 w-4" />
-                    <span>{property.guests} guests</span>
-                  </div>
-                  <span>•</span>
-                </>
-              )}
-
-              {property.bedrooms && (
-                <>
-                  <span>
-                    {property.bedrooms} bed{property.bedrooms > 1 ? "s" : ""}
-                  </span>
-                  <span>•</span>
-                </>
-              )}
-
-              {property.bathroom && (
-                <span>
-                  {property.bathroom} bath{property.bathroom > 1 ? "s" : ""}
-                </span>
-              )}
+            {/* DETAILS */}
+            <div className="flex items-center gap-4 text-xs text-gray-600 dark:text-gray-300">
+              <span className="flex items-center gap-1">
+                <Users className="h-4 w-4" /> {property.guests} guests
+              </span>
+              <span className="flex items-center gap-1">
+                <Bed className="h-4 w-4" /> {property.bedrooms} beds
+              </span>
+              <span className="flex items-center gap-1">
+                <Bath className="h-4 w-4" /> {property.bathroom} bath
+              </span>
             </div>
 
-            <div className="flex items-baseline justify-between border-t pt-3">
-              <div>
-                <span className="text-2xl font-bold text-sky-600">
-                  ${property.basePrice || 0}
-                </span>
-                <span className="text-sm text-gray-600"> / night</span>
-              </div>
+            {/* PRICE */}
+            <div className="pt-3 border-t flex justify-between items-baseline dark:border-gray-700">
+              <motion.p
+                whileHover={{ scale: 1.08 }}
+                className="text-2xl font-bold text-sky-600 dark:text-sky-400"
+              >
+                ${property.basePrice}
+              </motion.p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                / night
+              </p>
             </div>
           </div>
         </div>

@@ -60,7 +60,7 @@ A stunning, fully responsive holiday home rental website built with Next.js, Typ
 
 5. **Open your browser**
 
-   Navigate to [http://localhost:3000](http://localhost:3000)
+   Navigate to [http://localhost:3001](http://localhost:3001)
 
 ### Building for Production
 

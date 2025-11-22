@@ -4,42 +4,29 @@ import Users from "@/models/users";
 
 export const favoriteRouter = router({
   toggle: protectedProcedure
-    .input(
-      z.object({
-        propertyId: z.string(),
-      })
-    )
+    .input(z.object({ propertyId: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      const userId = ctx.user.id;
+      const userId = ctx.user.id; // use _id since we selected it
 
       const user = await Users.findById(userId);
       if (!user) {
         throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "User not found",
+          code: "UNAUTHORIZED",
+          message: "Login required or user deleted",
         });
       }
 
-      // Convert to string for comparison if stored as ObjectId
-      const propertyIdStr = input.propertyId;
-      const favourites = user.favouriteProperties || [];
+      const propertyId = input.propertyId;
+      const favorites = user.favouriteProperties || [];
 
-      const alreadyFavorited = favourites.some(
-        (id: any) => id.toString() === propertyIdStr
-      );
+      const exists = favorites.some((id: any) => id.toString() === propertyId);
 
-      if (alreadyFavorited) {
-        // REMOVE
-        user.favouriteProperties = favourites.filter(
-          (id: any) => id.toString() !== propertyIdStr
-        );
-      } else {
-        // ADD
-        user.favouriteProperties = [...favourites, input.propertyId];
-      }
+      user.favouriteProperties = exists
+        ? favorites.filter((id: any) => id.toString() !== propertyId)
+        : [...favorites, propertyId];
 
       await user.save();
-      return { status: alreadyFavorited ? "removed" : "added" };
+      return { status: exists ? "removed" : "added" };
     }),
 
   getMyFavorites: protectedProcedure.query(async ({ ctx }) => {

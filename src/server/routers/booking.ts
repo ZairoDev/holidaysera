@@ -5,6 +5,25 @@ import { Properties } from "@/models/property";
 import Users from "@/models/users";
 import { TRPCError } from "@trpc/server";
 import { emitToOwner, emitToTraveller, getSocketIO } from "../socket";
+import Notifications from "@/models/notification";
+import crypto from "crypto";
+
+// Lazy require Razorpay to avoid startup errors when package isn't installed
+let Razorpay: any = null;
+try {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  Razorpay = require("razorpay");
+} catch (err) {
+  Razorpay = null;
+}
+
+function getRazorpayInstance() {
+  if (!Razorpay) throw new Error("Razorpay package not installed. Run 'npm install razorpay'");
+  const key_id = process.env.RAZORPAY_API_KEY;
+  const key_secret = process.env.RAZORPAY_API_SECRET;
+  if (!key_id || !key_secret) throw new Error("Razorpay API keys not configured in environment variables");
+  return new Razorpay({ key_id, key_secret });
+}
 
 export const bookingRouter = router({
   // Create a booking request (traveller initiates)
@@ -46,27 +65,46 @@ export const bookingRouter = router({
 
         const bookingDoc = booking.toObject();
 
-        // Emit real-time notification to owner
+        // Persist notification for owner and emit
         try {
-          const ioInstance = getSocketIO();
-          console.log(`createBookingRequest: ownerId=${String(property.userId)}, travellerId=${ctx.user.id}, ioInitialized=${!!ioInstance}`);
-        } catch (err) {
-          console.warn("createBookingRequest: failed to check socket instance", err);
-        }
+          const notification = await Notifications.create({
+            recipientId: String(property.userId),
+            recipientRole: "Owner",
+            type: "booking-request",
+            bookingId: (bookingDoc._id as any).toString(),
+            data: {
+              propertyId: input.propertyId,
+              propertyName: property.propertyName,
+              travellerId: ctx.user.id,
+              travelerName: ctx.user.email,
+              startDate: input.startDate,
+              endDate: input.endDate,
+              guests: input.guests,
+              price: input.price,
+              serviceCharge: bookingDoc.serviceCharge,
+            },
+          });
 
-        emitToOwner(String(property.userId), "booking-request-received", {
-          bookingId: (bookingDoc._id as any).toString(),
-          propertyId: input.propertyId,
-          propertyName: property.propertyName,
-          travellerId: ctx.user.id,
-          travelerName: ctx.user.email,
-          startDate: input.startDate,
-          endDate: input.endDate,
-          guests: input.guests,
-          price: input.price,
-          serviceCharge: bookingDoc.serviceCharge,
-          timestamp: new Date(),
-        });
+          const emitPayload = {
+            notificationId: String(notification._id),
+            bookingId: (bookingDoc._id as any).toString(),
+            propertyId: input.propertyId,
+            propertyName: property.propertyName,
+            travellerId: ctx.user.id,
+            travelerName: ctx.user.email,
+            startDate: input.startDate,
+            endDate: input.endDate,
+            guests: input.guests,
+            price: input.price,
+            serviceCharge: bookingDoc.serviceCharge,
+            timestamp: new Date(),
+          };
+
+          const emitSuccess = emitToOwner(String(property.userId), "booking-request-received", emitPayload);
+          console.log(`[Booking] Notification created ${notification._id} and emitted to owner ${property.userId}: ${emitSuccess}`);
+        } catch (err) {
+          console.warn("[Booking] Failed to persist/emit notification to owner", err);
+        }
 
         return {
           success: true,
@@ -111,6 +149,10 @@ export const bookingRouter = router({
           });
         }
 
+        // Fetch property details
+        const property = await Properties.findById(booking.propertyId).lean() as any;
+        const propertyName = property?.propertyName || "Your property";
+
         // Update booking status
         booking.ownerApprovalStatus = "approved";
         booking.bookingStatus = "approved";
@@ -118,15 +160,38 @@ export const bookingRouter = router({
 
         const updatedBooking = booking.toObject();
 
-        // Emit notification to traveller that payment is now required
-        emitToTraveller(String(booking.travellerId), "booking-approved-notification", {
-          bookingId: updatedBooking._id.toString(),
-          propertyId: String(booking.propertyId),
-          serviceCharge: updatedBooking.serviceCharge,
-          totalPrice: booking.price,
-          message: "Your booking has been approved! Please complete payment to confirm.",
-          timestamp: new Date(),
-        });
+        // Persist notification for traveller and emit
+        try {
+          const notification = await Notifications.create({
+            recipientId: String(booking.travellerId),
+            recipientRole: "Traveller",
+            type: "booking-approved",
+            bookingId: updatedBooking._id.toString(),
+            data: {
+              propertyId: String(booking.propertyId),
+              propertyName,
+              serviceCharge: updatedBooking.serviceCharge,
+              totalPrice: booking.price,
+              message: "Your booking has been approved! Please complete payment to confirm.",
+            },
+          });
+
+          const emitPayload = {
+            notificationId: String(notification._id),
+            bookingId: updatedBooking._id.toString(),
+            propertyId: String(booking.propertyId),
+            propertyName,
+            serviceCharge: updatedBooking.serviceCharge,
+            totalPrice: booking.price,
+            message: "Your booking has been approved! Please complete payment to confirm.",
+            timestamp: new Date(),
+          };
+
+          const emitSuccess = emitToTraveller(String(booking.travellerId), "booking-approved-notification", emitPayload);
+          console.log(`[Booking] Approval notification created ${notification._id} and emitted to traveller ${booking.travellerId}: ${emitSuccess}`);
+        } catch (err) {
+          console.warn("[Booking] Failed to persist/emit approval notification", err);
+        }
 
         return {
           success: true,
@@ -172,21 +237,41 @@ export const bookingRouter = router({
           });
         }
 
+        // Fetch property details
+        const property = await Properties.findById(booking.propertyId).lean() as any;
+        const propertyName = property?.propertyName || "The property";
+
         // Update booking status
         booking.ownerApprovalStatus = "rejected";
         booking.bookingStatus = "rejected";
         await booking.save();
 
-        // Emit notification to traveller
-        emitToTraveller(
-          String(booking.travellerId),
-          "booking-rejected-notification",
-          {
+        // Persist notification for traveller and emit
+        try {
+          const notification = await Notifications.create({
+            recipientId: String(booking.travellerId),
+            recipientRole: "Traveller",
+            type: "booking-rejected",
             bookingId: String(booking._id),
+            data: {
+              propertyName: propertyName,
+              reason: input.reason || "The property owner has declined your booking request",
+            },
+          });
+
+          const emitPayload = {
+            notificationId: String(notification._id),
+            bookingId: String(booking._id),
+            propertyName: propertyName,
             reason: input.reason || "The property owner has declined your booking request",
             timestamp: new Date(),
-          }
-        );
+          };
+
+          const emitSuccess = emitToTraveller(String(booking.travellerId), "booking-rejected-notification", emitPayload);
+          console.log(`[Booking] Rejection notification created ${notification._id} and emitted to traveller ${booking.travellerId}: ${emitSuccess}`);
+        } catch (err) {
+          console.warn("[Booking] Failed to persist/emit rejection notification", err);
+        }
 
         return {
           success: true,
@@ -284,6 +369,91 @@ export const bookingRouter = router({
     }
   }),
 
+  // Create a Razorpay order for a booking (traveller initiates checkout)
+  createPaymentOrder: protectedProcedure
+    .input(z.object({ bookingId: z.string().min(1) }))
+    .mutation(async ({ input, ctx }) => {
+      try {
+        const booking = await Bookings.findById(input.bookingId).lean() as any;
+        if (!booking) throw new TRPCError({ code: "NOT_FOUND", message: "Booking not found" });
+        if (String(booking.travellerId) !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN" });
+
+        // Only allow creating order if owner approved and payment awaiting
+        if (booking.ownerApprovalStatus !== "approved" || booking.paymentStatus !== "awaiting") {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Payment not required for this booking" });
+        }
+
+        const razorpay = getRazorpayInstance();
+        // Amount in smallest currency unit (cents for EUR)
+        const amount = Math.round((booking.serviceCharge || 0) * 100);
+
+        const order = await razorpay.orders.create({
+          amount,
+          currency: "EUR",
+          receipt: String(booking._id),
+          payment_capture: 1,
+        });
+
+        return {
+          orderId: order.id,
+          amount: order.amount,
+          currency: order.currency,
+          key: process.env.RAZORPAY_API_KEY,
+        };
+      } catch (err) {
+        console.error("[Payments] createPaymentOrder error", err);
+        if (err instanceof TRPCError) throw err;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to create payment order" });
+      }
+    }),
+
+  // Traveller's bookings
+  getTravellerBookings: protectedProcedure
+    .input(
+      z.object({
+        limit: z.number().optional(),
+        cursor: z.string().optional(),
+      }).optional()
+    )
+    .query(async ({ input, ctx }) => {
+      try {
+        const limit = input?.limit ?? 50;
+        const query: any = { travellerId: ctx.user.id };
+        if (input?.cursor) query._id = { $lt: input.cursor };
+
+        const list = await Bookings.find(query)
+          .sort({ createdAt: -1 })
+          .limit(limit + 1)
+          .populate("propertyId", "propertyName propertyCoverFileUrl basePrice currency")
+          .lean();
+
+        const hasMore = list.length > limit;
+        const items = (hasMore ? list.slice(0, -1) : list).map((b: any) => ({
+          id: b._id.toString(),
+          bookingId: b._id.toString(),
+          propertyId: String(b.propertyId._id),
+          propertyName: b.propertyId?.propertyName || "",
+          propertyCoverFileUrl: b.propertyId?.propertyCoverFileUrl || null,
+          price: b.price,
+          serviceCharge: b.serviceCharge,
+          ownerApprovalStatus: b.ownerApprovalStatus,
+          paymentStatus: b.paymentStatus,
+          startDate: b.startDate,
+          endDate: b.endDate,
+          bookingStatus: b.bookingStatus,
+          createdAt: b.createdAt,
+        }));
+
+        return {
+          items,
+          nextCursor: hasMore ? String(list[list.length - 1]._id) : undefined,
+        };
+      } catch (err) {
+        console.error("Error fetching traveller bookings:", err);
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to fetch bookings" });
+      }
+    }),
+
   // Mark payment as completed (called from payment gateway webhook)
   completePayment: protectedProcedure
     .input(
@@ -291,6 +461,8 @@ export const bookingRouter = router({
         bookingId: z.string().min(1),
         transactionId: z.string().min(1),
         paymentIntentId: z.string().optional(),
+        razorpayOrderId: z.string().optional(),
+        razorpaySignature: z.string().optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -312,26 +484,62 @@ export const bookingRouter = router({
           });
         }
 
-        // Update payment status
+        // If this is a Razorpay flow, verify the signature
+        if (input.razorpaySignature && input.razorpayOrderId) {
+          const secret = process.env.RAZORPAY_API_SECRET;
+          if (!secret) {
+            throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Razorpay secret not configured" });
+          }
+          const expected = crypto.createHmac("sha256", secret).update(`${input.razorpayOrderId}|${input.transactionId}`).digest("hex");
+          if (expected !== input.razorpaySignature) {
+            throw new TRPCError({ code: "FORBIDDEN", message: "Invalid payment signature" });
+          }
+          booking.transactionId = input.transactionId;
+          booking.paymentIntentId = input.razorpayOrderId;
+        } else {
+          // Update payment status (non-Razorpay fallback)
+          booking.transactionId = input.transactionId;
+          if (input.paymentIntentId) {
+            booking.paymentIntentId = input.paymentIntentId;
+          }
+        }
+
         booking.paymentStatus = "paid";
         booking.bookingStatus = "completed";
-        booking.transactionId = input.transactionId;
-        if (input.paymentIntentId) {
-          booking.paymentIntentId = input.paymentIntentId;
-        }
         await booking.save();
 
         const updatedBooking = booking.toObject();
 
-        // Notify owner of payment
-        emitToOwner(String(booking.ownerId), "payment-received", {
-          bookingId: updatedBooking._id.toString(),
-          propertyId: String(booking.propertyId),
-          travellerId: String(booking.travellerId),
-          amount: updatedBooking.serviceCharge,
-          transactionId: input.transactionId,
-          timestamp: new Date(),
-        });
+        // Persist notification for owner and emit
+        try {
+          const notification = await Notifications.create({
+            recipientId: String(booking.ownerId),
+            recipientRole: "Owner",
+            type: "payment-received",
+            bookingId: updatedBooking._id.toString(),
+            data: {
+              propertyId: String(booking.propertyId),
+              travellerId: String(booking.travellerId),
+              amount: updatedBooking.serviceCharge,
+              transactionId: input.transactionId,
+            },
+          });
+
+          const emitPayload = {
+            notificationId: String(notification._id),
+            bookingId: updatedBooking._id.toString(),
+            propertyId: String(booking.propertyId),
+            travellerId: String(booking.travellerId),
+            amount: updatedBooking.serviceCharge,
+            transactionId: input.transactionId,
+            timestamp: new Date(),
+          };
+
+          const emitSuccess = emitToOwner(String(booking.ownerId), "payment-received", emitPayload);
+          console.log(`[Booking] Payment notification created ${notification._id} and emitted to owner ${booking.ownerId}: ${emitSuccess}`);
+        } catch (err) {
+          console.warn("[Booking] Failed to persist/emit payment notification", err);
+        }
 
         return {
           success: true,

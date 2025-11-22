@@ -79,7 +79,7 @@ export default function LoginPage() {
           <h1 className="mb-2 text-3xl font-bold text-gray-900">
             Welcome Back
           </h1>
-          <p className="text-gray-600">Log in to your StayHaven account</p>
+          <p className="text-gray-600">Log in to your HolidaySera account</p>
         </div>
 
         <Card className="p-8">

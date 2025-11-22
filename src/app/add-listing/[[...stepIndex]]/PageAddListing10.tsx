@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { trpc } from "@/trpc/client";
 import { useRouter } from "next/navigation";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 export interface PageAddListing10Props {
   searchParams?: { [key: string]: string | string[] | undefined };
@@ -92,7 +92,6 @@ interface CombinedData {
 
 const PageAddListing10: FC<PageAddListing10Props> = ({ searchParams }) => {
   const router = useRouter();
-  const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [propertyCoverFileUrl, setPropertyCoverFileUrl] = useState<string>("");
   const [page3, setPage3] = useState<Page3State | null>(null);
@@ -104,8 +103,7 @@ const PageAddListing10: FC<PageAddListing10Props> = ({ searchParams }) => {
   // TRPC mutation for adding listing
   const addListingMutation = trpc.property.addListing.useMutation({
     onSuccess: (data) => {
-      toast({
-        title: "Success! 🎉",
+      toast.success("Success! 🎉", {
         description: "Your property listing has been published successfully!",
       });
       
@@ -127,10 +125,8 @@ const PageAddListing10: FC<PageAddListing10Props> = ({ searchParams }) => {
       }, 1000);
     },
     onError: (error) => {
-      toast({
-        title: "Error",
+      toast.error("Error", {
         description: error.message || "Failed to publish property. Please try again.",
-        variant: "destructive",
       });
       setIsLoading(false);
     },
@@ -139,8 +135,7 @@ const PageAddListing10: FC<PageAddListing10Props> = ({ searchParams }) => {
   // TRPC mutation for updating listing (edit flow)
   const updateListingMutation = trpc.property.updateListing.useMutation({
     onSuccess: (data) => {
-      toast({
-        title: "Updated! 🎉",
+      toast.success("Updated! 🎉", {
         description: "Your property listing has been updated successfully!",
       });
 
@@ -166,10 +161,8 @@ const PageAddListing10: FC<PageAddListing10Props> = ({ searchParams }) => {
       }, 600);
     },
     onError: (error) => {
-      toast({
-        title: "Error",
+      toast.error("Error", {
         description: error.message || "Failed to update property. Please try again.",
-        variant: "destructive",
       });
       setIsLoading(false);
     },
@@ -332,10 +325,8 @@ const PageAddListing10: FC<PageAddListing10Props> = ({ searchParams }) => {
       }
     } catch (error) {
       console.error("Error publishing property:", error);
-      toast({
-        title: "Error",
+      toast.error("Error", {
         description: "Failed to publish property. Please check all fields and try again.",
-        variant: "destructive",
       });
       setIsLoading(false);
     }
