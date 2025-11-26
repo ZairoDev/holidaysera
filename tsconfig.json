@@ -33,7 +33,7 @@
     "src",
     "next-env.d.ts",
     ".next/types/**/*.ts"
-  ],
+, "server.ts"  ],
   "exclude": [
     "node_modules"
   ]
