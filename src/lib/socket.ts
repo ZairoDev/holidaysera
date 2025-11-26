@@ -2,19 +2,21 @@
 
 import { io } from "socket.io-client";
 
-const socketUrl = typeof window !== "undefined" 
-  ? process.env.NEXT_PUBLIC_APP_URL || window.location.origin
-  : "http://localhost:3001";
+const socketUrl =
+  typeof window !== "undefined"
+    ? process.env.NODE_ENV === "production"
+      ? `${window.location.protocol}//${window.location.hostname}`
+      : `${window.location.protocol}//${window.location.hostname}:3001`
+    : "";
 
-// Configure socket with transports that work in Next.js
 export const socket = io(socketUrl, {
   path: "/api/socket",
+  transports: ["websocket"],
+  withCredentials: true,
   reconnection: true,
   reconnectionDelay: 1000,
   reconnectionDelayMax: 5000,
   reconnectionAttempts: 5,
-  transports: ["websocket"], // WebSocket only for performance
-  withCredentials: true,
 });
 
 console.log("[Socket.io] 🔌 Initialized at:", socketUrl);
