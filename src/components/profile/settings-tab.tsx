@@ -14,6 +14,11 @@ import { Card } from "@/components/ui/card";
 import { TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
+import { socket } from "@/lib/socket";
+
+import { useUserStore } from "@/lib/store";
+import { useRouter } from "next/navigation";
+
 
 interface SettingsTabProps {
   user: {
@@ -23,7 +28,10 @@ interface SettingsTabProps {
   isOwner: boolean;
 }
 
+
 export function SettingsTab({ user, isOwner }: SettingsTabProps) {
+  const router = useRouter();
+  const setUser = useUserStore((state) => state.setUser); // reset user
   const handleDeleteAccount = () => {
     if (
       confirm(
@@ -31,6 +39,28 @@ export function SettingsTab({ user, isOwner }: SettingsTabProps) {
       )
     ) {
       toast.error("Account deletion requested");
+    }
+  };
+
+  const handleLogout = () => {
+    if (confirm("Are you sure you want to logout?")) {
+      // 👇 Clear local storage token
+      localStorage.removeItem("token");
+
+      // 👇 Clear Zustand user
+      setUser(null);
+
+      // 👇 Disconnect socket (recommended)
+      try {
+        socket.disconnect();
+      } catch {}
+
+      toast.success("Logged out successfully");
+
+      // 👇 Redirect after short delay
+      setTimeout(() => {
+        router.push("/login");
+      }, 300);
     }
   };
 
@@ -131,6 +161,9 @@ export function SettingsTab({ user, isOwner }: SettingsTabProps) {
                 />
               </div>
             </Section>
+            <section>
+              <button onClick={handleLogout}>Logout</button>
+            </section>
 
             {/* Danger Zone */}
             <Section

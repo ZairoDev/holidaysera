@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import { Heart, MapPin, Star, Users, Bath, Bed, Crown } from "lucide-react";
 import { trpc } from "@/trpc/client";
 import { Property } from "@/lib/type";
+import { toast } from "sonner";
 
 interface PropertyCardProps {
   property: Property;
@@ -20,6 +21,13 @@ export function PropertyCard({ property }: PropertyCardProps) {
 
   const toggleMutation = trpc.favorite.toggle.useMutation({
     onSuccess: () => refetch(),
+    onError:(error) => {
+      // console.error("Error toggling favorite:", error);
+      if (error.data?.code === 'UNAUTHORIZED') {
+        toast.error("Please log in to manage favorites.");
+      } else
+      toast.error("Failed to update favorites. Please try again.");
+    }
   });
 
   const [imageIndex, setImageIndex] = useState(0);

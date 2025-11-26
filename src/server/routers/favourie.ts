@@ -1,6 +1,7 @@
 import { router, protectedProcedure, TRPCError } from "../trpc";
 import { z } from "zod";
 import Users from "@/models/users";
+import { Properties } from "@/models/property";
 
 export const favoriteRouter = router({
   toggle: protectedProcedure
@@ -29,15 +30,35 @@ export const favoriteRouter = router({
       return { status: exists ? "removed" : "added" };
     }),
 
-  getMyFavorites: protectedProcedure.query(async ({ ctx }) => {
-    const user = await Users.findById(ctx.user.id)
-      .select("favouriteProperties")
-      .lean();
+    getMyFavorites: protectedProcedure.query(async ({ ctx }) => {
+      const userId = ctx.user.id || ctx.user.id;
+    
+      const user = (await Users.findById(userId)
+        .select("favouriteProperties")
+        .lean()) as { favouriteProperties: string[] } | null;
 
-    if (!user) {
-      return [];
-    }
-
-    return (user as any).favouriteProperties || [];
-  }),
+    
+      if (!user || !user.favouriteProperties) return [];
+    
+      // Convert to string array
+      let favouriteIds = user.favouriteProperties.map((id: any) => id.toString());
+    
+      // Check which exist in the Property collection
+      const existingProperties = await Properties.find({ _id: { $in: favouriteIds } })
+        .select("_id")
+        .lean();
+    
+      const validIds = existingProperties.map((p: any) => p._id.toString());
+    
+      // Clean up invalid ones automatically
+      if (validIds.length !== favouriteIds.length) {
+        await Users.updateOne(
+          { _id: userId },
+          { $set: { favouriteProperties: validIds } }
+        );
+      }
+    
+      return validIds;
+    })
+    ,
 });

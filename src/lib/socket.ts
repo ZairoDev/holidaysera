@@ -13,6 +13,7 @@ export const socket = io(socketUrl, {
   path: "/api/socket",
   transports: ["websocket"],
   withCredentials: true,
+  autoConnect: false, 
   reconnection: true,
   reconnectionDelay: 1000,
   reconnectionDelayMax: 5000,

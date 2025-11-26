@@ -148,4 +148,10 @@ export const authRouter = router({
       const user = await Users.findById(ctx.user?.id).select("-password");
       return user;
     }),
+  logout: protectedProcedure.mutation(async ({ ctx }) => {
+    // Since JWT is stateless, logout can be handled on client side by deleting the token.
+    // Optionally, you can implement token blacklisting here.
+    
+    return { message: "Logout successful" };
+  }),
 });

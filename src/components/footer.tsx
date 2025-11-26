@@ -10,14 +10,14 @@ export function Footer() {
       links: [
         { label: 'About Us', href: '/about' },
         { label: 'Careers', href: '/careers' },
-        { label: 'Press', href: '/press' },
+        { label: 'Become a Host', href: '/subscriptions' },
         { label: 'Blog', href: '/blog' },
       ],
     },
     {
       title: 'Support',
       links: [
-        { label: 'Help Center', href: '/help' },
+        { label: 'Help Center', href: '/help-center' },
         { label: 'Safety', href: '/safety' },
         { label: 'Cancellation', href: '/cancellation' },
         { label: 'Contact Us', href: '/contact' },
@@ -26,7 +26,7 @@ export function Footer() {
     {
       title: 'Hosting',
       links: [
-        { label: 'List Your Property', href: '/host' },
+        { label: 'List Your Property', href: '/list-property' },
         { label: 'Host Resources', href: '/host-resources' },
         { label: 'Community', href: '/community' },
         { label: 'Responsible Hosting', href: '/responsible' },
