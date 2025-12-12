@@ -204,7 +204,7 @@ const ListPropertyPage: React.FC = () => {
                 🏠 List Your Property Now
               </button>
               <Link
-                href="/subscription"
+                href="/subscriptions"
                 className="px-10 py-5 bg-white text-gray-900 rounded-xl font-bold text-lg border-2 border-gray-300 hover:border-blue-600 shadow-lg hover:shadow-xl transition-all duration-300 inline-block"
               >
                 💎 View Subscription Plans
@@ -289,7 +289,7 @@ const ListPropertyPage: React.FC = () => {
 
           <div className="text-center mt-12">
             <Link
-              href="/subscription"
+              href="/subscriptions"
               className="inline-flex items-center gap-2 text-blue-600 font-bold text-lg hover:text-blue-700 transition-colors"
             >
               Compare all subscription features →
