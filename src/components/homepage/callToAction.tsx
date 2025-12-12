@@ -33,7 +33,7 @@ export function CallToAction() {
               <Button
                 size="lg"
                 variant="outline"
-                className="border-white text-white hover:bg-white/10"
+                className="border-white text-white bg-white/5 hover:bg-white/10"
               >
                 Sign Up Free
               </Button>

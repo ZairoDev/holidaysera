@@ -252,7 +252,7 @@ export default function PrivacyPage() {
       </section>
 
       {/* Quick Stats */}
-      <section className="relative -mt-8 z-10">
+      {/* <section className="relative -mt-8 z-10">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="bg-white rounded-2xl shadow-lg p-6 text-center">
@@ -278,7 +278,7 @@ export default function PrivacyPage() {
             </div>
           </div>
         </div>
-      </section>
+      </section> */}
 
       {/* Navigation Pills */}
       <section className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-gray-200 mt-12">

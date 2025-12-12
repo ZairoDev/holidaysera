@@ -19,7 +19,7 @@ export default async function Home() {
       <FeaturedProperties properties={featured}/>
       <PopularDestinations />
       <TrustIndicators />
-      <Testimonials />
+      {/* <Testimonials /> */}
       <CallToAction />
     </div>
   );

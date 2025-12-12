@@ -118,9 +118,9 @@ export function Footer() {
               <Link href="/terms" className="hover:text-sky-600">
                 Terms of Service
               </Link>
-              <Link href="/cookies" className="hover:text-sky-600">
+              {/* <Link href="/cookies" className="hover:text-sky-600">
                 Cookie Policy
-              </Link>
+              </Link> */}
             </div>
           </div>
         </div>

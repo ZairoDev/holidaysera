@@ -13,6 +13,10 @@ export const metadata: Metadata = {
   title: "HolidaySera - Find Your Perfect Holiday Home",
   description:
     "Discover unique properties and unforgettable experiences around the world. Book your dream vacation rental with HolidaySera.",
+  icons: {
+    icon: '/favicon.svg',
+    apple: '/favicon.svg',
+  },
 };
 
 export default function RootLayout({
