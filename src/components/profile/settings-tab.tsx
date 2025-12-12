@@ -8,6 +8,7 @@ import {
   Bell,
   AlertCircle,
   Trash2,
+  LogOut,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -161,9 +162,39 @@ export function SettingsTab({ user, isOwner }: SettingsTabProps) {
                 />
               </div>
             </Section>
-            <section>
-              <button onClick={handleLogout}>Logout</button>
-            </section>
+
+            {/* Logout Section */}
+            <Section
+              icon={LogOut}
+              title="Session"
+              description="Manage your current session"
+            >
+              <div className="rounded-xl bg-gray-50 border border-gray-200 p-6">
+                <div className="flex items-start gap-4">
+                  <div className="flex-shrink-0">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-orange-100">
+                      <LogOut className="h-6 w-6 text-orange-600" />
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="text-lg font-semibold text-gray-900 mb-2">
+                      Log Out
+                    </h4>
+                    <p className="text-sm text-gray-600 mb-4">
+                      Sign out of your account on this device. You can always log back in anytime.
+                    </p>
+                    <Button
+                      variant="outline"
+                      className="w-full sm:w-auto h-11 border-2 border-orange-300 text-orange-600 hover:bg-orange-50 hover:border-orange-400"
+                      onClick={handleLogout}
+                    >
+                      <LogOut className="mr-2 h-4 w-4" />
+                      Log Out
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </Section>
 
             {/* Danger Zone */}
             <Section

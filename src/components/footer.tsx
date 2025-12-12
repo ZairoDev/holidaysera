@@ -44,7 +44,7 @@ export function Footer() {
                 <Home className="h-6 w-6" />
               </div>
               <span className="text-2xl font-bold text-gray-900">
-                Stay<span className="text-sky-600">Haven</span>
+                Holiday<span className="text-sky-600">Sera</span>
               </span>
             </Link>
             <p className="mt-4 text-sm text-gray-600">
@@ -76,12 +76,12 @@ export function Footer() {
               >
                 <Twitter className="h-5 w-5" />
               </a>
-              <a
-                href="mailto:contact@HolidaySera.com"
+              <Link
+                href="/contact"
                 className="text-gray-400 transition-colors hover:text-sky-600"
               >
                 <Mail className="h-5 w-5" />
-              </a>
+              </Link>
             </div>
           </div>
 

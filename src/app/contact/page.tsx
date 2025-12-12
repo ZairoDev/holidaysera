@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import { toast } from "sonner";
 
 // Types
 interface ContactForm {
@@ -105,29 +106,42 @@ const ContactPage: React.FC = () => {
 
     setIsSubmitting(true);
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-
-    console.log("Form submitted:", formData);
-
-    // Here you would typically send to your API
-    // await fetch('/api/contact', { method: 'POST', body: JSON.stringify(formData) });
-
-    setIsSubmitting(false);
-    setIsSubmitted(true);
-
-    // Reset form after 3 seconds
-    setTimeout(() => {
-      setFormData({
-        name: "",
-        email: "",
-        phone: "",
-        subject: "",
-        category: "general",
-        message: "",
+    try {
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
       });
-      setIsSubmitted(false);
-    }, 3000);
+
+      const result = await response.json();
+
+      if (response.ok) {
+        toast.success("Message sent successfully! We'll get back to you soon.");
+        setIsSubmitted(true);
+
+        // Reset form after 3 seconds
+        setTimeout(() => {
+          setFormData({
+            name: "",
+            email: "",
+            phone: "",
+            subject: "",
+            category: "general",
+            message: "",
+          });
+          setIsSubmitted(false);
+        }, 3000);
+      } else {
+        toast.error(result.error || "Failed to send message. Please try again.");
+      }
+    } catch (error) {
+      console.error("Contact form error:", error);
+      toast.error("Something went wrong. Please try again later.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleChange = (

@@ -436,24 +436,24 @@ const HelpCenterPage: React.FC = () => {
                 Our support team is available 24/7 to assist you
               </p>
               <div className="grid md:grid-cols-3 gap-6 pt-8 max-w-4xl mx-auto">
-                <div className="p-6 bg-white/10 backdrop-blur-lg rounded-2xl border border-white/20">
+                <Link href="/contact" className="p-6 bg-white/10 backdrop-blur-lg rounded-2xl border border-white/20 block hover:bg-white/20 transition-colors">
                   <div className="text-4xl mb-3">💬</div>
                   <div className="text-xl font-bold mb-2">Live Chat</div>
                   <p className="text-blue-100 text-sm mb-4">
                     Average wait: 2 min
                   </p>
-                  <button className="w-full px-4 py-2 bg-white text-blue-600 rounded-lg font-semibold hover:bg-blue-50 transition-colors">
-                    Start Chat
-                  </button>
-                </div>
-                <div className="p-6 bg-white/10 backdrop-blur-lg rounded-2xl border border-white/20">
+                  <span className="block w-full px-4 py-2 bg-white text-blue-600 rounded-lg font-semibold hover:bg-blue-50 transition-colors text-center">
+                    Contact Us
+                  </span>
+                </Link>
+                <Link href="/contact" className="p-6 bg-white/10 backdrop-blur-lg rounded-2xl border border-white/20 block hover:bg-white/20 transition-colors">
                   <div className="text-4xl mb-3">📧</div>
                   <div className="text-xl font-bold mb-2">Email Support</div>
                   <p className="text-blue-100 text-sm mb-4">Response in 24h</p>
-                  <button className="w-full px-4 py-2 bg-white text-blue-600 rounded-lg font-semibold hover:bg-blue-50 transition-colors">
-                    Send Email
-                  </button>
-                </div>
+                  <span className="block w-full px-4 py-2 bg-white text-blue-600 rounded-lg font-semibold hover:bg-blue-50 transition-colors text-center">
+                    Contact Us
+                  </span>
+                </Link>
                 <div className="p-6 bg-white/10 backdrop-blur-lg rounded-2xl border border-white/20">
                   <div className="text-4xl mb-3">📞</div>
                   <div className="text-xl font-bold mb-2">Phone Support</div>

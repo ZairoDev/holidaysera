@@ -70,4 +70,4 @@ const bookingsSchema = new mongoose.Schema(
 );
 
 export const Bookings =
-  mongoose.models.Bookings || mongoose.model("Bookings", bookingsSchema);
+  mongoose.models.Bookings1 || mongoose.model("Bookings1", bookingsSchema);

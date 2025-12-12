@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Link from "next/link";
 
 // Icon Components
 const DocumentIcon = () => (
@@ -333,13 +334,13 @@ export default function TermsPage() {
                 If you have any questions about these Terms of Service, please don't hesitate to contact us. We're here to help clarify any concerns you may have.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <button className="group relative px-8 py-4 bg-white text-slate-900 font-bold rounded-xl hover:bg-blue-50 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-1">
+                <Link href="/contact" className="group relative px-8 py-4 bg-white text-slate-900 font-bold rounded-xl hover:bg-blue-50 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-1 inline-block">
                   <span className="relative z-10">Contact Us</span>
                   <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-indigo-400 rounded-xl opacity-0 group-hover:opacity-10 transition-opacity"></div>
-                </button>
-                <button className="px-8 py-4 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-500 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-1">
+                </Link>
+                <Link href="/help-center" className="px-8 py-4 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-500 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-1 inline-block">
                   Help Center
-                </button>
+                </Link>
               </div>
             </div>
           </div>
