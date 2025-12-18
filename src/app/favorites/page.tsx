@@ -9,14 +9,18 @@ import Link from "next/link";
 
 import { trpc } from "@/trpc/client";
 import { Property } from "@/lib/type";
+import { useUserStore } from "@/lib/store";
 
 export default function FavoritesPage() {
+  const { user } = useUserStore();
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
 
   // 🔥 Fetch IDs of favorite properties
   const { data: favoriteIds, isLoading: favLoading } =
-    trpc.favorite.getMyFavorites.useQuery();
+    trpc.favorite.getMyFavorites.useQuery(undefined, {
+      enabled: !!user,
+    });
 
   // 🔥 tRPC caller for fetching property by ID
   const utils = trpc.useUtils();

@@ -195,9 +195,9 @@ export const useNotificationCenter = create<NotificationStore>()(
 /*******************
  * 🚀 SOCKET LISTENERS FOR NOTIFICATIONS
  ********************/
-export function useNotificationSocketListener() {
+export function useNotificationSocketListener(isAuthenticated: boolean = false) {
   const { addNotification, setNotifications } = useNotificationCenter();
-  const notificationsQuery = trpc.notifications.getNotifications.useQuery({}, { enabled: true });
+  const notificationsQuery = trpc.notifications.getNotifications.useQuery({}, { enabled: isAuthenticated });
   const listenersSetup = useRef(false);
   const handlersRef = useRef<{
     bookingRequest: (data: BookingRequestPayload) => void;

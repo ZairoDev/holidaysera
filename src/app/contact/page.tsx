@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
+import { trpc } from "@/trpc/client";
 
 // Types
 interface ContactForm {
@@ -100,48 +101,39 @@ const ContactPage: React.FC = () => {
     return Object.keys(newErrors).length === 0;
   };
 
+  const sendMessageMutation = trpc.contact.sendMessage.useMutation({
+    onSuccess: () => {
+      toast.success("Message sent successfully! We'll get back to you soon.");
+      setIsSubmitted(true);
+
+      // Reset form after 3 seconds
+      setTimeout(() => {
+        setFormData({
+          name: "",
+          email: "",
+          phone: "",
+          subject: "",
+          category: "general",
+          message: "",
+        });
+        setIsSubmitted(false);
+      }, 3000);
+    },
+    onError: (error) => {
+      console.error("Contact form error:", error);
+      toast.error(error.message || "Failed to send message. Please try again.");
+    },
+    onSettled: () => {
+      setIsSubmitting(false);
+    },
+  });
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
 
     setIsSubmitting(true);
-
-    try {
-      const response = await fetch('/api/contact', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
-
-      const result = await response.json();
-
-      if (response.ok) {
-        toast.success("Message sent successfully! We'll get back to you soon.");
-        setIsSubmitted(true);
-
-        // Reset form after 3 seconds
-        setTimeout(() => {
-          setFormData({
-            name: "",
-            email: "",
-            phone: "",
-            subject: "",
-            category: "general",
-            message: "",
-          });
-          setIsSubmitted(false);
-        }, 3000);
-      } else {
-        toast.error(result.error || "Failed to send message. Please try again.");
-      }
-    } catch (error) {
-      console.error("Contact form error:", error);
-      toast.error("Something went wrong. Please try again later.");
-    } finally {
-      setIsSubmitting(false);
-    }
+    sendMessageMutation.mutate(formData);
   };
 
   const handleChange = (

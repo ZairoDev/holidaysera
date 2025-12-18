@@ -8,15 +8,18 @@ import { Heart, MapPin, Star, Users, Bath, Bed, Crown } from "lucide-react";
 import { trpc } from "@/trpc/client";
 import { Property } from "@/lib/type";
 import { toast } from "sonner";
+import { useUserStore } from "@/lib/store";
 
 interface PropertyCardProps {
   property: Property;
 }
 
 export function PropertyCard({ property }: PropertyCardProps) {
+  const { user } = useUserStore();
   const { data: favorites = [], refetch } =
     trpc.favorite.getMyFavorites.useQuery(undefined, {
       staleTime: 5 * 60 * 1000,
+      enabled: !!user,
     });
 
   const toggleMutation = trpc.favorite.toggle.useMutation({

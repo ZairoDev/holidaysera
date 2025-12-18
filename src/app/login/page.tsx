@@ -1,7 +1,7 @@
 "use client";
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   Home,
@@ -21,8 +21,10 @@ import { Separator } from "@/components/ui/separator";
 import { useUserStore } from "@/lib/store";
 import { trpc } from "@/trpc/client";
 
-export default function LoginPage() {
+function LoginContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectUrl = searchParams?.get("redirect") || "/";
   const { setUser } = useUserStore();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -39,7 +41,8 @@ export default function LoginPage() {
       // Store complete user data including role
       setUser(data.user);
 
-      router.push("/");
+      // Redirect to the specified URL or home
+      router.push(redirectUrl);
     },
     onError: (error) => {
       setError(error.message);
@@ -56,6 +59,8 @@ export default function LoginPage() {
       const res = await signInMutation.mutateAsync({ email, password, role });
       localStorage.setItem("token", res.token);
       setUser(res.user);
+      // Redirect after successful login
+      router.push(redirectUrl);
     } catch (err: any) {
       setError(err.message || "Failed to login");
     } finally {
@@ -227,5 +232,19 @@ export default function LoginPage() {
         </p>
       </motion.div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-600"></div>
+        </div>
+      }
+    >
+      <LoginContent />
+    </Suspense>
   );
 }

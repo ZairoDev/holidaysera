@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   Home,
@@ -21,8 +21,10 @@ import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { trpc } from "@/trpc/client";
 
-export default function SignupPage() {
+function SignupContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectUrl = searchParams?.get("redirect") || "";
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -36,7 +38,11 @@ export default function SignupPage() {
 
   const signupMutation = trpc.auth.signup.useMutation({
     onSuccess: () => {
-      router.push("/login?signup=success");
+      // Redirect to login with the original redirect URL preserved
+      const loginUrl = redirectUrl 
+        ? `/login?signup=success&redirect=${encodeURIComponent(redirectUrl)}`
+        : "/login?signup=success";
+      router.push(loginUrl);
     },
     onError: (error) => {
       setError(error.message);
@@ -320,7 +326,7 @@ export default function SignupPage() {
         <p className="mt-6 text-center text-sm text-gray-600">
           Already have an account?{" "}
           <Link
-            href="/login"
+            href={redirectUrl ? `/login?redirect=${encodeURIComponent(redirectUrl)}` : "/login"}
             className="font-medium text-sky-600 hover:text-sky-700"
           >
             Log in
@@ -328,5 +334,19 @@ export default function SignupPage() {
         </p>
       </motion.div>
     </div>
+  );
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-600"></div>
+        </div>
+      }
+    >
+      <SignupContent />
+    </Suspense>
   );
 }

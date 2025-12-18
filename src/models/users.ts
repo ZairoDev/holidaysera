@@ -69,6 +69,23 @@ const userSchema = new mongoose.Schema(
       type: [String],
       default: [],
     },
+    subscription: {
+      type: {
+        planId: String,
+        planName: String,
+        status: {
+          type: String,
+          enum: ["active", "expired", "cancelled", "none"],
+          default: "none",
+        },
+        startDate: Date,
+        endDate: Date,
+        subscriptionId: mongoose.Schema.Types.ObjectId,
+      },
+      default: {
+        status: "none",
+      },
+    },
     Payment: Object,
     forgotPasswordToken: String,
     forgotPasswordTokenExpiry: Date,

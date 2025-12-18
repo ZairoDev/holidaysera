@@ -27,7 +27,7 @@ export default function LayoutClient({ children }: LayoutClientProps) {
 
   // Call hooks unconditionally - they handle undefined values
   useSocket(user?.id, user?.role);
-  useNotificationSocketListener();
+  useNotificationSocketListener(!!user);
 
   return <>{children}</>;
 }

@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useUserStore } from "@/lib/store";
 
 // Types
 interface Feature {
@@ -341,6 +343,7 @@ const FeatureCard: React.FC<Feature> = ({ title, description, icon }) => (
 );
 
 const PlanCard: React.FC<SubscriptionPlan> = ({
+  id,
   name,
   price,
   duration,
@@ -350,12 +353,24 @@ const PlanCard: React.FC<SubscriptionPlan> = ({
   savings,
 }) => {
   const [isHovered, setIsHovered] = useState(false);
+  const { user } = useUserStore();
+  const router = useRouter();
 
   const colorClasses = {
     blue: "from-blue-500 to-blue-700",
     indigo: "from-indigo-500 to-indigo-700",
     purple: "from-purple-500 to-purple-700",
   }[color];
+
+  const handlePlanSelect = () => {
+    if (!user) {
+      // Redirect to login with return URL to checkout
+      router.push(`/login?redirect=/subscriptions/checkout?plan=${id}`);
+    } else {
+      // User is logged in, go directly to checkout
+      router.push(`/subscriptions/checkout?plan=${id}`);
+    }
+  };
 
   return (
     <div
@@ -420,7 +435,8 @@ const PlanCard: React.FC<SubscriptionPlan> = ({
 
       <div className="flex flex-col mt-auto space-y-3">
         <button
-          className={`w-full py-4 px-6 rounded-xl font-bold text-base transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 ${
+          onClick={handlePlanSelect}
+          className={`w-full py-4 px-6 rounded-xl font-bold text-base transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 text-center ${
             isPopular
               ? `bg-gradient-to-r ${colorClasses} text-white hover:scale-105`
               : "border-2 border-blue-600 bg-white text-blue-600 hover:bg-blue-600 hover:text-white"

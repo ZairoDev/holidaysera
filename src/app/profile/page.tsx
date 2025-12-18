@@ -13,6 +13,7 @@ import { ProfileInfoTab } from "@/components/profile/profile-info-tab";
 import { PropertiesTab } from "@/components/profile/properties-tab";
 import { BookingsTab } from "@/components/profile/booking-tab";
 import { SettingsTab } from "@/components/profile/settings-tab";
+import { SubscriptionCard } from "@/components/profile/subscription-card";
 
 // Import components
 
@@ -77,6 +78,13 @@ export default function ProfilePage() {
         >
           {/* Profile Header */}
           <ProfileHeader user={user} profileData={profileData} />
+
+          {/* Subscription Card - Only show for property owners */}
+          {isOwner && (
+            <SubscriptionCard 
+              subscription={profileData?.subscription || { status: "none" }} 
+            />
+          )}
 
           {/* Tabs Section */}
           <ProfileTabs
