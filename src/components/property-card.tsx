@@ -182,7 +182,7 @@ export function PropertyCard({ property }: PropertyCardProps) {
                 whileHover={{ scale: 1.08 }}
                 className="text-2xl font-bold text-sky-600 dark:text-sky-400"
               >
-                ${property.basePrice}
+                € {property.basePrice}
               </motion.p>
               <p className="text-sm text-gray-600 dark:text-gray-400">
                 / night

@@ -64,7 +64,7 @@ export function Navbar() {
         <Link href="/profile">
           <Button variant="outline" size="sm">
             <User className="mr-2 h-4 w-4" />
-            Profile
+            {user.fullName }
           </Button>
         </Link>
       );
@@ -96,7 +96,7 @@ export function Navbar() {
         >
           <Button variant="outline" className="w-full">
             <User className="mr-2 h-4 w-4" />
-            Profile
+            {user.fullName || "Profile"}
           </Button>
         </Link>
       );
@@ -133,7 +133,7 @@ export function Navbar() {
                 <Home className="h-6 w-6" />    
               </div>
               <span className="text-2xl font-bold text-gray-900">
-                Holiday<span className="text-sky-600">Sera</span>
+                Holidays<span className="text-sky-600">Era</span>
               </span>
             </motion.div>
           </Link>
@@ -304,7 +304,7 @@ export function Navbar() {
                         className="flex items-center gap-3 rounded-xl bg-gradient-to-r from-sky-50 to-sky-100 px-4 py-3 font-medium text-sky-700 shadow-sm transition-all hover:shadow-md dark:from-sky-900/30 dark:to-sky-800/30 dark:text-sky-300"
                       >
                         <User className="h-5 w-5" />
-                        <span>My Profile</span>
+                        <span>{user.fullName || "My Profile"}</span>
                       </Link>
                     </motion.div>
                   ) : (
@@ -341,7 +341,7 @@ export function Navbar() {
                 <div className="mt-auto pt-8">
                   <div className="rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 p-4 dark:from-blue-900/20 dark:to-indigo-900/20">
                     <p className="text-xs font-medium text-gray-700 dark:text-gray-300">
-                      💡 <span className="ml-2">Browse properties and book your next stay with HolidaySera</span>
+                      💡 <span className="ml-2">Browse properties and book your next stay with HolidaysEra</span>
                     </p>
                   </div>
                 </div>

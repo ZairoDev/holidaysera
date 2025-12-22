@@ -27,9 +27,9 @@ export function Footer() {
       title: 'Hosting',
       links: [
         { label: 'List Your Property', href: '/list-property' },
-        { label: 'Host Resources', href: '/host-resources' },
-        { label: 'Community', href: '/community' },
-        { label: 'Responsible Hosting', href: '/responsible' },
+        // { label: 'Host Resources', href: '/host-resources' },
+        // { label: 'Community', href: '/community' },
+        // { label: 'Responsible Hosting', href: '/responsible' },
       ],
     },
   ];
@@ -44,7 +44,7 @@ export function Footer() {
                 <Home className="h-6 w-6" />
               </div>
               <span className="text-2xl font-bold text-gray-900">
-                Holiday<span className="text-sky-600">Sera</span>
+                Holidays<span className="text-sky-600">Era</span>
               </span>
             </Link>
             <p className="mt-4 text-sm text-gray-600">
@@ -109,7 +109,7 @@ export function Footer() {
         <div className="mt-8 border-t pt-8">
           <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
             <p className="text-sm text-gray-600">
-              © {new Date().getFullYear()} HolidaySera. All rights reserved.
+              © {new Date().getFullYear()} HolidaysEra. All rights reserved.
             </p>
             <div className="flex gap-6 text-sm text-gray-600">
               <Link href="/privacy" className="hover:text-sky-600">

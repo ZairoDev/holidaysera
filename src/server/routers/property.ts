@@ -133,7 +133,7 @@ export const propertyRouter = router({
       )
         .sort({ _id: -1 })
         .lean()
-        .limit(10);
+        .limit(12);
 
       console.log("Raw featured from DB:", featured.length, "properties");
 

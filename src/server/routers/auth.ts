@@ -37,7 +37,7 @@ export const authRouter = router({
           });
         }
         const hashedPassword = await bcrypt.hash(input.password, 10);
-        const user = await Travellers.create({
+        const user = await Users.create({
           name: input.fullName,
           email: input.email,
           phone: input.phoneNumber,

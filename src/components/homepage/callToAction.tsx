@@ -18,7 +18,7 @@ export function CallToAction() {
             Ready to Start Your Adventure?
           </h2>
           <p className="mb-8 text-xl opacity-90">
-            Join thousands of travelers who trust HolidaySera
+            Join thousands of travelers who trust HolidaysEra
           </p>
           <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Link href="/properties">

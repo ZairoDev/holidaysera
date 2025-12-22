@@ -106,7 +106,7 @@ function SignupContent() {
           <h1 className="mb-2 text-3xl font-bold text-gray-900">
             Create Account
           </h1>
-          <p className="text-gray-600">Join HolidaySera and start exploring</p>
+          <p className="text-gray-600">Join HolidaysEra and start exploring</p>
         </div>
 
         <Card className="p-8">
@@ -236,7 +236,7 @@ function SignupContent() {
             {/* Role Selection */}
             <div>
               <label className="mb-2 block text-sm font-medium text-gray-700">
-                Role
+                I am a
               </label>
               <div className="flex items-center gap-6">
                 <label className="flex items-center gap-2">
