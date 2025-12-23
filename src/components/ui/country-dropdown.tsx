@@ -40,13 +40,15 @@ export interface Country {
 }
 
 // Dropdown props
-interface CountryDropdownProps {
+interface CountryDropdownProps
+  extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "onChange"> {
   options?: Country[];
   onChange?: (country: Country) => void;
   defaultValue?: string;
   disabled?: boolean;
   placeholder?: string;
   slim?: boolean;
+  showCallingCode?: boolean;
 }
 
 const CountryDropdownComponent = (
@@ -60,6 +62,8 @@ const CountryDropdownComponent = (
     disabled = false,
     placeholder = "Select a country",
     slim = false,
+    showCallingCode = false,
+    className,
     ...props
   }: CountryDropdownProps,
   ref: React.ForwardedRef<HTMLButtonElement>
@@ -98,16 +102,17 @@ const CountryDropdownComponent = (
 
   const triggerClasses = cn(
     "flex h-9 w-full items-center justify-between whitespace-nowrap rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1",
-    slim === true && "w-20"
+    slim === true && "w-20",
+    className
   );
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger
         ref={ref}
-        className={triggerClasses}
         disabled={disabled}
         {...props}
+        className={triggerClasses}
       >
         {selectedCountry ? (
           <div className="flex items-center flex-grow w-0 gap-2 overflow-hidden">
@@ -119,7 +124,9 @@ const CountryDropdownComponent = (
             </div>
             {slim === false && (
               <span className="overflow-hidden text-ellipsis whitespace-nowrap">
-                {selectedCountry.name}
+                {showCallingCode 
+                  ? selectedCountry.countryCallingCodes[0] 
+                  : selectedCountry.name}
               </span>
             )}
           </div>

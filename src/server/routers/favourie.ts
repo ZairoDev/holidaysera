@@ -9,7 +9,7 @@ export const favoriteRouter = router({
     .mutation(async ({ ctx, input }) => {
       const userId = ctx.user.id; // use _id since we selected it
 
-      const user = await Users.findById(userId);
+      const user = await Users.findById(userId).select("favouriteProperties").lean() as { favouriteProperties?: string[] } | null;
       if (!user) {
         throw new TRPCError({
           code: "UNAUTHORIZED",
@@ -22,11 +22,19 @@ export const favoriteRouter = router({
 
       const exists = favorites.some((id: any) => id.toString() === propertyId);
 
-      user.favouriteProperties = exists
-        ? favorites.filter((id: any) => id.toString() !== propertyId)
-        : [...favorites, propertyId];
+      // Use updateOne to avoid triggering full document validation
+      if (exists) {
+        await Users.updateOne(
+          { _id: userId },
+          { $pull: { favouriteProperties: propertyId } }
+        );
+      } else {
+        await Users.updateOne(
+          { _id: userId },
+          { $addToSet: { favouriteProperties: propertyId } }
+        );
+      }
 
-      await user.save();
       return { status: exists ? "removed" : "added" };
     }),
 

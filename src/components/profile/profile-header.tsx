@@ -19,7 +19,7 @@ interface ProfileHeaderProps {
 }
 
 export function ProfileHeader({ user, profileData }: ProfileHeaderProps) {
-  const isOwner = user.role === "owner";
+  const isOwner = user.role === "Owner";
   const displayName = profileData?.name || user.fullName || "User";
   const initials = displayName
     .split(" ")

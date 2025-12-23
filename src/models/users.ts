@@ -2,13 +2,23 @@ import mongoose from "mongoose";
 
 const userSchema = new mongoose.Schema(
   {
+    firstName: {
+      type: String,
+      required: [true, "Please enter your first name"],
+    },
+    lastName: {
+      type: String,
+      required: [true, "Please enter your last name"],
+    },
+    // Virtual getter for full name (backwards compatibility)
     name: {
       type: String,
-      required: [true, "PLease Enter your name"],
+      required: false,
     },
     email: {
       type: String,
-      required: [true, "PLease Enter  your email"],
+      required: [true, "Please enter your email"],
+      unique: true,
     },
     profilePic: {
       type: String,
@@ -31,9 +41,31 @@ const userSchema = new mongoose.Schema(
       type: Object,
       default: "",
     },
+    countryCode: {
+      type: String,
+      required: false, // Optional for OAuth users
+      default: "+91",
+    },
     phone: {
       type: String,
-      required: true,
+      required: false, // Optional for OAuth users
+      default: "",
+    },
+    // ============================================
+    // OAuth Authentication Fields
+    // ============================================
+    authProvider: {
+      type: String,
+      enum: ["local", "google", "facebook"],
+      default: "local",
+    },
+    providerId: {
+      type: String, // Unique ID from OAuth provider (e.g., Google's sub)
+      default: null,
+    },
+    isProfileComplete: {
+      type: Boolean,
+      default: true, // false for new OAuth users who need to select role
     },
     myRequests: {
       type: [String],
@@ -54,7 +86,8 @@ const userSchema = new mongoose.Schema(
     },
     password: {
       type: String,
-      required: [true, "Password is required "],
+      required: false, // Optional for OAuth users
+      default: null,
     },
     isVerified: {
       type: Boolean,
@@ -63,7 +96,8 @@ const userSchema = new mongoose.Schema(
     role: {
       type: String,
       enum: ["Owner", "Traveller"],
-      default: "Owner", // Optional: you can set a default role if needed
+      required: false, // Set after OAuth signup via complete-profile
+      default: null,
     },
     favouriteProperties: {
       type: [String],

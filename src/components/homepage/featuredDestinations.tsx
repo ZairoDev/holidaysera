@@ -48,7 +48,7 @@ export function FeaturedProperties({ properties }: FeaturedPropertiesProps) {
         <div className="flex justify-center mt-2">
           <Link href="/properties" className="p-2 border rounded-md bg-blue-500 shadow-md text-white">
             <span className="flex items-center ">
-              Show All <ArrowUpRight size={38}/>
+            View More Properties <ArrowUpRight size={38}/>
             </span>
           </Link>
         </div>

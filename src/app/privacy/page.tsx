@@ -181,7 +181,7 @@ const additionalPolicies = [
     title: "Disclaimers",
     icon: <DocumentIcon />,
     content: [
-      "Holidaysera.com is a listing service and the main purpose of the business is to advertise rental properties through our website. The website is not responsible for any of the incorrect information listed on this website.",
+      "holidaysera.com is a listing service and the main purpose of the business is to advertise rental properties through our website. The website is not responsible for any of the incorrect information listed on this website.",
       "Renters are responsible for verifying complete information about the property before getting into any kind of contract with homeowners, property managers or agencies. Owners should also do their research about renters before qualifying them.",
       "As we are not involved in any transactions, we have no control over the quality, safety or legality of the items advertised. We advise owners and renters to get complete information before getting into any agreement or payments.",
       "Holidays Era is not a licensed real estate broker in any state and is not acting as a property management agent. The sole purpose of this website is advertising."

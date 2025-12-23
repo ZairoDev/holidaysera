@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, Suspense, useCallback } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
@@ -20,21 +20,34 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { trpc } from "@/trpc/client";
+import { CountryDropdown, type Country } from "@/components/ui/country-dropdown";
+import { countries } from "country-data-list";
+
+// Get India as the default country
+const INDIA_DEFAULT = countries.all.find(
+  (country: Country) => country.alpha3 === "IND"
+) as Country;
 
 function SignupContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectUrl = searchParams?.get("redirect") || "";
-  const [fullName, setFullName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [selectedCountry, setSelectedCountry] = useState<Country | null>(INDIA_DEFAULT);
   const [phoneNumber, setPhoneNumber] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [role, setRole] = useState<"Owner" | "Traveller">("Traveller");
+  const [role, setRole] = useState<"Owner" | "Traveller" | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const handleCountryChange = useCallback((country: Country) => {
+    setSelectedCountry(country);
+  }, []);
 
   const signupMutation = trpc.auth.signup.useMutation({
     onSuccess: () => {
@@ -54,6 +67,16 @@ function SignupContent() {
     e.preventDefault();
     setError("");
 
+    if (!firstName.trim()) {
+      setError("Please provide your first name");
+      return;
+    }
+
+    if (!lastName.trim()) {
+      setError("Please provide your last name");
+      return;
+    }
+
     if (password !== confirmPassword) {
       setError("Passwords do not match");
       return;
@@ -64,8 +87,8 @@ function SignupContent() {
       return;
     }
 
-    if (!fullName.trim()) {
-      setError("Please provide your full name");
+    if (!selectedCountry) {
+      setError("Please select your country code");
       return;
     }
 
@@ -74,13 +97,22 @@ function SignupContent() {
       return;
     }
 
+    if (!role) {
+      setError("Please select whether you are an Owner or Traveller");
+      return;
+    }
+
     setLoading(true);
+
+    const countryCode = selectedCountry.countryCallingCodes[0] || "+1";
 
     try {
       await signupMutation.mutateAsync({
-        fullName,
+        firstName,
+        lastName,
         email,
         password,
+        countryCode,
         phoneNumber,
         confirmPassword,
         role,
@@ -121,21 +153,39 @@ function SignupContent() {
           )}
 
           <form onSubmit={handleSignup} className="space-y-4">
-            {/* Full Name */}
-            <div>
-              <label className="mb-2 block text-sm font-medium text-gray-700">
-                Full Name
-              </label>
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
-                <Input
-                  type="text"
-                  placeholder="John Doe"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  className="pl-10"
-                  required
-                />
+            {/* Name Fields - First and Last */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="mb-2 block text-sm font-medium text-gray-700">
+                  First Name
+                </label>
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
+                  <Input
+                    type="text"
+                    placeholder="John"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    className="pl-10"
+                    required
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="mb-2 block text-sm font-medium text-gray-700">
+                  Last Name
+                </label>
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
+                  <Input
+                    type="text"
+                    placeholder="Doe"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    className="pl-10"
+                    required
+                  />
+                </div>
               </div>
             </div>
 
@@ -157,22 +207,34 @@ function SignupContent() {
               </div>
             </div>
 
-            {/* Phone Number */}
+            {/* Phone Number with Country Code */}
             <div>
               <label className="mb-2 block text-sm font-medium text-gray-700">
                 Phone Number
               </label>
-              <div className="relative">
-                <Phone className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
-                <Input
-                  type="tel"
-                  placeholder="+1 234 567 8901"
-                  value={phoneNumber}
-                  onChange={(e) => setPhoneNumber(e.target.value)}
-                  className="pl-10"
-                  required
-                />
+              <div className="flex gap-2">
+                <div className="w-[100px] ">
+                  <CountryDropdown
+                    onChange={handleCountryChange}
+                    defaultValue="IND"
+                    placeholder="Code"
+                    showCallingCode
+                    className="h-10"
+                  />
+                </div>
+                <div className="relative flex-1">
+                  <Phone className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
+                  <Input
+                    type="tel"
+                    placeholder="234 567 8901"
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
+                    className="pl-10"
+                    required
+                  />
+                </div>
               </div>
+             
             </div>
 
             {/* Password */}
@@ -236,25 +298,25 @@ function SignupContent() {
             {/* Role Selection */}
             <div>
               <label className="mb-2 block text-sm font-medium text-gray-700">
-                I am a
+                I am a <span className="text-red-500">*</span>
               </label>
               <div className="flex items-center gap-6">
-                <label className="flex items-center gap-2">
+                <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="radio"
                     name="role"
-                    value="owner"
+                    value="Owner"
                     checked={role === "Owner"}
                     onChange={() => setRole("Owner")}
                     className="text-sky-600 focus:ring-sky-500"
                   />
                   <span className="text-gray-700">Owner</span>
                 </label>
-                <label className="flex items-center gap-2">
+                <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="radio"
                     name="role"
-                    value="traveller"
+                    value="Traveller"
                     checked={role === "Traveller"}
                     onChange={() => setRole("Traveller")}
                     className="text-sky-600 focus:ring-sky-500"
@@ -312,11 +374,27 @@ function SignupContent() {
 
           {/* Social Buttons */}
           <div className="grid gap-3 sm:grid-cols-2">
-            <Button variant="outline" className="w-full">
+            <Button
+              variant="outline"
+              className="w-full"
+              type="button"
+              onClick={() => {
+                // Redirect to Google OAuth with current redirect URL and role
+                const params = new URLSearchParams();
+                if (redirectUrl) {
+                  params.set("redirect", redirectUrl);
+                }
+                if (role) {
+                  params.set("role", role);
+                }
+                const queryString = params.toString();
+                window.location.href = `/api/auth/google${queryString ? `?${queryString}` : ""}`;
+              }}
+            >
               <Chrome className="mr-2 h-5 w-5" />
               Google
             </Button>
-            <Button variant="outline" className="w-full">
+            <Button variant="outline" className="w-full" disabled>
               <Facebook className="mr-2 h-5 w-5" />
               Facebook
             </Button>

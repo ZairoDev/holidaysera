@@ -228,7 +228,7 @@ function BookingConfirmPageContent() {
           </div>
 
           <div className="mt-8 text-center text-sm text-gray-600">
-            <p>Need help? Contact us at support@HolidaySera.com</p>
+            <p>Need help? Contact us at support@HolidaysEra.com</p>
             <p className="mt-1">or call +1 (555) 123-4567</p>
           </div>
         </motion.div>

@@ -21,17 +21,38 @@ import { Separator } from "@/components/ui/separator";
 import { useUserStore } from "@/lib/store";
 import { trpc } from "@/trpc/client";
 
-function LoginContent() {
+// Map OAuth error codes to user-friendly messages
+const OAUTH_ERROR_MESSAGES: Record<string, string> = {
+  oauth_config_error: "OAuth is not configured. Please contact support.",
+  no_code: "Authentication failed. Please try again.",
+  token_exchange_failed: "Failed to authenticate with Google. Please try again.",
+  user_info_failed: "Could not retrieve your profile. Please try again.",
+  oauth_callback_failed: "Something went wrong. Please try again.",
+  access_denied: "You cancelled the sign-in process.",
+  no_token: "Session expired. Please sign in again.",
+};
+
+interface LoginFormProps {
+  onSuccess?: () => void;
+  redirectUrl?: string;
+  initialError?: string;
+  isModal?: boolean;
+}
+
+function LoginForm({ 
+  onSuccess, 
+  redirectUrl: propRedirectUrl = "/", 
+  initialError,
+  isModal = false 
+}: LoginFormProps) {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const redirectUrl = searchParams?.get("redirect") || "/";
   const { setUser } = useUserStore();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState<"traveller" | "owner">("traveller");
+  const [role, setRole] = useState<"Traveller" | "Owner" | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState(initialError || "");
 
   const signInMutation = trpc.auth.login.useMutation({
     onSuccess: (data) => {
@@ -41,8 +62,12 @@ function LoginContent() {
       // Store complete user data including role
       setUser(data.user);
 
-      // Redirect to the specified URL or home
-      router.push(redirectUrl);
+      // If modal mode, call onSuccess callback, otherwise redirect
+      if (isModal && onSuccess) {
+        onSuccess();
+      } else {
+        router.push(propRedirectUrl);
+      }
     },
     onError: (error) => {
       setError(error.message);
@@ -53,14 +78,24 @@ function LoginContent() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+
+    if (!role) {
+      setError("Please select whether you are a Traveller or Owner");
+      return;
+    }
+
     setLoading(true);
 
     try {
       const res = await signInMutation.mutateAsync({ email, password, role });
       localStorage.setItem("token", res.token);
       setUser(res.user);
-      // Redirect after successful login
-      router.push(redirectUrl);
+      // If modal mode, call onSuccess callback, otherwise redirect
+      if (isModal && onSuccess) {
+        onSuccess();
+      } else {
+        router.push(propRedirectUrl);
+      }
     } catch (err: any) {
       setError(err.message || "Failed to login");
     } finally {
@@ -68,26 +103,8 @@ function LoginContent() {
     }
   };
 
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-sky-50 to-blue-100 px-4 py-12">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-md"
-      >
-        <div className="mb-8 text-center">
-          <Link href="/" className="inline-flex items-center gap-2 mb-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br from-sky-500 to-sky-600 text-white shadow-lg">
-              <Home className="h-7 w-7" />
-            </div>
-          </Link>
-          <h1 className="mb-2 text-3xl font-bold text-gray-900">
-            Welcome Back
-          </h1>
-          <p className="text-gray-600">Log in to your HolidaySera account</p>
-        </div>
-
-        <Card className="p-8">
+  const formContent = (
+    <Card className={isModal ? "p-6" : "p-8"}>
           {error && (
             <motion.div
               initial={{ opacity: 0, y: -10 }}
@@ -102,14 +119,14 @@ function LoginContent() {
             {/* Role Selection */}
             <div>
               <label className="mb-3 block text-sm font-medium text-gray-700">
-                I am a
+                I am a <span className="text-red-500">*</span>
               </label>
               <div className="grid grid-cols-2 gap-3">
                 <button
                   type="button"
-                  onClick={() => setRole("traveller")}
+                  onClick={() => setRole("Traveller")}
                   className={`flex flex-col items-center gap-2 rounded-lg border-2 p-4 transition-all ${
-                    role === "traveller"
+                    role === "Traveller"
                       ? "border-sky-600 bg-sky-50 text-sky-700"
                       : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"
                   }`}
@@ -119,9 +136,9 @@ function LoginContent() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setRole("owner")}
+                  onClick={() => setRole("Owner")}
                   className={`flex flex-col items-center gap-2 rounded-lg border-2 p-4 transition-all ${
-                    role === "owner"
+                    role === "Owner"
                       ? "border-sky-600 bg-sky-50 text-sky-700"
                       : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"
                   }`}
@@ -210,16 +227,58 @@ function LoginContent() {
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
-            <Button variant="outline" className="w-full">
+            <Button
+              variant="outline"
+              className="w-full"
+              type="button"
+              onClick={() => {
+                // Redirect to Google OAuth with current redirect URL
+                const params = new URLSearchParams();
+                if (propRedirectUrl && propRedirectUrl !== "/") {
+                  params.set("redirect", propRedirectUrl);
+                }
+                if (role) {
+                  params.set("role", role);
+                }
+                const queryString = params.toString();
+                window.location.href = `/api/auth/google${queryString ? `?${queryString}` : ""}`;
+              }}
+            >
               <Chrome className="mr-2 h-5 w-5" />
               Google
             </Button>
-            <Button variant="outline" className="w-full">
+            <Button variant="outline" className="w-full" disabled>
               <Facebook className="mr-2 h-5 w-5" />
               Facebook
             </Button>
           </div>
         </Card>
+  );
+
+  if (isModal) {
+    return formContent;
+  }
+
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-sky-50 to-blue-100 px-4 py-12">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="w-full max-w-md"
+      >
+        <div className="mb-8 text-center">
+          <Link href="/" className="inline-flex items-center gap-2 mb-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br from-sky-500 to-sky-600 text-white shadow-lg">
+              <Home className="h-7 w-7" />
+            </div>
+          </Link>
+          <h1 className="mb-2 text-3xl font-bold text-gray-900">
+            Welcome Back
+          </h1>
+          <p className="text-gray-600">Log in to your HolidaysEra account</p>
+        </div>
+
+        {formContent}
 
         <p className="mt-6 text-center text-sm text-gray-600">
           Don't have an account?{" "}
@@ -235,6 +294,25 @@ function LoginContent() {
   );
 }
 
+// Export LoginForm for use in modals (doesn't require Suspense)
+export function LoginContent({ 
+  onSuccess, 
+  redirectUrl, 
+  initialError,
+  isModal = false 
+}: LoginFormProps) {
+  return <LoginForm onSuccess={onSuccess} redirectUrl={redirectUrl} initialError={initialError} isModal={isModal} />;
+}
+
+function LoginPageContent() {
+  const searchParams = useSearchParams();
+  const redirectUrl = searchParams?.get("redirect") || "/";
+  const oauthError = searchParams?.get("error");
+  const initialError = oauthError ? OAUTH_ERROR_MESSAGES[oauthError] || "Authentication failed" : "";
+  
+  return <LoginForm redirectUrl={redirectUrl} initialError={initialError} />;
+}
+
 export default function LoginPage() {
   return (
     <Suspense
@@ -244,7 +322,7 @@ export default function LoginPage() {
         </div>
       }
     >
-      <LoginContent />
+      <LoginPageContent />
     </Suspense>
   );
 }

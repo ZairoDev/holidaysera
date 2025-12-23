@@ -147,7 +147,7 @@ function BookingPaymentContent() {
         key: orderResp.key,
         amount: orderResp.amount,
         currency: orderResp.currency,
-        name: "Holidaysera",
+        name: "HolidaysEra",
         description: `Payment for booking ${bookingId}`,
         order_id: orderResp.orderId,
         // Additional Razorpay options
@@ -280,7 +280,7 @@ function BookingPaymentContent() {
           <div className="mt-4 bg-blue-50 p-4 rounded">
             <p className="text-sm text-blue-700">
               💡 Only the service charge (12% of total price) will be deducted. This goes
-              to Holidaysera to maintain the platform.
+              to HolidaysEra to maintain the platform.
             </p>
           </div>
         </div>

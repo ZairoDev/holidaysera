@@ -139,7 +139,7 @@ const requirements = [
 const ListPropertyPage: React.FC = () => {
   const router = useRouter();
   const [isAuthenticated, setIsAuthenticated] = useState(false); // This would come from your auth system
-  const [userRole, setUserRole] = useState<string | null>(null); // "owner" or "traveller"
+  const [userRole, setUserRole] = useState<string | null>(null); // "Owner" or "Traveller"
   const [showLoginModal, setShowLoginModal] = useState(false);
 
   const handleListPropertyClick = () => {
@@ -150,7 +150,7 @@ const ListPropertyPage: React.FC = () => {
     }
 
     // Check if user is an owner
-    if (userRole !== "owner") {
+    if (userRole !== "Owner") {
       alert("Please log in with an Owner account to list properties");
       return;
     }

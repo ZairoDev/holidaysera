@@ -28,7 +28,7 @@ export default function ProfilePage() {
   // Set initial tab based on user role
   useEffect(() => {
     if (user) {
-      setActiveTab(user.role === "owner" ? "properties" : "profile");
+      setActiveTab(user.role === "Owner" ? "properties" : "profile");
     }
   }, [user]);
 
@@ -65,7 +65,7 @@ export default function ProfilePage() {
     );
   }
 
-  const isOwner = user.role === "owner";
+  const isOwner = user.role === "Owner";
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-sky-50/50 py-6 sm:py-12">

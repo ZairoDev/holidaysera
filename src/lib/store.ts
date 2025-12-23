@@ -57,7 +57,7 @@ interface User {
   id: string;
   fullName: string;
   email: string;
-  role: "traveller" | "owner";
+  role: "Traveller" | "Owner";
   createdAt: Date;
 }
 
