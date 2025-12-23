@@ -3,6 +3,9 @@ import { connectDb } from "@/server/db";
 import { signToken } from "@/server/utils/jwt";
 import Users from "@/models/users";
 
+// Force dynamic rendering - this route uses searchParams
+export const dynamic = "force-dynamic";
+
 /**
  * Google OAuth Callback Route
  * 

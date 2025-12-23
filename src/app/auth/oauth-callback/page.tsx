@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { Suspense, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useUserStore } from "@/lib/store";
 import { trpc } from "@/trpc/client";
@@ -11,7 +11,8 @@ import { trpc } from "@/trpc/client";
  * This page receives the JWT token from OAuth callback,
  * stores it, fetches user data, and redirects to the intended destination.
  */
-export default function OAuthCallbackPage() {
+
+function OAuthCallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { setUser } = useUserStore();
@@ -57,6 +58,23 @@ export default function OAuthCallbackPage() {
         <p className="text-gray-600">Completing login...</p>
       </div>
     </div>
+  );
+}
+
+export default function OAuthCallbackPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-sky-50 to-blue-100">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading...</p>
+          </div>
+        </div>
+      }
+    >
+      <OAuthCallbackContent />
+    </Suspense>
   );
 }
 

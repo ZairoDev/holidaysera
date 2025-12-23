@@ -13,6 +13,9 @@ interface LayoutClientProps {
 export default function LayoutClient({ children }: LayoutClientProps) {
   const user = useUserStore((state) => state.user);
 
+  const socketRole =
+    user?.role === "Owner" ? "owner" : user?.role === "Traveller" ? "traveller" : undefined;
+
   useEffect(() => {
     if (user?.id) {
       if (!socket.connected) {
@@ -26,7 +29,7 @@ export default function LayoutClient({ children }: LayoutClientProps) {
   }, [user?.id]);
 
   // Call hooks unconditionally - they handle undefined values
-  useSocket(user?.id, user?.role);
+  useSocket(user?.id, socketRole);
   useNotificationSocketListener(!!user);
 
   return <>{children}</>;

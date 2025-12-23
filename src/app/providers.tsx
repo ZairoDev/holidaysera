@@ -15,7 +15,9 @@ function SocketManager({ children }: { children: React.ReactNode }) {
   const user = useUserStore((state) => state.user);
 
   // Initialize socket and join appropriate room
-  useSocket(user?.id, user?.role);
+  const socketRole =
+    user?.role === "Owner" ? "owner" : user?.role === "Traveller" ? "traveller" : undefined;
+  useSocket(user?.id, socketRole);
   
   // Set up notification listeners (only when authenticated)
   useNotificationSocketListener(!!user);

@@ -10,7 +10,7 @@ import { Property } from "@/lib/type";
 import { toast } from "sonner";
 import { useUserStore } from "@/lib/store";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { LoginContent } from "@/app/login/page";
+import { LoginContent } from "@/components/auth/login-form";
 
 interface PropertyCardProps {
   property: Property;

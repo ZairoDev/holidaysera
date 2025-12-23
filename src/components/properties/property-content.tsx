@@ -38,7 +38,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { LoginContent } from "@/app/login/page";
+import { LoginContent } from "@/components/auth/login-form";
 import { useUserStore } from "@/lib/store";
 
 interface PropertyContentProps {
