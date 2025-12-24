@@ -16,13 +16,14 @@ import { NextRequest, NextResponse } from "next/server";
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI;
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL;
 
 export async function GET(request: NextRequest) {
   // Validate environment variables
   if (!GOOGLE_CLIENT_ID || !GOOGLE_REDIRECT_URI) {
     console.error("Missing Google OAuth environment variables");
     return NextResponse.redirect(
-      new URL("/login?error=oauth_config_error", request.url)
+      new URL("/login?error=oauth_config_error", APP_URL)
     );
   }
 

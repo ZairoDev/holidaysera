@@ -23,6 +23,7 @@ export const dynamic = "force-dynamic";
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 const GOOGLE_REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI;
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL;
 
 interface GoogleTokenResponse {
   access_token: string;
@@ -49,7 +50,7 @@ export async function GET(request: NextRequest) {
     if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET || !GOOGLE_REDIRECT_URI) {
       console.error("Missing Google OAuth environment variables");
       return NextResponse.redirect(
-        new URL("/login?error=oauth_config_error", request.url)
+        new URL("/login?error=oauth_config_error", APP_URL)
       );
     }
 
@@ -62,13 +63,13 @@ export async function GET(request: NextRequest) {
     if (error) {
       console.error("Google OAuth error:", error);
       return NextResponse.redirect(
-        new URL(`/login?error=${error}`, request.url)
+        new URL(`/login?error=${error}`, APP_URL)
       );
     }
 
     if (!code) {
       return NextResponse.redirect(
-        new URL("/login?error=no_code", request.url)
+        new URL("/login?error=no_code", APP_URL)
       );
     }
 
@@ -101,7 +102,7 @@ export async function GET(request: NextRequest) {
       const errorData = await tokenResponse.text();
       console.error("Token exchange failed:", errorData);
       return NextResponse.redirect(
-        new URL("/login?error=token_exchange_failed", request.url)
+        new URL("/login?error=token_exchange_failed", APP_URL)
       );
     }
 
@@ -120,7 +121,7 @@ export async function GET(request: NextRequest) {
     if (!userInfoResponse.ok) {
       console.error("Failed to get user info");
       return NextResponse.redirect(
-        new URL("/login?error=user_info_failed", request.url)
+        new URL("/login?error=user_info_failed", APP_URL)
       );
     }
 
@@ -177,19 +178,19 @@ export async function GET(request: NextRequest) {
       role: user.role || "Traveller", // Default role for token, will be updated after profile completion
     });
 
-    // Determine redirect URL
+    // Determine redirect URL - use APP_URL to ensure correct port
     let redirectUrl: URL;
     
     if (isNewUser || !user.isProfileComplete || !user.role) {
       // New OAuth user needs to complete profile (select role)
-      redirectUrl = new URL("/auth/complete-profile", request.url);
+      redirectUrl = new URL("/auth/complete-profile", APP_URL);
       redirectUrl.searchParams.set("token", token);
       if (stateData.redirect && stateData.redirect !== "/") {
         redirectUrl.searchParams.set("redirect", stateData.redirect);
       }
     } else {
       // Existing user with complete profile - redirect to intended destination
-      redirectUrl = new URL("/auth/oauth-callback", request.url);
+      redirectUrl = new URL("/auth/oauth-callback", APP_URL);
       redirectUrl.searchParams.set("token", token);
       redirectUrl.searchParams.set("redirect", stateData.redirect || "/");
     }
@@ -198,7 +199,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error("OAuth callback error:", error);
     return NextResponse.redirect(
-      new URL("/login?error=oauth_callback_failed", request.url)
+      new URL("/login?error=oauth_callback_failed", APP_URL)
     );
   }
 }
