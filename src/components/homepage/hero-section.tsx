@@ -7,7 +7,7 @@ import { SearchBar } from "../search-bar";
 export function HeroSection() {
   const stats = [
     { label: "Average Rating", value: "4.9/5", icon: true },
-    { label: "Properties", value: "10,000+" },
+    { label: "Properties", value: "4,000+" },
     { label: "Happy Guests", value: "50,000+" },
   ];
 

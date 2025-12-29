@@ -152,8 +152,8 @@ export default function PropertiesPage() {
           className="mb-2"
         />
         <div className="flex items-center justify-between text-sm text-gray-600">
-          <span>${filters.priceRange[0]}</span>
-          <span>${filters.priceRange[1]}+</span>
+          <span>€{filters.priceRange[0]}</span>
+          <span>€{filters.priceRange[1]}+</span>
         </div>
       </div>
 
@@ -282,7 +282,9 @@ export default function PropertiesPage() {
             {location ? `Properties in ${location}` : "All Properties"}
           </h1>
           <p className="text-gray-600">
-            {totalCount} {totalCount === 1 ? "property" : "properties"} found
+            {!location || totalCount === 0
+              ? "4000+ properties found"
+              : `${totalCount} ${totalCount === 1 ? "property" : "properties"} found`}
           </p>
         </div>
 

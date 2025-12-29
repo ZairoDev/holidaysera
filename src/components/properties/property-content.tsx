@@ -586,14 +586,14 @@ export function PropertyContent({
             <div className="mb-6">
               <div className="flex items-baseline gap-2">
                 <span className="text-3xl font-bold text-sky-600">
-                  ${property.basePrice}
+                €{property.basePrice}
                 </span>
                 <span className="text-gray-600">/ night</span>
               </div>
               {property.weekendPrice &&
                 property.weekendPrice !== property.basePrice && (
                   <p className="mt-1 text-sm text-gray-600">
-                    Weekend: ${property.weekendPrice}/night
+                    Weekend: €{property.weekendPrice}/night
                   </p>
                 )}
             </div>
@@ -644,7 +644,7 @@ export function PropertyContent({
               <div className="my-6 rounded-lg bg-gray-50 p-4">
                 <div className="mb-2 flex justify-between text-sm">
                   <span className="text-gray-600">
-                    ${property.basePrice} x{" "}
+                  €{property.basePrice} x{" "}
                     {differenceInDays(new Date(checkOut), new Date(checkIn))}{" "}
                     night
                     {differenceInDays(new Date(checkOut), new Date(checkIn)) !==
@@ -652,7 +652,7 @@ export function PropertyContent({
                       ? "s"
                       : ""}
                   </span>
-                  <span className="font-medium">${calculateTotal()}</span>
+                  <span className="font-medium">€{calculateTotal()}</span>
                 </div>
                 {property.weeklyDiscount &&
                   differenceInDays(new Date(checkOut), new Date(checkIn)) >=
@@ -660,7 +660,7 @@ export function PropertyContent({
                     <div className="mb-2 flex justify-between text-sm text-green-600">
                       <span>Weekly discount ({property.weeklyDiscount}%)</span>
                       <span>
-                        -$
+                        -€
                         {(
                           (calculateTotal() * property.weeklyDiscount) /
                           100
@@ -672,7 +672,7 @@ export function PropertyContent({
                 <div className="flex justify-between font-semibold">
                   <span>Total</span>
                   <span className="text-sky-600">
-                    $
+                  €
                     {property.weeklyDiscount &&
                     differenceInDays(new Date(checkOut), new Date(checkIn)) >= 7
                       ? (

@@ -2,6 +2,8 @@
 
 import Image from "next/image";
 import { motion } from "framer-motion";
+import { useRouter } from "next/navigation";
+import { useSearchStore } from "@/lib/store";
 
 interface Destination {
   name: string;
@@ -11,24 +13,24 @@ interface Destination {
 
 const destinations: Destination[] = [
   {
-    name: "Bali, Indonesia",
-    properties: 234,
-    image: "https://images.pexels.com/photos/2166559/pexels-photo-2166559.jpeg",
+    name: "Greece",
+    properties: 985,
+    image: "https://images.pexels.com/photos/4388164/pexels-photo-4388164.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750",
   },
   {
-    name: "Santorini, Greece",
-    properties: 156,
-    image: "https://images.pexels.com/photos/2819284/pexels-photo-2819284.jpeg",
+    name: "Italy",
+    properties: 668,
+    image: "https://images.unsplash.com/photo-1534113414509-0eec2bfb493f?w=800&q=80",
+  },
+{
+    name: "Spain",
+    properties: 92,
+    image: "https://images.unsplash.com/photo-1539037116277-4db20889f2d4?w=800&q=80",
   },
   {
-    name: "Tulum, Mexico",
-    properties: 189,
-    image: "https://images.pexels.com/photos/3155726/pexels-photo-3155726.jpeg",
-  },
-  {
-    name: "Aspen, USA",
-    properties: 98,
-    image: "https://images.pexels.com/photos/1666021/pexels-photo-1666021.jpeg",
+    name: "Croatia",
+    properties: 51,
+    image: "https://images.pexels.com/photos/1388030/pexels-photo-1388030.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750",
   },
 ];
 
@@ -66,6 +68,14 @@ function DestinationCard({
   destination: Destination;
   index: number;
 }) {
+  const router = useRouter();
+  const { setLocation } = useSearchStore();
+
+  const handleClick = () => {
+    setLocation(destination.name);
+    router.push("/properties");
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -73,6 +83,7 @@ function DestinationCard({
       transition={{ delay: index * 0.1 }}
       viewport={{ once: true }}
       whileHover={{ y: -8 }}
+      onClick={handleClick}
       className="group relative h-80 cursor-pointer overflow-hidden rounded-xl"
     >
       <Image
