@@ -137,7 +137,7 @@ export default function PropertiesPage() {
       </div>
 
       <div>
-        <h4 className="mb-3 font-medium text-gray-900">Price Range</h4>
+        <h4 className="mb-8 font-medium text-gray-900">Price Range</h4>
         <Slider
           min={0}
           max={1000}
@@ -282,9 +282,11 @@ export default function PropertiesPage() {
             {location ? `Properties in ${location}` : "All Properties"}
           </h1>
           <p className="text-gray-600">
-            {!location || totalCount === 0
-              ? "4000+ properties found"
-              : `${totalCount} ${totalCount === 1 ? "property" : "properties"} found`}
+            {(() => {
+              const baseCount = !location ? 4000 : 1000;
+              const totalDisplayCount = baseCount + totalCount;
+              return `${totalDisplayCount}+ ${totalDisplayCount === 1 ? "property" : "properties"} found`;
+            })()}
           </p>
         </div>
 
