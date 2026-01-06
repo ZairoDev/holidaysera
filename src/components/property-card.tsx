@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import * as React from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Heart, MapPin, Star, Users, Bath, Bed, Crown } from "lucide-react";
+import { Heart, MapPin, Star, Users, Bath, Bed, Crown, ChevronLeft, ChevronRight } from "lucide-react";
 import { trpc } from "@/trpc/client";
 import { Property } from "@/lib/type";
 import { toast } from "sonner";
@@ -35,6 +36,8 @@ export function PropertyCard({ property }: PropertyCardProps) {
 
   const [imageIndex, setImageIndex] = useState(0);
   const [imageError, setImageError] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+  const [isManuallyNavigating, setIsManuallyNavigating] = useState(false);
 
   const favorite = favorites.includes(property._id);
 
@@ -74,6 +77,53 @@ export function PropertyCard({ property }: PropertyCardProps) {
       ? allImages[imageIndex]
       : "/placeholder.jpg";
 
+  // Auto-slide images on hover (only if not manually navigating)
+  React.useEffect(() => {
+    if (isHovered && allImages.length > 1 && !isManuallyNavigating) {
+      const interval = setInterval(() => {
+        setImageIndex((prev) => (prev + 1) % allImages.length);
+      }, 3000); // Change image every 3 seconds
+
+      return () => clearInterval(interval);
+    }
+  }, [isHovered, allImages.length, isManuallyNavigating]);
+
+  // Reset manual navigation flag after a delay
+  React.useEffect(() => {
+    if (isManuallyNavigating) {
+      const timer = setTimeout(() => {
+        setIsManuallyNavigating(false);
+      }, 5000); // Resume auto-slide after 5 seconds
+      return () => clearTimeout(timer);
+    }
+  }, [isManuallyNavigating]);
+
+  const goToNextImage = (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    setIsManuallyNavigating(true);
+    setImageIndex((prev) => (prev + 1) % allImages.length);
+  };
+
+  const goToPreviousImage = (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    setIsManuallyNavigating(true);
+    setImageIndex((prev) => (prev - 1 + allImages.length) % allImages.length);
+  };
+
+  const goToImage = (index: number, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsManuallyNavigating(true);
+    setImageIndex(index);
+    setImageError(false);
+  };
+
   const handleFavoriteClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -97,13 +147,18 @@ export function PropertyCard({ property }: PropertyCardProps) {
   return (
     <>
       <Link href={`/properties/${property._id}`}>
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          whileHover={{ y: -4 }}
-          transition={{ duration: 0.2 }}
-          className="group cursor-pointer"
-        >
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        whileHover={{ y: -4 }}
+        transition={{ duration: 0.2 }}
+        className="group cursor-pointer"
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => {
+          setIsHovered(false);
+          setImageIndex(0); // Reset to first image when not hovering
+        }}
+      >
         <div
           className="
           relative overflow-hidden rounded-2xl border 
@@ -113,20 +168,74 @@ export function PropertyCard({ property }: PropertyCardProps) {
         >
           {/* IMAGE */}
           <div className="relative h-64 w-full overflow-hidden bg-gray-200 dark:bg-gray-700">
-            {activeImage ? (
-              <Image
-                src={activeImage}
-                alt={property.propertyName || "Property"}
-                fill
-                unoptimized
-                onError={() => setImageError(true)}
-                className="object-cover transition-transform duration-700 group-hover:scale-110"
-              />
+            {allImages.length > 0 ? (
+              <div className="relative w-full h-full">
+                {allImages.map((image, idx) => (
+                  <motion.div
+                    key={idx}
+                    initial={false}
+                    animate={{
+                      opacity: idx === imageIndex ? 1 : 0,
+                      scale: idx === imageIndex ? 1 : 1.05,
+                    }}
+                    transition={{
+                      duration: 0.5,
+                      ease: "easeInOut",
+                    }}
+                    className={`absolute inset-0 ${
+                      idx === imageIndex ? "z-10" : "z-0"
+                    }`}
+                  >
+                    <Image
+                      src={image}
+                      alt={`${property.propertyName || "Property"} - Image ${idx + 1}`}
+                      fill
+                      unoptimized
+                      onError={() => {
+                        if (idx === imageIndex) setImageError(true);
+                      }}
+                      className="object-cover"
+                    />
+                  </motion.div>
+                ))}
+              </div>
             ) : (
               <div className="flex h-full w-full flex-col items-center justify-center text-gray-400 dark:text-gray-500">
                 <MapPin className="h-10 w-10" />
                 <p>No Image</p>
               </div>
+            )}
+
+            {/* Navigation Arrows */}
+            {allImages.length > 1 && (
+              <>
+                <button
+                  onClick={goToPreviousImage}
+                  className="
+                    absolute left-2 top-1/2 -translate-y-1/2 z-20
+                    rounded-full p-2 bg-white/80 dark:bg-black/80 
+                    backdrop-blur-md opacity-0 group-hover:opacity-100
+                    transition-opacity duration-200 hover:bg-white dark:hover:bg-black
+                    shadow-lg hover:scale-110
+                  "
+                  aria-label="Previous image"
+                >
+                  <ChevronLeft className="h-5 w-5 text-gray-900 dark:text-gray-100" />
+                </button>
+                <button
+                  onClick={goToNextImage}
+                  className="
+                    absolute right-2 top-1/2 -translate-y-1/2 z-20
+                    rounded-full p-2 bg-white/80 dark:bg-black/80 
+                    backdrop-blur-md opacity-0 group-hover:opacity-100
+                    transition-opacity duration-200 hover:bg-white dark:hover:bg-black
+                    shadow-lg hover:scale-110
+                  "
+                  aria-label="Next image"
+                >
+                  <ChevronRight className="h-5 w-5 text-gray-900 dark:text-gray-100" />
+                </button>
+              </>
             )}
 
             {/* GLASS FAVORITE */}
@@ -147,26 +256,27 @@ export function PropertyCard({ property }: PropertyCardProps) {
               />
             </button>
 
-            {/* Mini Hover Gallery */}
+            {/* Mini Hover Gallery - Dots Indicator */}
             {allImages.length > 1 && (
               <div
                 className="
-                absolute bottom-3 left-1/2 -translate-x-1/2 
-                hidden group-hover:flex gap-1 bg-black/40 px-2 py-1 rounded-full backdrop-blur-sm
+                absolute bottom-3 left-1/2 -translate-x-1/2 z-20
+                hidden group-hover:flex gap-1.5 bg-black/50 px-3 py-1.5 rounded-full backdrop-blur-sm
               "
               >
                 {allImages.map((_, idx) => (
                   <button
                     key={idx}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setImageIndex(idx);
-                      setImageError(false);
-                    }}
-                    className={`h-2 w-2 rounded-full ${
-                      idx === imageIndex ? "bg-white" : "bg-white/50"
-                    }`}
+                    onClick={(e) => goToImage(idx, e)}
+                    className={`
+                      transition-all duration-300 rounded-full
+                      ${
+                        idx === imageIndex
+                          ? "bg-white w-6 h-2"
+                          : "bg-white/50 w-2 h-2 hover:bg-white/75"
+                      }
+                    `}
+                    aria-label={`Go to image ${idx + 1}`}
                   />
                 ))}
               </div>

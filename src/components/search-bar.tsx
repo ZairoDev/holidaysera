@@ -1,13 +1,12 @@
 'use client';
 
-import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Search, MapPin, Calendar, Users } from 'lucide-react';
+import { Search, MapPin, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useSearchStore } from '@/lib/store';
-import { format } from 'date-fns';
+import { DateRangePicker } from '@/components/date-range-picker';
 
 interface SearchBarProps {
   variant?: 'hero' | 'compact';
@@ -16,8 +15,6 @@ interface SearchBarProps {
 export function SearchBar({ variant = 'compact' }: SearchBarProps) {
   const router = useRouter();
   const { location, checkIn, checkOut, guests, setLocation, setCheckIn, setCheckOut, setGuests } = useSearchStore();
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const [showGuestPicker, setShowGuestPicker] = useState(false);
 
   const handleSearch = () => {
     router.push('/properties');
@@ -38,7 +35,7 @@ export function SearchBar({ variant = 'compact' }: SearchBarProps) {
                 Location
               </label>
               <div className="relative">
-                <MapPin className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
+                <MapPin className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400 z-10" />
                 <Input
                   type="text"
                   placeholder="Where to?"
@@ -49,40 +46,19 @@ export function SearchBar({ variant = 'compact' }: SearchBarProps) {
               </div>
             </div>
 
-            <div>
+            <div className="md:col-span-2">
               <label className="mb-2 block text-sm font-medium text-gray-700">
-                Check-in
+                Check-in & Check-out
               </label>
-              <div className="relative">
-                <Calendar className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
-                <Input
-                  type="date"
-                  value={checkIn ? format(checkIn, "yyyy-MM-dd") : ""}
-                  onChange={(e) =>
-                    setCheckIn(e.target.value ? new Date(e.target.value) : null)
-                  }
-                  className="pl-10"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm font-medium text-gray-700">
-                Check-out
-              </label>
-              <div className="relative">
-                <Calendar className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
-                <Input
-                  type="date"
-                  value={checkOut ? format(checkOut, "yyyy-MM-dd") : ""}
-                  onChange={(e) =>
-                    setCheckOut(
-                      e.target.value ? new Date(e.target.value) : null
-                    )
-                  }
-                  className="pl-10"
-                />
-              </div>
+              <DateRangePicker
+                startDate={checkIn}
+                endDate={checkOut}
+                onDateChange={({ start, end }) => {
+                  setCheckIn(start);
+                  setCheckOut(end);
+                }}
+                fieldClassName="h-10"
+              />
             </div>
 
             <div>

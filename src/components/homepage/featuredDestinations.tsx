@@ -15,7 +15,7 @@ export function FeaturedProperties({ properties }: FeaturedPropertiesProps) {
 
   if (!properties || properties.length === 0) {
     return (
-      <section className="py-16 px-4">
+      <section className="py-8 px-4">
         <div className="container mx-auto">
           <h2 className="text-3xl font-bold text-center mb-12">
             Featured Properties
@@ -29,7 +29,7 @@ export function FeaturedProperties({ properties }: FeaturedPropertiesProps) {
   }
 
   return (
-    <section className="py-16 px-4 bg-gray-50">
+    <section className="pt-8  px-4 bg-gray-50">
       <div className="container mx-auto">
         <div className="text-center mb-12">
           <h2 className="text-3xl md:text-4xl font-bold mb-4">
@@ -46,9 +46,9 @@ export function FeaturedProperties({ properties }: FeaturedPropertiesProps) {
           ))}
         </div>
         <div className="flex justify-center mt-2">
-          <Link href="/properties" className="p-2 border rounded-md bg-blue-500 shadow-md text-white">
+          <Link href="/properties" className="py-2 px-4 mt-8 border rounded-lg bg-blue-500 shadow-md text-white">
             <span className="flex items-center ">
-            View More Properties <ArrowUpRight size={38}/>
+            View More Properties
             </span>
           </Link>
         </div>

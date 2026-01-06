@@ -557,7 +557,7 @@ const EnhancedSubscriptionPage: React.FC = () => {
                     ))}
                   </div>
                   <p className="text-sm text-gray-600 mt-1">
-                    <span className="font-bold">4.9/5</span> from 2,000+ reviews
+                    <span className="font-bold">4.7/5</span> from 2,000+ reviews
                   </p>
                 </div>
               </div>

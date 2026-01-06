@@ -8,6 +8,7 @@ import { bookingRouter } from "./booking";
 import { notificationsRouter } from "./notifications";
 import { subscriptionRouter } from "./subscription";
 import { contactRouter } from "./contact";
+import { reviewRouter } from "./review";
 
 export const appRouter = router({
   property: propertyRouter,
@@ -19,6 +20,7 @@ export const appRouter = router({
   notifications: notificationsRouter,
   subscription: subscriptionRouter,
   contact: contactRouter,
+  review: reviewRouter,
 })
 
 export type AppRouter = typeof appRouter;

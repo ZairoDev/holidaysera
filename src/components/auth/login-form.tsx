@@ -21,6 +21,7 @@ import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { useUserStore } from "@/lib/store";
 import { trpc } from "@/trpc/client";
+import { ForgotPasswordDialog } from "./forgot-password-dialog";
 
 export interface LoginFormProps {
   onSuccess?: () => void;
@@ -43,6 +44,7 @@ export function LoginForm({
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(initialError || "");
+  const [showForgotPasswordDialog, setShowForgotPasswordDialog] = useState(false);
 
   const signInMutation = trpc.auth.login.useMutation({
     onSuccess: (data) => {
@@ -189,12 +191,13 @@ export function LoginForm({
             <input type="checkbox" className="rounded" />
             <span className="text-gray-600">Remember me</span>
           </label>
-          <Link
-            href="/reset-password"
+          <button
+            type="button"
+            onClick={() => setShowForgotPasswordDialog(true)}
             className="text-sky-600 hover:text-sky-700"
           >
             Forgot password?
-          </Link>
+          </button>
         </div>
 
         <Button
@@ -248,7 +251,15 @@ export function LoginForm({
   );
 
   if (isModal) {
-    return formContent;
+    return (
+      <>
+        {formContent}
+        <ForgotPasswordDialog
+          open={showForgotPasswordDialog}
+          onOpenChange={setShowForgotPasswordDialog}
+        />
+      </>
+    );
   }
 
   return (
@@ -282,6 +293,11 @@ export function LoginForm({
           </Link>
         </p>
       </motion.div>
+
+      <ForgotPasswordDialog
+        open={showForgotPasswordDialog}
+        onOpenChange={setShowForgotPasswordDialog}
+      />
     </div>
   );
 }

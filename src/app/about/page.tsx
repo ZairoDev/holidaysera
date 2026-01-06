@@ -201,7 +201,7 @@ const milestones: Milestone[] = [
     year: "2021",
     title: "Award Recognition",
     description:
-      "Received 'Best Vacation Rental Platform' award and achieved 4.9/5 customer satisfaction.",
+      "Received 'Best Vacation Rental Platform' award and achieved 4.7/5 customer satisfaction.",
     icon: "🏆",
   },
   {
@@ -229,25 +229,25 @@ const milestones: Milestone[] = [
 
 const achievements: Achievement[] = [
   {
-    number: "4,500+",
+    number: "5.5M+",
     label: "Premium Properties",
     description: "Carefully curated vacation rentals",
     icon: "🏠",
   },
   {
-    number: "2M+",
+    number: "1.2M+",
     label: "Happy Guests",
     description: "Satisfied travelers worldwide",
     icon: "😊",
   },
   {
-    number: "50+",
+    number: "25+",
     label: "Countries",
     description: "Global presence and growing",
     icon: "🌎",
   },
   {
-    number: "4.9/5",
+    number: "4.7/5",
     label: "Rating",
     description: "From verified guest reviews",
     icon: "⭐",
@@ -645,7 +645,7 @@ const AboutPage: React.FC = () => {
                 <div className="p-6 bg-white/10 backdrop-blur-lg rounded-2xl border border-white/20">
                   <div className="text-4xl mb-3">🌟</div>
                   <div className="text-2xl font-bold mb-2">Top Rated</div>
-                  <p className="text-blue-100 text-sm">4.9/5 rating</p>
+                  <p className="text-blue-100 text-sm"> rating</p>
                 </div>
               </div>
             </div>

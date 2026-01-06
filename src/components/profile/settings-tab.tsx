@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   User,
   Mail,
@@ -19,6 +20,7 @@ import { socket } from "@/lib/socket";
 
 import { useUserStore } from "@/lib/store";
 import { useRouter } from "next/navigation";
+import { ChangePasswordDialog } from "./change-password-dialog";
 
 
 interface SettingsTabProps {
@@ -33,6 +35,7 @@ interface SettingsTabProps {
 export function SettingsTab({ user, isOwner }: SettingsTabProps) {
   const router = useRouter();
   const setUser = useUserStore((state) => state.setUser); // reset user
+  const [showChangePasswordDialog, setShowChangePasswordDialog] = useState(false);
   const handleDeleteAccount = () => {
     if (
       confirm(
@@ -117,12 +120,13 @@ export function SettingsTab({ user, isOwner }: SettingsTabProps) {
                 <Button
                   variant="outline"
                   className="w-full sm:w-auto h-11 border-2 hover:bg-gray-50"
+                  onClick={() => setShowChangePasswordDialog(true)}
                 >
                   <Lock className="mr-2 h-4 w-4" />
                   Change Password
                 </Button>
                 <p className="mt-2 text-xs text-gray-500">
-                  Last changed: Never
+                  Keep your account secure with a strong password
                 </p>
               </div>
             </Section>
@@ -234,6 +238,11 @@ export function SettingsTab({ user, isOwner }: SettingsTabProps) {
           </div>
         </Card>
       </motion.div>
+
+      <ChangePasswordDialog
+        open={showChangePasswordDialog}
+        onOpenChange={setShowChangePasswordDialog}
+      />
     </TabsContent>
   );
 }

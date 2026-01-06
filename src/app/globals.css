@@ -2,6 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Adjust navbar position when banner is visible */
+body[data-banner-visible="true"] nav.fixed.top-\\[60px\\] {
+  top: 60px;
+}
+
+body:not([data-banner-visible="true"]) nav.fixed.top-\\[60px\\] {
+  top: 0;
+}
+
 :root {
   --foreground-rgb: 0, 0, 0;
   --background-start-rgb: 214, 219, 220;

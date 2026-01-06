@@ -6,14 +6,15 @@ import { SearchBar } from "../search-bar";
 
 export function HeroSection() {
   const stats = [
-    { label: "Average Rating", value: "4.9/5", icon: true },
-    { label: "Properties", value: "4,000+" },
-    { label: "Happy Guests", value: "50,000+" },
+    { label: "Average Rating", value: "4.7/5", icon: true },
+    { label: "Properties", value: "5.5K+" },
+    { label: "Happy Guests", value: "1.2M+" },
+
   ];
 
   return (
     <section className="relative min-h-[90vh] bg-gradient-to-br from-hero-from to-hero-to overflow-hidden flex items-center">
-      <div className="container relative mx-auto px-4 py-12 lg:py-20">
+      <div className="container relative mx-auto px-4 py-16  lg:py-10">
         {/* Main Content Grid */}
         <div className="relative grid gap-8 lg:grid-cols-2 lg:gap-16">
           {/* Left Side - Text Content */}
@@ -85,7 +86,7 @@ export function HeroSection() {
             initial={{ opacity: 0, x: 30 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.2 }}
-            className="relative h-[350px] md:h-[450px] lg:h-[700px] rounded-2xl overflow-visible shadow-elegant"
+            className="relative h-[350px] md:h-[450px] lg:h-[600px] rounded-2xl overflow-visible shadow-elegant"
           >
             <div className="relative w-full h-full rounded-2xl overflow-hidden">
               <img
@@ -219,7 +220,7 @@ export function HeroSection() {
           </motion.div>
 
           {/* Search Bar - Positioned as overlay */}
-          <div className="absolute lg:left-0 -bottom-40 md:-bottom-32 lg:bottom-4 flex justify-center lg:justify-start z-20 px-4 lg:px-0 w-full lg:w-auto">
+          <div className="absolute lg:left-0 -bottom-40 md:-bottom-32 lg:bottom-2 flex justify-center lg:justify-start z-20 px-4 lg:px-0 w-full lg:w-auto">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}

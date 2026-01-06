@@ -31,6 +31,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { PropertyCard } from "@/components/property-card";
+import { ReviewsSection } from "./reviews-section";
 import { trpc } from "@/trpc/client";
 import {
   Popover,
@@ -578,6 +579,9 @@ export function PropertyContent({
                 )}
             </div>
           </Card>
+
+          {/* Reviews Section */}
+          <ReviewsSection propertyId={property._id} />
         </div>
 
         {/* Right Column - Booking Card */}
