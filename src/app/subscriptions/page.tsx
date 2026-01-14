@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useUserStore } from "@/lib/store";
+import { CreditCard, Wallet, RefreshCw, Building2, Users, Globe } from "lucide-react";
 
 // Types
 interface Feature {
@@ -238,7 +239,7 @@ const subscriptionPlans: SubscriptionPlan[] = [
     price: 399,
     duration: "18 months",
     isPopular: true,
-    color: "indigo",
+    color: "sky",
     savings: "€22/month - Best Value!",
     features: [
       { text: "18 Months Premium Listing" },
@@ -257,7 +258,7 @@ const subscriptionPlans: SubscriptionPlan[] = [
     name: "Master Plan",
     price: 499,
     duration: "24 months",
-    color: "purple",
+    color: "sky-dark",
     savings: "€21/month",
     features: [
       { text: "24 Months Premium Listing" },
@@ -278,35 +279,38 @@ const howItWorks = [
     title: "No Commission",
     description:
       "Zero hidden charges or commissions. Keep 100% of your earnings",
-    icon: "💰",
+    icon: CreditCard,
   },
   {
     title: "Direct Payment",
     description: "Get paid directly from guests to your bank account instantly",
-    icon: "💳",
+    icon: Wallet,
   },
   {
     title: "Stay Connected",
     description: "Easy renewal process with exclusive loyalty discounts",
-    icon: "🔄",
+    icon: RefreshCw,
   },
 ];
 
 const stats = [
   {
-    title: "4,500+ Properties",
+    value: "4,500+",
+    label: "Properties",
     description: "Active listings across Europe, Asia, and United States",
-    icon: "🏘️",
+    icon: Building2,
   },
   {
-    title: "2M+ Happy Guests",
+    value: "2M+",
+    label: "Happy Guests",
     description: "Satisfied customers and growing community",
-    icon: "😊",
+    icon: Users,
   },
   {
-    title: "Short & Long Term",
-    description: "Flexible rental options in 50+ countries worldwide",
-    icon: "🌍",
+    value: "50+",
+    label: "Countries",
+    description: "Flexible rental options worldwide",
+    icon: Globe,
   },
 ];
 
@@ -327,16 +331,16 @@ const CheckIcon: React.FC = () => (
 );
 
 const FeatureCard: React.FC<Feature> = ({ title, description, icon }) => (
-  <div className="group p-6 bg-white border border-gray-200 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 hover:border-blue-300">
-    <div className="flex items-start gap-4">
-      <div className="flex-shrink-0 w-14 h-14 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl flex items-center justify-center text-blue-600 group-hover:scale-110 transition-transform duration-300">
+  <div className="group h-full p-6 bg-white border border-gray-200 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 hover:border-sky-300">
+    <div className="flex items-start gap-4 h-full">
+      <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-sky-50 to-sky-100 rounded-xl flex items-center justify-center text-sky-600 group-hover:scale-110 transition-transform duration-300">
         {icon}
       </div>
       <div className="flex-1">
-        <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">
+        <h3 className="text-lg font-bold text-gray-900 mb-2 group-hover:text-sky-600 transition-colors">
           {title}
         </h3>
-        <p className="text-base text-gray-600 leading-relaxed">{description}</p>
+        <p className="text-sm text-gray-600 leading-relaxed">{description}</p>
       </div>
     </div>
   </div>
@@ -357,9 +361,9 @@ const PlanCard: React.FC<SubscriptionPlan> = ({
   const router = useRouter();
 
   const colorClasses = {
-    blue: "from-blue-500 to-blue-700",
-    indigo: "from-indigo-500 to-indigo-700",
-    purple: "from-purple-500 to-purple-700",
+    blue: "from-sky-400 to-sky-600",
+    sky: "from-sky-500 to-sky-600",
+    "sky-dark": "from-sky-600 to-sky-800",
   }[color];
 
   const handlePlanSelect = () => {
@@ -376,18 +380,18 @@ const PlanCard: React.FC<SubscriptionPlan> = ({
     <div
       className={`h-full relative px-8 py-10 rounded-3xl border-2 flex flex-col overflow-hidden bg-white transition-all duration-500 ${
         isPopular
-          ? "border-indigo-500 shadow-2xl scale-105"
-          : "border-gray-200 hover:border-blue-400 shadow-lg hover:shadow-2xl"
+          ? "border-sky-500 shadow-2xl scale-105"
+          : "border-gray-200 hover:border-sky-400 shadow-lg hover:shadow-2xl"
       } hover:-translate-y-2`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
       {isPopular && (
         <>
-          <span className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-4 py-1.5 tracking-widest text-xs absolute right-4 top-4 rounded-full z-10 font-bold shadow-lg animate-pulse">
+          <span className="bg-gradient-to-r from-sky-500 to-sky-600 text-white px-4 py-1.5 tracking-widest text-xs absolute right-4 top-4 rounded-full z-10 font-bold shadow-lg animate-pulse">
             ⭐ MOST POPULAR
           </span>
-          <div className="absolute inset-0 bg-gradient-to-br from-indigo-50/50 to-purple-50/50 -z-10 rounded-3xl" />
+          <div className="absolute inset-0 bg-gradient-to-br from-sky-50/50 to-sky-100/50 -z-10 rounded-3xl" />
         </>
       )}
 
@@ -423,7 +427,7 @@ const PlanCard: React.FC<SubscriptionPlan> = ({
                 : "none",
             }}
           >
-            <span className="mr-3 inline-flex flex-shrink-0 text-blue-600 mt-0.5 group-hover/item:scale-125 transition-transform">
+            <span className="mr-3 inline-flex flex-shrink-0 text-sky-600 mt-0.5 group-hover/item:scale-125 transition-transform">
               <CheckIcon />
             </span>
             <span className="text-gray-700 text-sm leading-relaxed font-medium">
@@ -439,7 +443,7 @@ const PlanCard: React.FC<SubscriptionPlan> = ({
           className={`w-full py-4 px-6 rounded-xl font-bold text-base transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 text-center ${
             isPopular
               ? `bg-gradient-to-r ${colorClasses} text-white hover:scale-105`
-              : "border-2 border-blue-600 bg-white text-blue-600 hover:bg-blue-600 hover:text-white"
+              : "border-2 border-sky-600 bg-white text-sky-600 hover:bg-sky-600 hover:text-white"
           }`}
         >
           {isPopular ? "🚀 Get Started Now" : "Choose This Plan"}
@@ -489,11 +493,11 @@ const EnhancedSubscriptionPage: React.FC = () => {
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 via-white to-blue-50">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 via-white to-sky-50">
       {/* Animated Background */}
       <div className="fixed inset-0 -z-10 overflow-hidden">
-        <div className="absolute -top-1/2 -right-1/2 w-full h-full bg-gradient-to-br from-blue-100/20 to-transparent rounded-full blur-3xl animate-blob" />
-        <div className="absolute -bottom-1/2 -left-1/2 w-full h-full bg-gradient-to-tr from-indigo-100/20 to-transparent rounded-full blur-3xl animate-blob animation-delay-2000" />
+        <div className="absolute -top-1/2 -right-1/2 w-full h-full bg-gradient-to-br from-sky-100/20 to-transparent rounded-full blur-3xl animate-blob" />
+        <div className="absolute -bottom-1/2 -left-1/2 w-full h-full bg-gradient-to-tr from-sky-100/20 to-transparent rounded-full blur-3xl animate-blob animation-delay-2000" />
       </div>
 
       <div className="container mx-auto px-4 py-16">
@@ -501,16 +505,16 @@ const EnhancedSubscriptionPage: React.FC = () => {
           {/* Hero Section */}
           <div className="flex flex-col mt-5 md:flex-row md:gap-16 items-center w-full max-w-7xl">
             <div className="md:w-1/2 p-4 space-y-8">
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 rounded-full border border-blue-200">
-                <span className="w-2 h-2 bg-blue-600 rounded-full animate-pulse" />
-                <span className="text-sm font-semibold text-blue-700">
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-sky-50 rounded-full border border-sky-200">
+                <span className="w-2 h-2 bg-sky-600 rounded-full animate-pulse" />
+                <span className="text-sm font-semibold text-sky-600">
                   Join 4,500+ Successful Hosts
                 </span>
               </div>
 
               <h1 className="text-5xl font-black text-gray-900 md:text-6xl xl:text-7xl leading-tight">
                 Become A{" "}
-                <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent animate-gradient">
+                <span className="bg-gradient-to-r from-sky-500 to-sky-600 bg-clip-text text-transparent animate-gradient">
                   Host
                 </span>
               </h1>
@@ -524,12 +528,10 @@ const EnhancedSubscriptionPage: React.FC = () => {
               </p>
 
               <div className="flex flex-wrap gap-4">
-                <button className="px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300">
-                  Start Free Trial
-                </button>
-                <button className="px-8 py-4 bg-white text-gray-900 rounded-xl font-bold border-2 border-gray-300 hover:border-blue-600 shadow-md hover:shadow-lg transition-all duration-300">
-                  View Demo
-                </button>
+                <Link href="/list-property" className="px-8 py-4 bg-gradient-to-r from-sky-500 to-sky-600 text-white rounded-xl font-bold shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 inline-block text-center">
+                  Start Listing Now
+                </Link>
+                
               </div>
 
               <div className="flex items-center gap-8 pt-4">
@@ -537,7 +539,7 @@ const EnhancedSubscriptionPage: React.FC = () => {
                   {[1, 2, 3, 4].map((i) => (
                     <div
                       key={i}
-                      className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-indigo-600 border-4 border-white flex items-center justify-center text-white font-bold"
+                      className="w-12 h-12 rounded-full bg-gradient-to-br from-sky-400 to-sky-600 border-4 border-white flex items-center justify-center text-white font-bold"
                     >
                       {i}
                     </div>
@@ -565,13 +567,13 @@ const EnhancedSubscriptionPage: React.FC = () => {
 
             <div className="md:w-1/2 flex justify-center items-center">
               <div className="relative w-full h-[500px] group">
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-200 to-indigo-200 rounded-3xl transform rotate-6 group-hover:rotate-12 transition-transform duration-500" />
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-100 to-purple-100 rounded-3xl shadow-2xl overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-br from-blue-600/90 to-indigo-600/90 flex items-center justify-center">
+                <div className="absolute inset-0 bg-gradient-to-br from-sky-200 to-sky-300 rounded-3xl transform rotate-6 group-hover:rotate-12 transition-transform duration-500" />
+                <div className="absolute inset-0 bg-gradient-to-br from-sky-100 to-sky-200 rounded-3xl shadow-2xl overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-br from-sky-500/90 to-sky-600/90 flex items-center justify-center">
                     <div className="text-center p-8">
                       <div className="w-56 h-56 mx-auto bg-white rounded-full flex items-center justify-center shadow-2xl mb-6 group-hover:scale-110 transition-transform duration-500">
                         <svg
-                          className="w-32 h-32 text-blue-600"
+                          className="w-32 h-32 text-sky-600"
                           fill="none"
                           stroke="currentColor"
                           viewBox="0 0 24 24"
@@ -584,10 +586,8 @@ const EnhancedSubscriptionPage: React.FC = () => {
                           />
                         </svg>
                       </div>
-                      <h3 className="text-3xl font-bold text-white mb-2">
-                        List Your Property
-                      </h3>
-                      <p className="text-blue-100 text-lg">
+                    
+                      <p className="text-sky-100 text-lg">
                         Start earning in 3 simple steps
                       </p>
                     </div>
@@ -602,7 +602,7 @@ const EnhancedSubscriptionPage: React.FC = () => {
             <div className="text-center mb-16">
               <h2 className="text-5xl font-black text-gray-900 md:text-6xl mb-6">
                 Why Choose{" "}
-                <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                <span className="bg-gradient-to-r from-sky-500 to-sky-600 bg-clip-text text-transparent">
                   Us?
                 </span>
               </h2>
@@ -611,23 +611,16 @@ const EnhancedSubscriptionPage: React.FC = () => {
                 vacation rental market
               </p>
             </div>
-            <div className="flex flex-col md:flex-row gap-8">
-              <div className="flex flex-col gap-6 md:w-1/2">
-                {leftFeatures.map((feature, index) => (
-                  <FeatureCard key={index} {...feature} />
-                ))}
-              </div>
-              <div className="flex flex-col gap-6 md:w-1/2">
-                {rightFeatures.map((feature, index) => (
-                  <FeatureCard key={index} {...feature} />
-                ))}
-              </div>
+            <div className="grid md:grid-cols-2 gap-6">
+              {[...leftFeatures, ...rightFeatures].map((feature, index) => (
+                <FeatureCard key={index} {...feature} />
+              ))}
             </div>
           </div>
 
           {/* Banner Section */}
           <div className="w-full max-w-7xl">
-            <div className="relative p-12 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 rounded-3xl shadow-2xl overflow-hidden">
+            <div className="relative p-12 bg-gradient-to-r from-sky-500 to-sky-600 rounded-3xl shadow-2xl overflow-hidden">
               <div className="absolute inset-0 bg-grid-white/10 [mask-image:linear-gradient(0deg,white,rgba(255,255,255,0.5))] -z-10" />
               <div className="relative z-10 text-center text-white space-y-6">
                 <h2 className="text-4xl md:text-5xl font-black">
@@ -635,22 +628,22 @@ const EnhancedSubscriptionPage: React.FC = () => {
                   <br />
                   Listing for Your Rental Space
                 </h2>
-                <p className="text-xl text-blue-100 max-w-3xl mx-auto">
+                <p className="text-xl text-sky-100 max-w-3xl mx-auto">
                   Our expert team will transform your property into an
                   irresistible listing that attracts premium guests
                 </p>
                 <div className="flex justify-center gap-4 pt-4">
                   <div className="px-6 py-3 bg-white/20 backdrop-blur-lg rounded-xl border border-white/30">
                     <div className="text-3xl font-bold">4K</div>
-                    <div className="text-sm text-blue-100">Photo Quality</div>
+                    <div className="text-sm text-sky-100">Photo Quality</div>
                   </div>
                   <div className="px-6 py-3 bg-white/20 backdrop-blur-lg rounded-xl border border-white/30">
                     <div className="text-3xl font-bold">24/7</div>
-                    <div className="text-sm text-blue-100">Support</div>
+                    <div className="text-sm text-sky-100">Support</div>
                   </div>
                   <div className="px-6 py-3 bg-white/20 backdrop-blur-lg rounded-xl border border-white/30">
                     <div className="text-3xl font-bold">100%</div>
-                    <div className="text-sm text-blue-100">Guarantee</div>
+                    <div className="text-sm text-sky-100">Guarantee</div>
                   </div>
                 </div>
               </div>
@@ -660,57 +653,59 @@ const EnhancedSubscriptionPage: React.FC = () => {
           {/* How It Works Section */}
           <div className="w-full max-w-7xl">
             <div className="text-center mb-16">
-              <h2 className="text-5xl font-black text-gray-900 md:text-6xl mb-6">
+              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
                 3 Easy{" "}
-                <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                  Steps
-                </span>
+                <span className="text-sky-600">Steps</span>
               </h2>
-              <p className="text-xl text-gray-600">
+              <p className="text-lg text-gray-600 max-w-2xl mx-auto">
                 Our simple process gets you started in minutes
               </p>
             </div>
-            <div className="grid md:grid-cols-3 gap-12">
-              {howItWorks.map((item, index) => (
-                <div
-                  key={index}
-                  className="relative flex flex-col items-center group"
-                >
-                  {index < howItWorks.length - 1 && (
-                    <div className="hidden md:block absolute top-24 left-1/2 w-full h-1 bg-gradient-to-r from-blue-300 to-indigo-300 -z-10" />
-                  )}
-                  <div className="mb-8 w-48 h-48 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center shadow-2xl group-hover:scale-110 transition-all duration-500 relative">
-                    <div className="absolute inset-4 bg-white rounded-full flex items-center justify-center">
-                      <span className="text-6xl">{item.icon}</span>
-                    </div>
-                    <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-16 h-16 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-full flex items-center justify-center text-white text-2xl font-black shadow-lg">
-                      {index + 1}
+            <div className="grid md:grid-cols-3 gap-6 lg:gap-8">
+              {howItWorks.map((item, index) => {
+                const IconComponent = item.icon;
+                return (
+                  <div
+                    key={index}
+                    className="group relative bg-white border border-gray-200 rounded-xl p-8 hover:border-sky-300 hover:shadow-sm transition-all duration-200 hover:-translate-y-1"
+                  >
+                    <div className="flex flex-col h-full">
+                      <div className="mb-6">
+                        <span className="text-xs font-medium text-gray-400 uppercase tracking-wider">
+                          Step {String(index + 1).padStart(2, "0")}
+                        </span>
+                      </div>
+                      <div className="mb-6 flex items-center justify-start">
+                        <div className="w-12 h-12 rounded-lg bg-sky-50 flex items-center justify-center text-sky-600 group-hover:bg-sky-100 transition-colors duration-200">
+                          <IconComponent className="w-6 h-6" strokeWidth={1.5} />
+                        </div>
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="text-xl font-semibold text-gray-900 mb-3 leading-tight">
+                          {item.title}
+                        </h3>
+                        <p className="text-gray-600 text-base leading-relaxed">
+                          {item.description}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                  <div className="text-center mt-auto">
-                    <h3 className="text-2xl font-black text-gray-900 mb-4">
-                      {item.title}
-                    </h3>
-                    <p className="text-gray-600 text-lg leading-relaxed">
-                      {item.description}
-                    </p>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
           {/* Subscription Plans Section */}
           <div className="w-full max-w-7xl">
             <header className="text-center max-w-3xl mx-auto mb-20">
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 rounded-full border border-blue-200 mb-6">
-                <span className="text-sm font-semibold text-blue-700">
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-sky-50 rounded-full border border-sky-200 mb-6">
+                <span className="text-sm font-semibold text-sky-600">
                   💎 Save up to 30% with annual plans
                 </span>
               </div>
               <h2 className="text-5xl md:text-6xl font-black text-gray-900 mb-6">
                 Choose Your{" "}
-                <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                <span className="bg-gradient-to-r from-sky-500 to-sky-600 bg-clip-text text-transparent">
                   Perfect Plan
                 </span>
               </h2>
@@ -724,7 +719,7 @@ const EnhancedSubscriptionPage: React.FC = () => {
                   <PlanCard key={plan.id} {...plan} />
                 ))}
               </div>
-              <div className="text-center mt-12 p-8 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border-2 border-blue-200">
+              <div className="text-center mt-12 p-8 bg-gradient-to-r from-sky-50 to-sky-100 rounded-2xl border-2 border-sky-200">
                 <p className="text-lg font-semibold text-gray-900 mb-2">
                   🎉 Special Offer: Get 2 months free with annual plans!
                 </p>
@@ -732,7 +727,7 @@ const EnhancedSubscriptionPage: React.FC = () => {
                   Need a custom plan?{" "}
                   <Link
                     href="#"
-                    className="text-blue-600 hover:text-blue-700 font-bold underline"
+                    className="text-sky-600 hover:text-sky-600 font-bold underline"
                   >
                     Contact our sales team
                   </Link>
@@ -743,61 +738,69 @@ const EnhancedSubscriptionPage: React.FC = () => {
 
           {/* Stats Section */}
           <div className="w-full max-w-7xl">
-            <div className="text-center mb-16">
-              <h2 className="text-5xl font-black text-gray-900 md:text-6xl mb-6">
+            <div className="text-center mb-12">
+              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
                 Trusted by{" "}
-                <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                  Thousands
-                </span>
+                <span className="text-sky-600">Thousands</span>
               </h2>
-              <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-                Join a thriving community of successful property owners
-                worldwide
+              <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+                Join a thriving community of successful property owners worldwide
               </p>
             </div>
-            <div className="grid md:grid-cols-3 gap-8">
-              {stats.map((stat, index) => (
-                <div
-                  key={index}
-                  className="group p-10 bg-gradient-to-br from-white to-blue-50 rounded-3xl border-2 border-blue-100 hover:border-blue-400 transition-all duration-500 shadow-lg hover:shadow-2xl hover:-translate-y-2"
-                >
-                  <div className="text-6xl mb-6 group-hover:scale-110 transition-transform duration-300">
-                    {stat.icon}
+            <div className="grid md:grid-cols-3 gap-6 lg:gap-8">
+              {stats.map((stat, index) => {
+                const IconComponent = stat.icon;
+                return (
+                  <div
+                    key={index}
+                    className="group relative bg-white border border-gray-200 rounded-xl p-8 hover:border-sky-200 hover:bg-gray-50/50 transition-all duration-200"
+                  >
+                    <div className="flex flex-col">
+                      <div className="flex items-center gap-4 mb-6">
+                        <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-sky-50 flex items-center justify-center text-sky-600 group-hover:bg-sky-100 transition-colors duration-200">
+                          <IconComponent className="w-5 h-5" strokeWidth={1.5} />
+                        </div>
+                        <div className="flex-1 border-t border-gray-100"></div>
+                      </div>
+                      <div className="mb-3">
+                        <div className="text-3xl md:text-4xl font-bold text-gray-900 mb-1">
+                          {stat.value}
+                        </div>
+                        <h3 className="text-base font-medium text-gray-500 uppercase tracking-wide">
+                          {stat.label}
+                        </h3>
+                      </div>
+                      <p className="text-gray-600 text-sm leading-relaxed">
+                        {stat.description}
+                      </p>
+                    </div>
                   </div>
-                  <h3 className="text-4xl font-black text-gray-900 mb-4">
-                    {stat.title}
-                  </h3>
-                  <p className="text-gray-600 text-lg leading-relaxed">
-                    {stat.description}
-                  </p>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
           {/* CTA Section */}
           <div className="w-full max-w-7xl">
-            <div className="relative p-16 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 rounded-3xl shadow-2xl overflow-hidden">
+            <div className="relative p-16 bg-gradient-to-r from-sky-500 to-sky-600 rounded-3xl shadow-2xl overflow-hidden">
               <div className="absolute inset-0 bg-grid-white/10 [mask-image:linear-gradient(0deg,white,rgba(255,255,255,0.5))]" />
               <div className="relative z-10 text-center text-white space-y-8">
                 <h2 className="text-4xl md:text-5xl font-black">
                   Ready to Start Earning?
                 </h2>
-                <p className="text-xl text-blue-100 max-w-2xl mx-auto">
+                <p className="text-xl text-sky-100 max-w-2xl mx-auto">
                   Join thousands of successful hosts and transform your property
                   into a profitable business today
                 </p>
                 <div className="flex flex-wrap justify-center gap-4">
-                  <button className="px-10 py-5 bg-white text-blue-600 rounded-xl font-bold text-lg shadow-xl hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-300">
-                    🚀 Get Started Free
+                  <button className="px-10 py-5 bg-white text-sky-600 rounded-xl font-bold text-lg shadow-xl hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-300">
+                    🚀 Get Started Now
                   </button>
-                  <button className="px-10 py-5 bg-transparent border-2 border-white text-white rounded-xl font-bold text-lg hover:bg-white hover:text-blue-600 transition-all duration-300">
+                  <button className="px-10 py-5 bg-transparent border-2 border-white text-white rounded-xl font-bold text-lg hover:bg-white hover:text-sky-600 transition-all duration-300">
                     📞 Talk to Sales
                   </button>
                 </div>
-                <p className="text-sm text-blue-100">
-                  No credit card required • 14-day free trial • Cancel anytime
-                </p>
+               
               </div>
             </div>
           </div>

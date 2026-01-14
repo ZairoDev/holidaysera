@@ -18,9 +18,10 @@ function LoginPageContent() {
   const searchParams = useSearchParams();
   const redirectUrl = searchParams?.get("redirect") || "/";
   const oauthError = searchParams?.get("error");
+  const roleParam = searchParams?.get("role") as "Traveller" | "Owner" | null;
   const initialError = oauthError ? OAUTH_ERROR_MESSAGES[oauthError] || "Authentication failed" : "";
   
-  return <LoginForm redirectUrl={redirectUrl} initialError={initialError} />;
+  return <LoginForm redirectUrl={redirectUrl} initialError={initialError} initialRole={roleParam || undefined} />;
 }
 
 export default function LoginPage() {

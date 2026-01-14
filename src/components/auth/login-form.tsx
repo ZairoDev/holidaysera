@@ -27,6 +27,7 @@ export interface LoginFormProps {
   onSuccess?: () => void;
   redirectUrl?: string;
   initialError?: string;
+  initialRole?: "Traveller" | "Owner";
   isModal?: boolean;
 }
 
@@ -34,13 +35,14 @@ export function LoginForm({
   onSuccess,
   redirectUrl: propRedirectUrl = "/",
   initialError,
+  initialRole,
   isModal = false,
 }: LoginFormProps) {
   const router = useRouter();
   const { setUser } = useUserStore();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState<"Traveller" | "Owner" | null>(null);
+  const [role, setRole] = useState<"Traveller" | "Owner" | null>(initialRole || null);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(initialError || "");
@@ -89,7 +91,9 @@ export function LoginForm({
         router.push(propRedirectUrl);
       }
     } catch (err: any) {
-      setError(err.message || "Failed to login");
+      // Handle TRPC errors and other error types
+      const errorMessage = err?.data?.message || err?.message || "Something went wrong. Please try again.";
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -307,6 +311,7 @@ export function LoginContent({
   onSuccess,
   redirectUrl,
   initialError,
+  initialRole,
   isModal = false,
 }: LoginFormProps) {
   return (
@@ -314,6 +319,7 @@ export function LoginContent({
       onSuccess={onSuccess}
       redirectUrl={redirectUrl}
       initialError={initialError}
+      initialRole={initialRole}
       isModal={isModal}
     />
   );
