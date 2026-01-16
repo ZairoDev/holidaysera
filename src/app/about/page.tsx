@@ -3,6 +3,35 @@
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { motion } from "framer-motion";
+import {
+  Rocket,
+  Building2,
+  Globe,
+  Award,
+  Lightbulb,
+  Target,
+  Home,
+  Users,
+  Star,
+  MessageCircle,
+  CheckCircle2,
+  Shield,
+  DollarSign,
+  Sparkles,
+  Palette,
+  Handshake,
+  Zap,
+  Plane,
+  Waves,
+  TrendingUp,
+  Leaf,
+  Eye,
+  HeartHandshake,
+  ArrowRight,
+  Phone,
+  Search,
+} from "lucide-react";
 
 // Types
 interface TeamMember {
@@ -22,14 +51,14 @@ interface Milestone {
   year: string;
   title: string;
   description: string;
-  icon: string;
+  icon: React.ComponentType<any>;
 }
 
 interface Achievement {
   number: string;
   label: string;
   description: string;
-  icon: string;
+  icon: React.ComponentType<any>;
 }
 
 // Icon Components
@@ -180,89 +209,89 @@ const milestones: Milestone[] = [
     year: "2018",
     title: "Founded with a Vision",
     description:
-      "Holiday Sera was born from a passion to revolutionize vacation rentals and create unforgettable travel experiences.",
-    icon: "🚀",
+      "HolidaysEra was born from a passion to revolutionize vacation rentals and create unforgettable travel experiences.",
+    icon: Rocket,
   },
   {
     year: "2019",
     title: "1,000 Properties",
     description:
       "Reached our first major milestone with 1,000 premium properties across Europe and Asia.",
-    icon: "🏘️",
+    icon: Building2,
   },
   {
     year: "2020",
     title: "Global Expansion",
     description:
       "Expanded to United States and introduced 24/7 multilingual customer support.",
-    icon: "🌍",
+    icon: Globe,
   },
   {
     year: "2021",
     title: "Award Recognition",
     description:
       "Received 'Best Vacation Rental Platform' award and achieved 4.7/5 customer satisfaction.",
-    icon: "🏆",
+    icon: Award,
   },
   {
     year: "2022",
     title: "Technology Innovation",
     description:
       "Launched AI-powered matching system and mobile app with instant booking capabilities.",
-    icon: "💡",
+    icon: Lightbulb,
   },
   {
     year: "2023",
-    title: "4,500+ Properties",
+    title: "5,500+ Properties",
     description:
-      "Reached 4,500+ properties and 2 million happy guests with sustainable tourism initiatives.",
-    icon: "🎯",
+      "Reached 5,500+ properties and 2 million happy guests with sustainable tourism initiatives.",
+    icon: Target,
   },
   {
     year: "2024",
     title: "Future Forward",
     description:
       "Expanding to new markets with enhanced features and commitment to exceptional experiences.",
-    icon: "✨",
+    icon: Sparkles,
   },
 ];
 
 const achievements: Achievement[] = [
   {
-    number: "5.5M+",
+    number: "5,500+",
     label: "Premium Properties",
     description: "Carefully curated vacation rentals",
-    icon: "🏠",
+    icon: Home,
   },
   {
     number: "1.2M+",
     label: "Happy Guests",
     description: "Satisfied travelers worldwide",
-    icon: "😊",
+    icon: Users,
   },
   {
     number: "25+",
     label: "Countries",
     description: "Global presence and growing",
-    icon: "🌎",
+    icon: Globe,
   },
   {
     number: "4.7/5",
     label: "Rating",
     description: "From verified guest reviews",
-    icon: "⭐",
+    icon: Star,
   },
   {
     number: "24/7",
     label: "Support",
     description: "Always here to help you",
-    icon: "💬",
+    icon: MessageCircle,
   },
   {
     number: "98%",
     label: "Satisfaction",
     description: "Guest satisfaction rate",
-    icon: "💯",
+    icon: CheckCircle2,
   },
 ];
 
@@ -301,62 +330,84 @@ const teamMembers: TeamMember[] = [
 
 // Components
 const ValueCard: React.FC<Value> = ({ title, description, icon }) => (
-  <div className="group p-8 bg-white rounded-2xl border-2 border-gray-200 hover:border-blue-400 shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-2">
-    <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center text-white mb-6 group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 shadow-lg">
-      {icon}
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    whileInView={{ opacity: 1, y: 0 }}
+    viewport={{ once: true }}
+    whileHover={{ y: -5 }}
+    className="group relative p-8 bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200 hover:border-sky-300 shadow-sm hover:shadow-lg transition-all duration-300"
+  >
+    <div className="absolute inset-0 bg-sky-500 rounded-2xl blur opacity-0 group-hover:opacity-5 transition-opacity duration-300" />
+    <div className="relative">
+      <div className="w-14 h-14 bg-sky-50 rounded-xl flex items-center justify-center text-sky-600 mb-6 group-hover:bg-sky-100 group-hover:scale-110 transition-all duration-300">
+        {icon}
+      </div>
+      <h3 className="text-xl font-semibold text-gray-900 mb-4 group-hover:text-sky-600 transition-colors">
+        {title}
+      </h3>
+      <p className="text-gray-600 leading-relaxed text-sm">{description}</p>
     </div>
-    <h3 className="text-2xl font-bold text-gray-900 mb-4 group-hover:text-blue-600 transition-colors">
-      {title}
-    </h3>
-    <p className="text-gray-600 leading-relaxed">{description}</p>
-  </div>
+  </motion.div>
 );
 
 const MilestoneCard: React.FC<Milestone & { index: number }> = ({
   year,
   title,
   description,
-  icon,
+  icon: IconComponent,
   index,
 }) => (
-  <div
+  <motion.div
+    initial={{ opacity: 0, x: index % 2 === 0 ? -20 : 20 }}
+    whileInView={{ opacity: 1, x: 0 }}
+    viewport={{ once: true }}
+    transition={{ delay: index * 0.1 }}
     className={`flex gap-8 items-start ${
       index % 2 === 0 ? "flex-row" : "flex-row-reverse"
     }`}
   >
     <div className={`flex-1 ${index % 2 === 0 ? "text-right" : "text-left"}`}>
-      <div className="inline-block p-6 bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-        <div className="text-sm font-bold text-blue-600 mb-2">{year}</div>
-        <h3 className="text-2xl font-bold text-gray-900 mb-3">{title}</h3>
-        <p className="text-gray-600">{description}</p>
+      <div className="inline-block p-6 bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200 shadow-sm hover:shadow-lg hover:border-sky-300 transition-all duration-300">
+        <div className="text-sm font-semibold text-sky-600 mb-2">{year}</div>
+        <h3 className="text-xl font-semibold text-gray-900 mb-3">{title}</h3>
+        <p className="text-gray-600 text-sm">{description}</p>
       </div>
     </div>
     <div className="relative flex flex-col items-center">
-      <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-4xl shadow-xl z-10 hover:scale-110 transition-transform duration-300">
-        {icon}
+      <div className="w-16 h-16 bg-sky-600 rounded-full flex items-center justify-center text-white shadow-lg z-10 hover:scale-110 transition-transform duration-300">
+        <IconComponent className="w-8 h-8" strokeWidth={1.5} />
       </div>
       {index < milestones.length - 1 && (
-        <div className="absolute top-20 w-1 h-32 bg-gradient-to-b from-blue-400 to-indigo-400" />
+        <div className="absolute top-16 w-0.5 h-24 bg-sky-200" />
       )}
     </div>
     <div className="flex-1" />
-  </div>
+  </motion.div>
 );
 
 const AchievementCard: React.FC<Achievement> = ({
   number,
   label,
   description,
-  icon,
+  icon: IconComponent,
 }) => (
-  <div className="group p-8 bg-gradient-to-br from-white to-blue-50 rounded-2xl border-2 border-blue-100 hover:border-blue-400 shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-2">
-    <div className="text-6xl mb-4 group-hover:scale-110 transition-transform duration-300">
-      {icon}
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    whileInView={{ opacity: 1, y: 0 }}
+    viewport={{ once: true }}
+    whileHover={{ y: -5 }}
+    className="group relative p-8 bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200 hover:border-sky-300 shadow-sm hover:shadow-lg transition-all duration-300"
+  >
+    <div className="absolute inset-0 bg-sky-500 rounded-2xl blur opacity-0 group-hover:opacity-5 transition-opacity duration-300" />
+    <div className="relative">
+      <div className="w-14 h-14 bg-sky-50 rounded-xl flex items-center justify-center text-sky-600 mb-4 group-hover:bg-sky-100 group-hover:scale-110 transition-all duration-300">
+        <IconComponent className="w-7 h-7" strokeWidth={1.5} />
+      </div>
+      <div className="text-4xl font-bold text-gray-900 mb-2">{number}</div>
+      <div className="text-lg font-semibold text-sky-600 mb-2">{label}</div>
+      <p className="text-gray-600 text-sm">{description}</p>
     </div>
-    <div className="text-5xl font-black text-gray-900 mb-2">{number}</div>
-    <div className="text-xl font-bold text-blue-600 mb-2">{label}</div>
-    <p className="text-gray-600">{description}</p>
-  </div>
+  </motion.div>
 );
 
 
@@ -365,63 +416,91 @@ const AboutPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<"mission" | "vision">("mission");
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 via-white to-blue-50">
-      {/* Animated Background */}
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 via-white to-sky-50">
+      {/* Subtle Background */}
       <div className="fixed inset-0 -z-10 overflow-hidden">
-        <div className="absolute -top-1/2 -right-1/2 w-full h-full bg-gradient-to-br from-blue-100/20 to-transparent rounded-full blur-3xl animate-blob" />
-        <div className="absolute -bottom-1/2 -left-1/2 w-full h-full bg-gradient-to-tr from-indigo-100/20 to-transparent rounded-full blur-3xl animate-blob animation-delay-2000" />
+        <div className="absolute -top-1/2 -right-1/2 w-full h-full bg-gradient-to-br from-sky-100/10 to-transparent rounded-full blur-3xl" />
+        <div className="absolute -bottom-1/2 -left-1/2 w-full h-full bg-gradient-to-tr from-sky-100/10 to-transparent rounded-full blur-3xl" />
       </div>
 
       <div className="container mx-auto px-4 py-16">
         {/* Hero Section */}
         <div className="max-w-7xl mx-auto mb-24">
           <div className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 rounded-full border border-blue-200 mb-6">
-              <span className="w-2 h-2 bg-blue-600 rounded-full animate-pulse" />
-              <span className="text-sm font-semibold text-blue-700">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-sky-50 rounded-full border border-sky-200 mb-6"
+            >
+              <span className="w-2 h-2 bg-sky-600 rounded-full" />
+              <span className="text-sm font-semibold text-sky-600">
                 Established 2018 • Trusted by Millions
               </span>
-            </div>
-            <h1 className="text-6xl md:text-7xl font-black text-gray-900 mb-6 leading-tight">
+            </motion.div>
+            <motion.h1
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="text-5xl md:text-6xl lg:text-7xl font-bold text-gray-900 mb-6 leading-tight"
+            >
               About{" "}
-              <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                Holiday Sera
-              </span>
-            </h1>
-            <p className="text-2xl text-gray-600 max-w-4xl mx-auto leading-relaxed">
+              <span className="text-sky-600">HolidaysEra</span>
+            </motion.h1>
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed"
+            >
               Transforming the way people experience vacation rentals through
               innovation, trust, and exceptional service since 2018.
-            </p>
+            </motion.p>
           </div>
 
           {/* Hero Image/Visual */}
-          <div className="relative h-[600px] rounded-3xl overflow-hidden shadow-2xl group">
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600">
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="relative h-[500px] rounded-3xl overflow-hidden shadow-2xl group"
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-sky-500 to-sky-700">
               <div className="absolute inset-0 bg-grid-white/10 [mask-image:linear-gradient(0deg,white,rgba(255,255,255,0.5))]" />
             </div>
             <div className="relative h-full flex items-center justify-center text-white p-12">
               <div className="text-center space-y-8">
-                <div className="flex justify-center gap-4">
-                  <div className="w-24 h-24 bg-white/20 backdrop-blur-lg rounded-2xl flex items-center justify-center text-5xl transform group-hover:scale-110 group-hover:rotate-12 transition-all duration-300">
-                    🏖️
-                  </div>
-                  <div className="w-24 h-24 bg-white/20 backdrop-blur-lg rounded-2xl flex items-center justify-center text-5xl transform group-hover:scale-110 group-hover:-rotate-12 transition-all duration-300 animation-delay-100">
-                    🏡
-                  </div>
-                  <div className="w-24 h-24 bg-white/20 backdrop-blur-lg rounded-2xl flex items-center justify-center text-5xl transform group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 animation-delay-200">
-                    ✈️
-                  </div>
+                <div className="flex justify-center gap-6">
+                  <motion.div
+                    whileHover={{ scale: 1.1, rotate: 12 }}
+                    className="w-20 h-20 bg-white/20 backdrop-blur-lg rounded-2xl flex items-center justify-center"
+                  >
+                    <Waves className="w-10 h-10" strokeWidth={1.5} />
+                  </motion.div>
+                  <motion.div
+                    whileHover={{ scale: 1.1, rotate: -12 }}
+                    transition={{ delay: 0.1 }}
+                    className="w-20 h-20 bg-white/20 backdrop-blur-lg rounded-2xl flex items-center justify-center"
+                  >
+                    <Home className="w-10 h-10" strokeWidth={1.5} />
+                  </motion.div>
+                  <motion.div
+                    whileHover={{ scale: 1.1, rotate: 6 }}
+                    transition={{ delay: 0.2 }}
+                    className="w-20 h-20 bg-white/20 backdrop-blur-lg rounded-2xl flex items-center justify-center"
+                  >
+                    <Plane className="w-10 h-10" strokeWidth={1.5} />
+                  </motion.div>
                 </div>
-                <h2 className="text-5xl font-black mb-4">
+                <h2 className="text-4xl md:text-5xl font-bold mb-4">
                   Your Dream Vacation Starts Here
                 </h2>
-                <p className="text-xl text-blue-100 max-w-3xl mx-auto">
+                <p className="text-lg text-sky-100 max-w-2xl mx-auto">
                   We connect travelers with extraordinary properties and create
                   unforgettable memories around the world.
                 </p>
               </div>
             </div>
-          </div>
+          </motion.div>
         </div>
 
         {/* Mission & Vision Section */}
@@ -430,29 +509,35 @@ const AboutPage: React.FC = () => {
             <div className="flex border-b border-gray-200">
               <button
                 onClick={() => setActiveTab("mission")}
-                className={`flex-1 py-6 px-8 text-xl font-bold transition-all duration-300 ${
+                className={`flex-1 py-6 px-8 text-lg font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${
                   activeTab === "mission"
-                    ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white"
-                    : "text-gray-600 hover:text-blue-600 hover:bg-gray-50"
+                    ? "bg-sky-600 text-white"
+                    : "text-gray-600 hover:text-sky-600 hover:bg-gray-50"
                 }`}
               >
-                🎯 Our Mission
+                <Target className="w-5 h-5" />
+                Our Mission
               </button>
               <button
                 onClick={() => setActiveTab("vision")}
-                className={`flex-1 py-6 px-8 text-xl font-bold transition-all duration-300 ${
+                className={`flex-1 py-6 px-8 text-lg font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${
                   activeTab === "vision"
-                    ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white"
-                    : "text-gray-600 hover:text-blue-600 hover:bg-gray-50"
+                    ? "bg-sky-600 text-white"
+                    : "text-gray-600 hover:text-sky-600 hover:bg-gray-50"
                 }`}
               >
-                🔮 Our Vision
+                <Eye className="w-5 h-5" />
+                Our Vision
               </button>
             </div>
             <div className="p-12">
               {activeTab === "mission" ? (
-                <div className="space-y-6 animate-fadeIn">
-                  <h3 className="text-4xl font-black text-gray-900 mb-4">
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="space-y-6"
+                >
+                  <h3 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
                     Empowering Memorable Journeys
                   </h3>
                   <p className="text-xl text-gray-600 leading-relaxed">
@@ -468,38 +553,48 @@ const AboutPage: React.FC = () => {
                     maintaining the highest standards of quality and safety.
                   </p>
                   <div className="grid md:grid-cols-3 gap-6 pt-8">
-                    <div className="p-6 bg-blue-50 rounded-2xl">
-                      <div className="text-4xl mb-3">🎨</div>
-                      <h4 className="text-lg font-bold text-gray-900 mb-2">
+                    <div className="p-6 bg-sky-50 rounded-xl border border-sky-100">
+                      <div className="w-12 h-12 bg-sky-100 rounded-lg flex items-center justify-center text-sky-600 mb-3">
+                        <Palette className="w-6 h-6" />
+                      </div>
+                      <h4 className="text-lg font-semibold text-gray-900 mb-2">
                         Quality First
                       </h4>
-                      <p className="text-gray-600">
+                      <p className="text-gray-600 text-sm">
                         Premium properties vetted for excellence
                       </p>
                     </div>
-                    <div className="p-6 bg-indigo-50 rounded-2xl">
-                      <div className="text-4xl mb-3">🤝</div>
-                      <h4 className="text-lg font-bold text-gray-900 mb-2">
+                    <div className="p-6 bg-sky-50 rounded-xl border border-sky-100">
+                      <div className="w-12 h-12 bg-sky-100 rounded-lg flex items-center justify-center text-sky-600 mb-3">
+                        <Handshake className="w-6 h-6" />
+                      </div>
+                      <h4 className="text-lg font-semibold text-gray-900 mb-2">
                         Trust & Safety
                       </h4>
-                      <p className="text-gray-600">
+                      <p className="text-gray-600 text-sm">
                         Secure bookings with verified hosts
                       </p>
                     </div>
-                    <div className="p-6 bg-purple-50 rounded-2xl">
-                      <div className="text-4xl mb-3">💫</div>
-                      <h4 className="text-lg font-bold text-gray-900 mb-2">
+                    <div className="p-6 bg-sky-50 rounded-xl border border-sky-100">
+                      <div className="w-12 h-12 bg-sky-100 rounded-lg flex items-center justify-center text-sky-600 mb-3">
+                        <Zap className="w-6 h-6" />
+                      </div>
+                      <h4 className="text-lg font-semibold text-gray-900 mb-2">
                         Exceptional Service
                       </h4>
-                      <p className="text-gray-600">
+                      <p className="text-gray-600 text-sm">
                         24/7 support for peace of mind
                       </p>
                     </div>
                   </div>
-                </div>
+                </motion.div>
               ) : (
-                <div className="space-y-6 animate-fadeIn">
-                  <h3 className="text-4xl font-black text-gray-900 mb-4">
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="space-y-6"
+                >
+                  <h3 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
                     Building the Future of Travel
                   </h3>
                   <p className="text-xl text-gray-600 leading-relaxed">
@@ -515,35 +610,41 @@ const AboutPage: React.FC = () => {
                     sustainable tourism practices worldwide.
                   </p>
                   <div className="grid md:grid-cols-3 gap-6 pt-8">
-                    <div className="p-6 bg-blue-50 rounded-2xl">
-                      <div className="text-4xl mb-3">🌍</div>
-                      <h4 className="text-lg font-bold text-gray-900 mb-2">
+                    <div className="p-6 bg-sky-50 rounded-xl border border-sky-100">
+                      <div className="w-12 h-12 bg-sky-100 rounded-lg flex items-center justify-center text-sky-600 mb-3">
+                        <Globe className="w-6 h-6" />
+                      </div>
+                      <h4 className="text-lg font-semibold text-gray-900 mb-2">
                         Global Reach
                       </h4>
-                      <p className="text-gray-600">
+                      <p className="text-gray-600 text-sm">
                         Expanding to 100+ countries by 2025
                       </p>
                     </div>
-                    <div className="p-6 bg-indigo-50 rounded-2xl">
-                      <div className="text-4xl mb-3">🚀</div>
-                      <h4 className="text-lg font-bold text-gray-900 mb-2">
+                    <div className="p-6 bg-sky-50 rounded-xl border border-sky-100">
+                      <div className="w-12 h-12 bg-sky-100 rounded-lg flex items-center justify-center text-sky-600 mb-3">
+                        <Rocket className="w-6 h-6" />
+                      </div>
+                      <h4 className="text-lg font-semibold text-gray-900 mb-2">
                         Innovation
                       </h4>
-                      <p className="text-gray-600">
+                      <p className="text-gray-600 text-sm">
                         AI-powered matching & smart booking
                       </p>
                     </div>
-                    <div className="p-6 bg-purple-50 rounded-2xl">
-                      <div className="text-4xl mb-3">🌱</div>
-                      <h4 className="text-lg font-bold text-gray-900 mb-2">
+                    <div className="p-6 bg-sky-50 rounded-xl border border-sky-100">
+                      <div className="w-12 h-12 bg-sky-100 rounded-lg flex items-center justify-center text-sky-600 mb-3">
+                        <Leaf className="w-6 h-6" />
+                      </div>
+                      <h4 className="text-lg font-semibold text-gray-900 mb-2">
                         Sustainability
                       </h4>
-                      <p className="text-gray-600">
+                      <p className="text-gray-600 text-sm">
                         Carbon-neutral operations by 2026
                       </p>
                     </div>
                   </div>
-                </div>
+                </motion.div>
               )}
             </div>
           </div>
@@ -552,11 +653,9 @@ const AboutPage: React.FC = () => {
         {/* Company Values Section */}
         <div className="max-w-7xl mx-auto mb-24">
           <div className="text-center mb-16">
-            <h2 className="text-5xl font-black text-gray-900 mb-6">
+            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
               Our Core{" "}
-              <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                Values
-              </span>
+              <span className="text-sky-600">Values</span>
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
               These principles guide everything we do and define who we are as a
@@ -573,11 +672,9 @@ const AboutPage: React.FC = () => {
         {/* Our Journey Section */}
         <div className="max-w-5xl mx-auto mb-24">
           <div className="text-center mb-16">
-            <h2 className="text-5xl font-black text-gray-900 mb-6">
+            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
               Our{" "}
-              <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                Journey
-              </span>
+              <span className="text-sky-600">Journey</span>
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
               From a small startup to a global platform - here's how we've grown
@@ -593,11 +690,9 @@ const AboutPage: React.FC = () => {
         {/* Achievements Section */}
         <div className="max-w-7xl mx-auto mb-24">
           <div className="text-center mb-16">
-            <h2 className="text-5xl font-black text-gray-900 mb-6">
+            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
               By the{" "}
-              <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                Numbers
-              </span>
+              <span className="text-sky-600">Numbers</span>
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
               Our achievements reflect our commitment to excellence and growth
@@ -613,125 +708,104 @@ const AboutPage: React.FC = () => {
 
 
         {/* Why Choose Us Section */}
-        <div className="max-w-7xl mx-auto mb-24">
-          <div className="relative p-16 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 rounded-3xl shadow-2xl overflow-hidden">
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="max-w-7xl mx-auto mb-24"
+        >
+          <div className="relative p-12 bg-sky-600 rounded-3xl shadow-2xl overflow-hidden">
             <div className="absolute inset-0 bg-grid-white/10 [mask-image:linear-gradient(0deg,white,rgba(255,255,255,0.5))]" />
             <div className="relative z-10 text-center text-white space-y-8">
-              <h2 className="text-5xl font-black mb-4">
-                Why Choose Holiday Sera?
+              <h2 className="text-4xl md:text-5xl font-bold mb-4">
+                Why Choose HolidaysEra?
               </h2>
-              <p className="text-xl text-blue-100 max-w-3xl mx-auto leading-relaxed">
+              <p className="text-lg text-sky-100 max-w-2xl mx-auto leading-relaxed">
                 We're not just a booking platform – we're your partner in
                 creating unforgettable vacation experiences with personalized
                 service, verified properties, and unwavering commitment to your
                 satisfaction.
               </p>
               <div className="grid md:grid-cols-4 gap-6 pt-8">
-                <div className="p-6 bg-white/10 backdrop-blur-lg rounded-2xl border border-white/20">
-                  <div className="text-4xl mb-3">🏆</div>
-                  <div className="text-2xl font-bold mb-2">Award Winning</div>
-                  <p className="text-blue-100 text-sm">Recognized excellence</p>
+                <div className="p-6 bg-white/10 backdrop-blur-lg rounded-xl border border-white/20">
+                  <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center mb-3 mx-auto">
+                    <Award className="w-6 h-6" />
+                  </div>
+                  <div className="text-xl font-semibold mb-2">Award Winning</div>
+                  <p className="text-sky-100 text-sm">Recognized excellence</p>
                 </div>
-                <div className="p-6 bg-white/10 backdrop-blur-lg rounded-2xl border border-white/20">
-                  <div className="text-4xl mb-3">🔒</div>
-                  <div className="text-2xl font-bold mb-2">Secure Platform</div>
-                  <p className="text-blue-100 text-sm">Your data protected</p>
+                <div className="p-6 bg-white/10 backdrop-blur-lg rounded-xl border border-white/20">
+                  <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center mb-3 mx-auto">
+                    <Shield className="w-6 h-6" />
+                  </div>
+                  <div className="text-xl font-semibold mb-2">Secure Platform</div>
+                  <p className="text-sky-100 text-sm">Your data protected</p>
                 </div>
-                <div className="p-6 bg-white/10 backdrop-blur-lg rounded-2xl border border-white/20">
-                  <div className="text-4xl mb-3">💰</div>
-                  <div className="text-2xl font-bold mb-2">Best Value</div>
-                  <p className="text-blue-100 text-sm">No hidden fees</p>
+                <div className="p-6 bg-white/10 backdrop-blur-lg rounded-xl border border-white/20">
+                  <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center mb-3 mx-auto">
+                    <DollarSign className="w-6 h-6" />
+                  </div>
+                  <div className="text-xl font-semibold mb-2">Best Value</div>
+                  <p className="text-sky-100 text-sm">No hidden fees</p>
                 </div>
-                <div className="p-6 bg-white/10 backdrop-blur-lg rounded-2xl border border-white/20">
-                  <div className="text-4xl mb-3">🌟</div>
-                  <div className="text-2xl font-bold mb-2">Top Rated</div>
-                  <p className="text-blue-100 text-sm"> rating</p>
+                <div className="p-6 bg-white/10 backdrop-blur-lg rounded-xl border border-white/20">
+                  <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center mb-3 mx-auto">
+                    <Star className="w-6 h-6 fill-white" />
+                  </div>
+                  <div className="text-xl font-semibold mb-2">Top Rated</div>
+                  <p className="text-sky-100 text-sm">4.7/5 rating</p>
                 </div>
               </div>
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* CTA Section */}
-        <div className="max-w-7xl mx-auto">
-          <div className="bg-white rounded-3xl shadow-2xl p-16 text-center">
-            <h2 className="text-5xl font-black text-gray-900 mb-6">
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="max-w-7xl mx-auto"
+        >
+          <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl p-12 text-center border border-gray-200">
+            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
               Ready to Join Our{" "}
-              <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                Community?
-              </span>
+              <span className="text-sky-600">Community?</span>
             </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-10">
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto mb-10">
               Whether you're looking to list your property or find your perfect
               vacation rental, we're here to help you every step of the way.
             </p>
             <div className="flex flex-wrap justify-center gap-4">
-              <button className="px-10 py-5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold text-lg shadow-xl hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-300">
-                🏠 List Your Property
-              </button>
-              <button className="px-10 py-5 bg-white text-gray-900 rounded-xl font-bold text-lg border-2 border-gray-300 hover:border-blue-600 shadow-lg hover:shadow-xl transition-all duration-300">
-                🔍 Browse Properties
-              </button>
-              <button className="px-10 py-5 bg-white text-gray-900 rounded-xl font-bold text-lg border-2 border-gray-300 hover:border-blue-600 shadow-lg hover:shadow-xl transition-all duration-300">
-                📞 Contact Us
-              </button>
+              <Link
+                href="/list-property"
+                className="inline-flex items-center gap-2 px-8 py-4 bg-sky-600 text-white rounded-xl font-semibold text-base shadow-lg hover:bg-sky-700 hover:shadow-xl transition-all duration-300"
+              >
+                <Home className="w-5 h-5" />
+                List Your Property
+              </Link>
+              <Link
+                href="/properties"
+                className="inline-flex items-center gap-2 px-8 py-4 bg-white text-gray-900 rounded-xl font-semibold text-base border border-gray-300 hover:border-sky-600 shadow-sm hover:shadow-md transition-all duration-300"
+              >
+                <Search className="w-5 h-5" />
+                Browse Properties
+              </Link>
+              <Link
+                href="/contact"
+                className="inline-flex items-center gap-2 px-8 py-4 bg-white text-gray-900 rounded-xl font-semibold text-base border border-gray-300 hover:border-sky-600 shadow-sm hover:shadow-md transition-all duration-300"
+              >
+                <Phone className="w-5 h-5" />
+                Contact Us
+              </Link>
             </div>
             <p className="text-sm text-gray-500 mt-8">
-              Join 4,500+ property owners and 2 million happy guests worldwide
+              Join 5,500+ property owners and 2 million happy guests worldwide
             </p>
           </div>
-        </div>
+        </motion.div>
       </div>
 
-      <style jsx>{`
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        @keyframes blob {
-          0%,
-          100% {
-            transform: translate(0, 0) scale(1);
-          }
-          33% {
-            transform: translate(30px, -50px) scale(1.1);
-          }
-          66% {
-            transform: translate(-20px, 20px) scale(0.9);
-          }
-        }
-
-        .animate-blob {
-          animation: blob 7s infinite;
-        }
-
-        .animation-delay-100 {
-          animation-delay: 0.1s;
-        }
-
-        .animation-delay-200 {
-          animation-delay: 0.2s;
-        }
-
-        .animation-delay-2000 {
-          animation-delay: 2s;
-        }
-
-        .animate-fadeIn {
-          animation: fadeIn 0.5s ease-out;
-        }
-
-        .bg-grid-white\/10 {
-          background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
-        }
-      `}</style>
     </div>
   );
 };

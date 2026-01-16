@@ -197,10 +197,10 @@ const testimonials: Testimonial[] = [
 ];
 
 const stats = [
-  { value: "4,500+", label: "Active Properties", icon: Building2 },
-  { value: "98%", label: "Success Rate", icon: TrendingUp },
-  { value: "2M+", label: "Happy Guests", icon: Users },
-  { value: "50+", label: "Countries", icon: Award },
+  { value: "5,500+", label: "Active Properties", icon: Building2 },
+  { value: "95%", label: "Success Rate", icon: TrendingUp },
+  { value: "1.2M+", label: "Happy Guests", icon: Users },
+  { value: "25+", label: "Countries", icon: Award },
 ];
 
 const faqs: FAQ[] = [
@@ -320,7 +320,7 @@ const ListPropertyPage: React.FC = () => {
           >
             <Sparkles className="w-4 h-4 text-sky-600" />
             <span className="text-sm font-semibold text-sky-600">
-              Trusted by 4,500+ Property Owners Worldwide
+              Trusted by 5,500+ Property Owners Worldwide
             </span>
           </motion.div>
 

@@ -295,19 +295,19 @@ const howItWorks = [
 
 const stats = [
   {
-    value: "4,500+",
+    value: "5,500+",
     label: "Properties",
     description: "Active listings across Europe, Asia, and United States",
     icon: Building2,
   },
   {
-    value: "2M+",
+    value: "1.2M+",
     label: "Happy Guests",
     description: "Satisfied customers and growing community",
     icon: Users,
   },
   {
-    value: "50+",
+    value: "25+",
     label: "Countries",
     description: "Flexible rental options worldwide",
     icon: Globe,
@@ -508,7 +508,7 @@ const EnhancedSubscriptionPage: React.FC = () => {
               <div className="inline-flex items-center gap-2 px-4 py-2 bg-sky-50 rounded-full border border-sky-200">
                 <span className="w-2 h-2 bg-sky-600 rounded-full animate-pulse" />
                 <span className="text-sm font-semibold text-sky-600">
-                  Join 4,500+ Successful Hosts
+                  Join 5,500+ Successful Hosts
                 </span>
               </div>
 

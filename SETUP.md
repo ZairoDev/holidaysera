@@ -28,9 +28,40 @@ Create a `.env.local` file in the root directory:
 ```env
 NEXT_PUBLIC_SUPABASE_URL=your-project-url-here
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
+GOOGLE_MAPS_API_KEY=your-google-maps-api-key-here
 ```
 
-Replace the placeholder values with your actual Supabase credentials.
+Replace the placeholder values with your actual credentials.
+
+### Google Maps API Setup (Required for Places Search)
+
+1. **Create a Google Cloud Project**
+   - Go to [Google Cloud Console](https://console.cloud.google.com/)
+   - Create a new project or select an existing one
+
+2. **Enable Required APIs**
+   - Navigate to "APIs & Services" > "Library"
+   - Enable the following APIs:
+     - **Places API** (for autocomplete and place details)
+     - **Maps JavaScript API** (optional, for future map features)
+
+3. **Create API Key**
+   - Go to "APIs & Services" > "Credentials"
+   - Click "Create Credentials" > "API Key"
+   - Copy your API key
+
+4. **Restrict API Key (Recommended for Production)**
+   - Click on your API key to edit it
+   - Under "API restrictions", select "Restrict key"
+   - Choose "Places API" and "Maps JavaScript API"
+   - Under "Application restrictions", you can restrict by HTTP referrer or IP address
+
+5. **Add to Environment Variables**
+   - Add `GOOGLE_MAPS_API_KEY=your-api-key-here` to your `.env.local` file
+   - **Important**: Never commit this key to version control
+   - For production, add it to your hosting platform's environment variables
+
+**Note**: The Google Maps API key is kept secure on the backend. The frontend never directly accesses Google APIs - all requests go through our backend routes (`/api/places/autocomplete` and `/api/places/details`).
 
 ### 3. Database Setup
 
