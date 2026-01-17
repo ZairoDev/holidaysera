@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useUserStore } from "@/lib/store";
+import { motion } from "framer-motion";
 import { CreditCard, Wallet, RefreshCw, Building2, Users, Globe } from "lucide-react";
 
 // Types
@@ -272,6 +273,7 @@ const subscriptionPlans: SubscriptionPlan[] = [
       { text: "4 Guaranteed Reservations (1-3 Weeks Each)" },
     ],
   },
+  
 ];
 
 const howItWorks = [
@@ -503,99 +505,122 @@ const EnhancedSubscriptionPage: React.FC = () => {
       <div className="container mx-auto px-4 py-16">
         <div className="flex flex-col justify-center items-center space-y-24">
           {/* Hero Section */}
-          <div className="flex flex-col mt-5 md:flex-row md:gap-16 items-center w-full max-w-7xl">
-            <div className="md:w-1/2 p-4 space-y-8">
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-sky-50 rounded-full border border-sky-200">
-                <span className="w-2 h-2 bg-sky-600 rounded-full animate-pulse" />
-                <span className="text-sm font-semibold text-sky-600">
-                  Join 5,500+ Successful Hosts
-                </span>
-              </div>
+          <motion.section
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            className="max-w-7xl mx-auto mb-2 text-center relative w-full"
+          >
+            {/* Trust Badge */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.2 }}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-sky-50 border border-sky-200/50 rounded-full mb-8 backdrop-blur-sm"
+            >
+              <span className="w-2 h-2 bg-sky-600 rounded-full animate-pulse" />
+              <span className="text-sm font-semibold text-sky-600">
+                Trusted by 5,500+ Property Owners Worldwide
+              </span>
+            </motion.div>
 
-              <h1 className="text-5xl font-black text-gray-900 md:text-6xl xl:text-7xl leading-tight">
-                Become A{" "}
-                <span className="bg-gradient-to-r from-sky-500 to-sky-600 bg-clip-text text-transparent animate-gradient">
-                  Host
-                </span>
-              </h1>
+            {/* Main Headline */}
+            <motion.h1
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="text-6xl md:text-7xl lg:text-8xl font-bold text-gray-900 mb-6 leading-tight"
+            >
+              Turn Your Property Into
+              <br />
+              <span className="text-sky-600">
+                Passive Income
+              </span>
+            </motion.h1>
 
-              <p className="text-lg text-gray-600 xl:text-xl leading-relaxed">
-                Transform your property into a thriving vacation rental
-                business. We provide everything you need - from professional
-                photography to guaranteed bookings. Join the leading platform
-                for short-term holiday rentals across Europe, Asia, and United
-                States.
-              </p>
+            {/* Subheading */}
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              className="text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto mb-12 leading-relaxed"
+            >
+              Join the leading platform for vacation rentals. Get professional support,
+              guaranteed bookings, and keep 100% of your earnings.
+            </motion.p>
 
-              <div className="flex flex-wrap gap-4">
-                <Link href="/list-property" className="px-8 py-4 bg-gradient-to-r from-sky-500 to-sky-600 text-white rounded-xl font-bold shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 inline-block text-center">
-                  Start Listing Now
+            {/* CTA Buttons */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+              className="flex flex-wrap justify-center gap-4 mb-16"
+            >
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Link
+                  href="/list-property"
+                  className="group relative px-8 py-4 bg-sky-600 text-white rounded-xl font-semibold text-lg overflow-hidden transition-all duration-300 hover:shadow-2xl hover:shadow-sky-500/50 inline-flex items-center gap-2"
+                >
+                  <span>Start Listing Now</span>
+                  <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                  </svg>
                 </Link>
-                
-              </div>
+              </motion.div>
 
-              <div className="flex items-center gap-8 pt-4">
-                <div className="flex -space-x-3">
-                  {[1, 2, 3, 4].map((i) => (
-                    <div
-                      key={i}
-                      className="w-12 h-12 rounded-full bg-gradient-to-br from-sky-400 to-sky-600 border-4 border-white flex items-center justify-center text-white font-bold"
-                    >
-                      {i}
-                    </div>
-                  ))}
-                </div>
-                <div>
-                  <div className="flex items-center gap-1 text-yellow-400">
-                    {[1, 2, 3, 4, 5].map((i) => (
-                      <svg
-                        key={i}
-                        className="w-5 h-5"
-                        fill="currentColor"
-                        viewBox="0 0 20 20"
-                      >
-                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                      </svg>
-                    ))}
-                  </div>
-                  <p className="text-sm text-gray-600 mt-1">
-                    <span className="font-bold">4.7/5</span> from 2,000+ reviews
-                  </p>
-                </div>
-              </div>
-            </div>
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <a
+                  href="#perfect-plan"
+                  className="px-8 py-4 bg-white text-gray-900 rounded-xl font-semibold text-lg border-2 border-gray-200 hover:border-sky-600 transition-all duration-300 inline-flex items-center gap-2 hover:shadow-xl cursor-pointer"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    const element = document.getElementById('perfect-plan');
+                    if (element) {
+                      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                  }}
+                >
+                  View Plans
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                </a>
+              </motion.div>
+            </motion.div>
 
-            <div className="md:w-1/2 flex justify-center items-center">
-              <div className="relative w-full h-[500px] group">
-                <div className="absolute inset-0 bg-gradient-to-br from-sky-200 to-sky-300 rounded-3xl transform rotate-6 group-hover:rotate-12 transition-transform duration-500" />
-                <div className="absolute inset-0 bg-gradient-to-br from-sky-100 to-sky-200 rounded-3xl shadow-2xl overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-br from-sky-500/90 to-sky-600/90 flex items-center justify-center">
-                    <div className="text-center p-8">
-                      <div className="w-56 h-56 mx-auto bg-white rounded-full flex items-center justify-center shadow-2xl mb-6 group-hover:scale-110 transition-transform duration-500">
-                        <svg
-                          className="w-32 h-32 text-sky-600"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
-                          />
-                        </svg>
-                      </div>
-                    
-                      <p className="text-sky-100 text-lg">
-                        Start earning in 3 simple steps
-                      </p>
-                    </div>
-                  </div>
-                </div>
+            {/* Quick Highlights */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6 }}
+              className="flex flex-wrap justify-center gap-8 text-sm text-gray-600"
+            >
+              <div className="flex items-center gap-2">
+                <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <span>No Commission Fees</span>
               </div>
-            </div>
-          </div>
+              <div className="flex items-center gap-2">
+                <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <span>Professional Photography</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <span>Guaranteed Bookings</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <span>24/7 Support</span>
+              </div>
+            </motion.div>
+          </motion.section>
 
           {/* Our Features Section */}
           <div className="w-full max-w-7xl">
@@ -618,37 +643,7 @@ const EnhancedSubscriptionPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Banner Section */}
-          <div className="w-full max-w-7xl">
-            <div className="relative p-12 bg-gradient-to-r from-sky-500 to-sky-600 rounded-3xl shadow-2xl overflow-hidden">
-              <div className="absolute inset-0 bg-grid-white/10 [mask-image:linear-gradient(0deg,white,rgba(255,255,255,0.5))] -z-10" />
-              <div className="relative z-10 text-center text-white space-y-6">
-                <h2 className="text-4xl md:text-5xl font-black">
-                  Create a Professional
-                  <br />
-                  Listing for Your Rental Space
-                </h2>
-                <p className="text-xl text-sky-100 max-w-3xl mx-auto">
-                  Our expert team will transform your property into an
-                  irresistible listing that attracts premium guests
-                </p>
-                <div className="flex justify-center gap-4 pt-4">
-                  <div className="px-6 py-3 bg-white/20 backdrop-blur-lg rounded-xl border border-white/30">
-                    <div className="text-3xl font-bold">4K</div>
-                    <div className="text-sm text-sky-100">Photo Quality</div>
-                  </div>
-                  <div className="px-6 py-3 bg-white/20 backdrop-blur-lg rounded-xl border border-white/30">
-                    <div className="text-3xl font-bold">24/7</div>
-                    <div className="text-sm text-sky-100">Support</div>
-                  </div>
-                  <div className="px-6 py-3 bg-white/20 backdrop-blur-lg rounded-xl border border-white/30">
-                    <div className="text-3xl font-bold">100%</div>
-                    <div className="text-sm text-sky-100">Guarantee</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+
 
           {/* How It Works Section */}
           <div className="w-full max-w-7xl">
@@ -696,11 +691,11 @@ const EnhancedSubscriptionPage: React.FC = () => {
           </div>
 
           {/* Subscription Plans Section */}
-          <div className="w-full max-w-7xl">
+          <div id="perfect-plan" className="w-full max-w-7xl scroll-mt-24">
             <header className="text-center max-w-3xl mx-auto mb-20">
               <div className="inline-flex items-center gap-2 px-4 py-2 bg-sky-50 rounded-full border border-sky-200 mb-6">
                 <span className="text-sm font-semibold text-sky-600">
-                  💎 Save up to 30% with annual plans
+                🎉 Special Offer: Get 3 months free with any plan!
                 </span>
               </div>
               <h2 className="text-5xl md:text-6xl font-black text-gray-900 mb-6">
@@ -720,18 +715,18 @@ const EnhancedSubscriptionPage: React.FC = () => {
                 ))}
               </div>
               <div className="text-center mt-12 p-8 bg-gradient-to-r from-sky-50 to-sky-100 rounded-2xl border-2 border-sky-200">
-                <p className="text-lg font-semibold text-gray-900 mb-2">
-                  🎉 Special Offer: Get 2 months free with annual plans!
-                </p>
-                <p className="text-gray-600">
-                  Need a custom plan?{" "}
+               
+                <p className="text-gray-600 mb-3">
+                  Have more than 10 properties?{" "}
                   <Link
-                    href="#"
-                    className="text-sky-600 hover:text-sky-600 font-bold underline"
+                    href="/contact"
+                    className="text-sky-600 hover:text-sky-700 font-bold underline"
                   >
-                    Contact our sales team
-                  </Link>
+                    Contact our sales team for Enterprise Edition
+                  </Link>{" "}
+                  for unlimited properties, custom pricing, dedicated support, and advanced features tailored to your business needs.
                 </p>
+            
               </div>
             </section>
           </div>
