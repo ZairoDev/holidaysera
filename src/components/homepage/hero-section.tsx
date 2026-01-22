@@ -220,7 +220,7 @@ export function HeroSection() {
           </motion.div>
 
           {/* Search Bar - Positioned as overlay */}
-          <div className="absolute lg:left-0 -bottom-40 md:-bottom-32 lg:bottom-2 flex justify-center lg:justify-start z-20 px-4 lg:px-0 w-full lg:w-auto">
+          <div className="absolute lg:left-0 -bottom-20 md:-bottom-16 lg:bottom-16 flex justify-center lg:justify-start z-20 px-4 lg:px-0 w-full lg:w-auto">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}

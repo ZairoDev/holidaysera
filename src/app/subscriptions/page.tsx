@@ -493,16 +493,61 @@ const AnimatedCounter: React.FC<{ end: number; suffix?: string }> = ({
 
 const EnhancedSubscriptionPage: React.FC = () => {
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
+  const { user } = useUserStore();
+  const isOwner = user?.role === "Owner";
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 via-white to-sky-50">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 via-white to-sky-50 relative">
+      {/* Owner Login Required Overlay */}
+      {!isOwner && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="relative bg-white rounded-2xl shadow-2xl p-8 md:p-12 max-w-md mx-4 text-center"
+          >
+            <div className="mb-6 flex justify-center">
+              <div className="flex h-20 w-20 items-center justify-center rounded-full bg-sky-100">
+                <Building2 className="h-10 w-10 text-sky-600" />
+              </div>
+            </div>
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">
+              Owner Login Required
+            </h2>
+            <p className="text-gray-600 mb-8 text-lg">
+              You must be logged in as an owner to access subscription plans and manage your property listings.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link
+                href="/login?role=Owner"
+                className="px-6 py-3 bg-sky-600 text-white rounded-xl font-semibold hover:bg-sky-700 transition-all duration-300 shadow-lg hover:shadow-xl"
+              >
+                Login as Owner
+              </Link>
+              <Link
+                href="/signup?role=Owner"
+                className="px-6 py-3 bg-transparent border-2 border-sky-600 text-sky-600 rounded-xl font-semibold hover:bg-sky-50 transition-all duration-300"
+              >
+                Sign Up as Owner
+              </Link>
+            </div>
+          </motion.div>
+        </div>
+      )}
+      
+      {/* Blur overlay on content when not owner */}
+      {!isOwner && (
+        <div className="fixed inset-0 z-40 pointer-events-none">
+          <div className="absolute inset-0 bg-white/80 backdrop-blur-sm" />
+        </div>
+      )}
       {/* Animated Background */}
       <div className="fixed inset-0 -z-10 overflow-hidden">
         <div className="absolute -top-1/2 -right-1/2 w-full h-full bg-gradient-to-br from-sky-100/20 to-transparent rounded-full blur-3xl animate-blob" />
         <div className="absolute -bottom-1/2 -left-1/2 w-full h-full bg-gradient-to-tr from-sky-100/20 to-transparent rounded-full blur-3xl animate-blob animation-delay-2000" />
       </div>
 
-      <div className="container mx-auto px-4 py-16">
+      <div className={`container mx-auto px-4 py-16 ${!isOwner ? 'opacity-50 pointer-events-none' : ''}`}>
         <div className="flex flex-col justify-center items-center space-y-24">
           {/* Hero Section */}
           <motion.section
@@ -558,7 +603,7 @@ const EnhancedSubscriptionPage: React.FC = () => {
             >
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                 <Link
-                  href="/list-property"
+                  href="/add-listing"
                   className="group relative px-8 py-4 bg-sky-600 text-white rounded-xl font-semibold text-lg overflow-hidden transition-all duration-300 hover:shadow-2xl hover:shadow-sky-500/50 inline-flex items-center gap-2"
                 >
                   <span>Start Listing Now</span>
@@ -788,14 +833,30 @@ const EnhancedSubscriptionPage: React.FC = () => {
                   into a profitable business today
                 </p>
                 <div className="flex flex-wrap justify-center gap-4">
-                  <button className="px-10 py-5 bg-white text-sky-600 rounded-xl font-bold text-lg shadow-xl hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-300">
+                  <button
+                    onClick={() => {
+                      const element = document.getElementById("perfect-plan");
+                      if (element) {
+                        element.scrollIntoView({ behavior: "smooth", block: "start" });
+                      }
+                    }}
+                    className="px-10 py-5 bg-white text-sky-600 rounded-xl font-bold text-lg shadow-xl hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-300"
+                  >
                     🚀 Get Started Now
                   </button>
-                  <button className="px-10 py-5 bg-transparent border-2 border-white text-white rounded-xl font-bold text-lg hover:bg-white hover:text-sky-600 transition-all duration-300">
+                  <Link
+                    href="/add-listing"
+                    className="px-10 py-5 bg-transparent border-2 border-white text-white rounded-xl font-bold text-lg hover:bg-white hover:text-sky-600 transition-all duration-300"
+                  >
+                    📝 Add Listing
+                  </Link>
+                  <Link
+                    href="/contact"
+                    className="px-10 py-5 bg-transparent border-2 border-white text-white rounded-xl font-bold text-lg hover:bg-white hover:text-sky-600 transition-all duration-300"
+                  >
                     📞 Talk to Sales
-                  </button>
+                  </Link>
                 </div>
-               
               </div>
             </div>
           </div>

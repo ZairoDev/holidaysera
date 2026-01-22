@@ -1,6 +1,8 @@
 import { Property, PropertyDocument } from "@/lib/type";
 import { router, publicProcedure, TRPCError, protectedProcedure } from "../trpc";
 import { Properties } from "@/models/property";
+import Review from "@/models/review";
+import mongoose from "mongoose";
 import z from "zod";
 import axios from "axios";
 
@@ -222,13 +224,50 @@ export const propertyRouter = router({
         if (input.minBathrooms) filter.bathroom = { $gte: input.minBathrooms };
         if (input.minGuests) filter.guests = { $gte: input.minGuests };
 
-        // Rating
-        if (input.minRating) filter.rating = { $gte: input.minRating };
-
-        // Amenities
+        // Amenities - check all three amenity maps (generalAmenities, otherAmenities, safeAmenities)
         if (input.amenities?.length) {
+          const amenityFilters: any[] = [];
+          
+          // Map frontend amenity names to possible database keys
+          const amenityKeyMap: Record<string, string[]> = {
+            "WiFi": ["Wifi", "WiFi", "wifi", "Internet"],
+            "Pool": ["Pool", "pool", "Private Pool", "Indoor Pool", "Outdoor Pool", "Small Pool"],
+            "Air Conditioning": ["Air conditioning", "Air Conditioning", "air conditioning"],
+            "Kitchen": ["Kitchen", "kitchen"],
+            "Parking": ["Free Parking", "Parking", "parking", "Free parking"],
+            "Hot Tub": ["Hot Tub/ Jacuzzi", "Hot Tub", "hot tub", "Jacuzzi"],
+            "Beach Access": ["Beach Front", "Beach", "beach", "Beach Access", "Beach Towel"],
+            "Gym Access": ["Gym", "gym", "Gym Access"],
+            "Fireplace": ["Fire Place", "Fireplace", "fireplace"],
+          };
+          
           for (const amenity of input.amenities) {
-            filter[`generalAmenities.${amenity}`] = true;
+            // Get possible keys for this amenity
+            const possibleKeys = amenityKeyMap[amenity] || [
+              amenity,
+              amenity.toLowerCase(),
+              amenity.charAt(0).toUpperCase() + amenity.slice(1).toLowerCase(),
+            ];
+            
+            const amenityConditions: any[] = [];
+            
+            for (const key of possibleKeys) {
+              // Check generalAmenities
+              amenityConditions.push({ [`generalAmenities.${key}`]: true });
+              // Check otherAmenities
+              amenityConditions.push({ [`otherAmenities.${key}`]: true });
+              // Check safeAmenities
+              amenityConditions.push({ [`safeAmenities.${key}`]: true });
+            }
+            
+            // At least one of the variations must be true in any of the amenity maps
+            amenityFilters.push({ $or: amenityConditions });
+          }
+          
+          // All selected amenities must be present (AND condition)
+          if (amenityFilters.length > 0) {
+            filter.$and = filter.$and || [];
+            filter.$and.push(...amenityFilters);
           }
         }
 
@@ -255,27 +294,140 @@ export const propertyRouter = router({
           filter._id = { $lt: cursor }; // Fetch next batch older than cursor
         }
 
-        const docs = await Properties.find(filter)
-          .sort(sort)
-          .limit(limit + 1) // fetch 1 extra to detect next page
-          .lean();
+        // If rating filter is applied, we need to use aggregation to calculate average ratings
+        if (input.minRating && input.minRating > 0) {
+          // Remove cursor from filter for aggregation (we'll handle it after)
+          const baseFilter = { ...filter };
+          delete baseFilter._id;
 
-        const mapped = docs
-          .slice(0, limit)
-          .map(mapPropertyDocument)
-          .filter(Boolean);
+          // Use aggregation pipeline to calculate average ratings from reviews
+          const pipeline: any[] = [
+            // Match properties with base filters (excluding cursor)
+            { $match: baseFilter },
+            // Lookup reviews for each property
+            {
+              $lookup: {
+                from: "reviews",
+                localField: "_id",
+                foreignField: "propertyId",
+                as: "reviews",
+              },
+            },
+            // Calculate average rating
+            {
+              $addFields: {
+                avgRating: {
+                  $cond: {
+                    if: { $gt: [{ $size: "$reviews" }, 0] },
+                    then: { $avg: "$reviews.rating" },
+                    else: 0,
+                  },
+                },
+              },
+            },
+            // Filter by minimum rating
+            {
+              $match: {
+                avgRating: { $gte: input.minRating },
+              },
+            },
+          ];
 
-        // next cursor
-        const nextCursor =
-          docs[limit] && docs[limit]._id ? docs[limit]._id.toString() : null;
+          // Apply cursor filter if exists (after rating calculation, before sort)
+          if (cursor) {
+            try {
+              const cursorObjectId = new mongoose.Types.ObjectId(cursor);
+              pipeline.push({
+                $match: {
+                  _id: { $lt: cursorObjectId },
+                },
+              });
+            } catch (error) {
+              console.error("Invalid cursor format:", error);
+            }
+          }
 
-        const totalCount = await Properties.countDocuments(filter);
+          // Sort and limit
+          pipeline.push({ $sort: sort });
+          pipeline.push({ $limit: limit + 1 });
 
-        return {
-          items: mapped,
-          totalCount,
-          nextCursor,
-        };
+          const docs = await Properties.aggregate(pipeline);
+
+          const mapped = docs
+            .slice(0, limit)
+            .map((doc: any) => {
+              // Convert aggregation result back to property document format
+              const { reviews, avgRating, ...propertyDoc } = doc;
+              return mapPropertyDocument(propertyDoc);
+            })
+            .filter(Boolean);
+
+          // Get total count with rating filter
+          const countPipeline: any[] = [
+            { $match: baseFilter },
+            {
+              $lookup: {
+                from: "reviews",
+                localField: "_id",
+                foreignField: "propertyId",
+                as: "reviews",
+              },
+            },
+            {
+              $addFields: {
+                avgRating: {
+                  $cond: {
+                    if: { $gt: [{ $size: "$reviews" }, 0] },
+                    then: { $avg: "$reviews.rating" },
+                    else: 0,
+                  },
+                },
+              },
+            },
+            {
+              $match: {
+                avgRating: { $gte: input.minRating },
+              },
+            },
+            { $count: "total" },
+          ];
+
+          const countResult = await Properties.aggregate(countPipeline);
+          const totalCount = countResult[0]?.total || 0;
+
+          // next cursor
+          const nextCursor =
+            docs[limit] && docs[limit]._id ? docs[limit]._id.toString() : null;
+
+          return {
+            items: mapped,
+            totalCount,
+            nextCursor,
+          };
+        } else {
+          // No rating filter, use regular query
+          const docs = await Properties.find(filter)
+            .sort(sort)
+            .limit(limit + 1) // fetch 1 extra to detect next page
+            .lean();
+
+          const mapped = docs
+            .slice(0, limit)
+            .map(mapPropertyDocument)
+            .filter(Boolean);
+
+          // next cursor
+          const nextCursor =
+            docs[limit] && docs[limit]._id ? docs[limit]._id.toString() : null;
+
+          const totalCount = await Properties.countDocuments(filter);
+
+          return {
+            items: mapped,
+            totalCount,
+            nextCursor,
+          };
+        }
       } catch (e) {
         console.error("Error in getFiltered:", e);
         throw new TRPCError({

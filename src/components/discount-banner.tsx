@@ -1,16 +1,38 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
 import { X, Tag, Copy, Check } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 
+const DISCOUNT_BANNER_DISMISSED_KEY = "discount-banner-dismissed";
+
 export function DiscountBanner() {
-  const [isVisible, setIsVisible] = useState(true);
+  const pathname = usePathname();
+  const [isVisible, setIsVisible] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  // Check if banner should be shown on current page
+  const allowedPaths = ["/", "/properties", "/login", "/signup"];
+  const shouldShowOnPage = allowedPaths.includes(pathname);
+
+  useEffect(() => {
+    // Check localStorage to see if banner was dismissed
+    const isDismissed = localStorage.getItem(DISCOUNT_BANNER_DISMISSED_KEY) === "true";
+    
+    // Only show if on allowed page and not dismissed
+    if (shouldShowOnPage && !isDismissed) {
+      setIsVisible(true);
+    } else {
+      setIsVisible(false);
+    }
+  }, [pathname, shouldShowOnPage]);
 
   const handleDismiss = () => {
     setIsVisible(false);
+    // Persist dismissed state in localStorage
+    localStorage.setItem(DISCOUNT_BANNER_DISMISSED_KEY, "true");
   };
 
   const handleCopyCoupon = async () => {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Filter, X, SlidersHorizontal, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,89 @@ import { Property } from "@/lib/type";
 export default function PropertiesPage() {
   const [showFilters, setShowFilters] = useState(false);
   const { location } = useSearchStore();
+  
+  // Local state for input values (to prevent filtering while typing)
+  const [bedroomsInput, setBedroomsInput] = useState<string>("");
+  const [bathroomsInput, setBathroomsInput] = useState<string>("");
+  const [guestsInput, setGuestsInput] = useState<string>("");
+  
+  // Debounce timers
+  const bedroomsTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const bathroomsTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const guestsTimerRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Helper function to update filter with debounce
+  const updateBedroomsFilter = (value: string) => {
+    if (bedroomsTimerRef.current) {
+      clearTimeout(bedroomsTimerRef.current);
+    }
+    
+    bedroomsTimerRef.current = setTimeout(() => {
+      const trimmedValue = value.trim();
+      if (trimmedValue === "") {
+        setFilters((prev) => ({ ...prev, minBedrooms: 0 }));
+        setBedroomsInput("");
+      } else {
+        const num = parseInt(trimmedValue);
+        if (!isNaN(num) && num >= 0) {
+          setFilters((prev) => ({ ...prev, minBedrooms: num }));
+        } else {
+          setBedroomsInput(filters.minBedrooms === 0 ? "" : filters.minBedrooms.toString());
+        }
+      }
+    }, 800); // 800ms delay
+  };
+  
+  const updateBathroomsFilter = (value: string) => {
+    if (bathroomsTimerRef.current) {
+      clearTimeout(bathroomsTimerRef.current);
+    }
+    
+    bathroomsTimerRef.current = setTimeout(() => {
+      const trimmedValue = value.trim();
+      if (trimmedValue === "") {
+        setFilters((prev) => ({ ...prev, minBathrooms: 0 }));
+        setBathroomsInput("");
+      } else {
+        const num = parseInt(trimmedValue);
+        if (!isNaN(num) && num >= 0) {
+          setFilters((prev) => ({ ...prev, minBathrooms: num }));
+        } else {
+          setBathroomsInput(filters.minBathrooms === 0 ? "" : filters.minBathrooms.toString());
+        }
+      }
+    }, 800); // 800ms delay
+  };
+  
+  const updateGuestsFilter = (value: string) => {
+    if (guestsTimerRef.current) {
+      clearTimeout(guestsTimerRef.current);
+    }
+    
+    guestsTimerRef.current = setTimeout(() => {
+      const trimmedValue = value.trim();
+      if (trimmedValue === "") {
+        setFilters((prev) => ({ ...prev, minGuests: 0 }));
+        setGuestsInput("");
+      } else {
+        const num = parseInt(trimmedValue);
+        if (!isNaN(num) && num >= 0) {
+          setFilters((prev) => ({ ...prev, minGuests: num }));
+        } else {
+          setGuestsInput(filters.minGuests === 0 ? "" : filters.minGuests.toString());
+        }
+      }
+    }, 800); // 800ms delay
+  };
+  
+  // Cleanup timers on unmount
+  useEffect(() => {
+    return () => {
+      if (bedroomsTimerRef.current) clearTimeout(bedroomsTimerRef.current);
+      if (bathroomsTimerRef.current) clearTimeout(bathroomsTimerRef.current);
+      if (guestsTimerRef.current) clearTimeout(guestsTimerRef.current);
+    };
+  }, []);
 
   const [filters, setFilters] = useState({
     priceRange: [0, 1000] as [number, number],
@@ -30,7 +113,6 @@ export default function PropertiesPage() {
     minBedrooms: 0,
     minBathrooms: 0,
     minGuests: 0,
-    minRating: 0,
     amenities: [] as string[],
     sortBy: "rating" as  "price-low" | "price-high" | "rating",
   });
@@ -69,7 +151,6 @@ export default function PropertiesPage() {
         minBathrooms:
           filters.minBathrooms > 0 ? filters.minBathrooms : undefined,
         minGuests: filters.minGuests > 0 ? filters.minGuests : undefined,
-        minRating: filters.minRating > 0 ? filters.minRating : undefined,
         amenities: filters.amenities.length > 0 ? filters.amenities : undefined,
         sortBy: filters.sortBy,
         limit: 20,
@@ -96,6 +177,23 @@ export default function PropertiesPage() {
   const properties = data?.pages.flatMap((page) => page.items) ?? [];
   const totalCount = data?.pages[0]?.totalCount ?? 0;
 
+  // Check if any filters are applied
+  const hasActiveFilters = () => {
+    return (
+      location ||
+      filters.priceRange[0] !== 0 ||
+      filters.priceRange[1] !== 1000 ||
+      filters.propertyTypes.length > 0 ||
+      filters.minBedrooms > 0 ||
+      filters.minBathrooms > 0 ||
+      filters.minGuests > 0 ||
+      filters.amenities.length > 0
+    );
+  };
+
+  // Check if filters are active
+  const isFiltered = hasActiveFilters();
+
     const handlePropertyTypeToggle = (type: string) => {
     setFilters((prev) => ({
       ...prev,
@@ -121,11 +219,38 @@ export default function PropertiesPage() {
       minBedrooms: 0,
       minBathrooms: 0,
       minGuests: 0,
-      minRating: 0,
       amenities: [],
       sortBy: "rating",
     });
+    setBedroomsInput("");
+    setBathroomsInput("");
+    setGuestsInput("");
   };
+
+  // Sync input values with filter values when filters change externally
+  useEffect(() => {
+    if (filters.minBedrooms === 0) {
+      setBedroomsInput("");
+    } else {
+      setBedroomsInput(filters.minBedrooms.toString());
+    }
+  }, [filters.minBedrooms]);
+
+  useEffect(() => {
+    if (filters.minBathrooms === 0) {
+      setBathroomsInput("");
+    } else {
+      setBathroomsInput(filters.minBathrooms.toString());
+    }
+  }, [filters.minBathrooms]);
+
+  useEffect(() => {
+    if (filters.minGuests === 0) {
+      setGuestsInput("");
+    } else {
+      setGuestsInput(filters.minGuests.toString());
+    }
+  }, [filters.minGuests]);
 
   const FilterSection = () => (
     <div className="space-y-6">
@@ -180,37 +305,95 @@ export default function PropertiesPage() {
 
       <div>
         <h4 className="mb-3 font-medium text-gray-900">Rooms</h4>
-        <div className="space-y-3">
+        <div className="space-y-4">
           <div>
-            <label className="mb-1 block text-sm text-gray-700">
+            <label className="mb-2 block text-sm text-gray-700">
               Min Bedrooms
             </label>
             <Input
               type="number"
               min="0"
-              value={filters.minBedrooms}
-              onChange={(e) =>
-                setFilters((prev) => ({
-                  ...prev,
-                  minBedrooms: parseInt(e.target.value) || 0,
-                }))
-              }
+              max="20"
+              placeholder="Any"
+              value={bedroomsInput}
+              onChange={(e) => {
+                const value = e.target.value;
+                // Update local input state immediately
+                setBedroomsInput(value);
+                // Clear existing timer and set new one
+                if (bedroomsTimerRef.current) {
+                  clearTimeout(bedroomsTimerRef.current);
+                }
+                // Debounce filter update
+                updateBedroomsFilter(value);
+              }}
+              onKeyDown={(e) => {
+                // Update filter immediately on Enter key
+                if (e.key === "Enter") {
+                  if (bedroomsTimerRef.current) {
+                    clearTimeout(bedroomsTimerRef.current);
+                  }
+                  const value = e.currentTarget.value.trim();
+                  if (value === "") {
+                    setFilters((prev) => ({ ...prev, minBedrooms: 0 }));
+                    setBedroomsInput("");
+                  } else {
+                    const num = parseInt(value);
+                    if (!isNaN(num) && num >= 0) {
+                      setFilters((prev) => ({ ...prev, minBedrooms: num }));
+                    } else {
+                      setBedroomsInput(filters.minBedrooms === 0 ? "" : filters.minBedrooms.toString());
+                    }
+                  }
+                  e.currentTarget.blur();
+                }
+              }}
+              className="h-10"
             />
           </div>
           <div>
-            <label className="mb-1 block text-sm text-gray-700">
+            <label className="mb-2 block text-sm text-gray-700">
               Min Bathrooms
             </label>
             <Input
               type="number"
               min="0"
-              value={filters.minBathrooms}
-              onChange={(e) =>
-                setFilters((prev) => ({
-                  ...prev,
-                  minBathrooms: parseInt(e.target.value) || 0,
-                }))
-              }
+              max="20"
+              placeholder="Any"
+              value={bathroomsInput}
+              onChange={(e) => {
+                const value = e.target.value;
+                // Update local input state immediately
+                setBathroomsInput(value);
+                // Clear existing timer and set new one
+                if (bathroomsTimerRef.current) {
+                  clearTimeout(bathroomsTimerRef.current);
+                }
+                // Debounce filter update
+                updateBathroomsFilter(value);
+              }}
+              onKeyDown={(e) => {
+                // Update filter immediately on Enter key
+                if (e.key === "Enter") {
+                  if (bathroomsTimerRef.current) {
+                    clearTimeout(bathroomsTimerRef.current);
+                  }
+                  const value = e.currentTarget.value.trim();
+                  if (value === "") {
+                    setFilters((prev) => ({ ...prev, minBathrooms: 0 }));
+                    setBathroomsInput("");
+                  } else {
+                    const num = parseInt(value);
+                    if (!isNaN(num) && num >= 0) {
+                      setFilters((prev) => ({ ...prev, minBathrooms: num }));
+                    } else {
+                      setBathroomsInput(filters.minBathrooms === 0 ? "" : filters.minBathrooms.toString());
+                    }
+                  }
+                  e.currentTarget.blur();
+                }
+              }}
+              className="h-10"
             />
           </div>
         </div>
@@ -221,34 +404,43 @@ export default function PropertiesPage() {
         <Input
           type="number"
           min="0"
-          value={filters.minGuests}
-          onChange={(e) =>
-            setFilters((prev) => ({
-              ...prev,
-              minGuests: parseInt(e.target.value) || 0,
-            }))
-          }
+          max="50"
+          placeholder="Any"
+          value={guestsInput}
+          onChange={(e) => {
+            const value = e.target.value;
+            // Update local input state immediately
+            setGuestsInput(value);
+            // Clear existing timer and set new one
+            if (guestsTimerRef.current) {
+              clearTimeout(guestsTimerRef.current);
+            }
+            // Debounce filter update
+            updateGuestsFilter(value);
+          }}
+          onKeyDown={(e) => {
+            // Update filter immediately on Enter key
+            if (e.key === "Enter") {
+              if (guestsTimerRef.current) {
+                clearTimeout(guestsTimerRef.current);
+              }
+              const value = e.currentTarget.value.trim();
+              if (value === "") {
+                setFilters((prev) => ({ ...prev, minGuests: 0 }));
+                setGuestsInput("");
+              } else {
+                const num = parseInt(value);
+                if (!isNaN(num) && num >= 0) {
+                  setFilters((prev) => ({ ...prev, minGuests: num }));
+                } else {
+                  setGuestsInput(filters.minGuests === 0 ? "" : filters.minGuests.toString());
+                }
+              }
+              e.currentTarget.blur();
+            }
+          }}
+          className="h-10"
         />
-      </div>
-
-      <div>
-        <h4 className="mb-3 font-medium text-gray-900">Minimum Rating</h4>
-        <Select
-          value={filters.minRating.toString()}
-          onValueChange={(value) =>
-            setFilters((prev) => ({ ...prev, minRating: parseFloat(value) }))
-          }
-        >
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="0">Any Rating</SelectItem>
-            <SelectItem value="3">3+ Stars</SelectItem>
-            <SelectItem value="4">4+ Stars</SelectItem>
-            <SelectItem value="4.5">4.5+ Stars</SelectItem>
-          </SelectContent>
-        </Select>
       </div>
 
       <div>
@@ -281,13 +473,15 @@ export default function PropertiesPage() {
           <h1 className="mb-2 text-4xl font-bold text-gray-900">
             {location ? `Properties in ${location}` : "All Properties"}
           </h1>
-          <p className="text-gray-600">
-            {(() => {
-              const baseCount = !location ? 4000 : 1000;
-              const totalDisplayCount = baseCount + totalCount;
-              return `${totalDisplayCount}+ ${totalDisplayCount === 1 ? "property" : "properties"} found`;
-            })()}
-          </p>
+          {!isFiltered && (
+            <p className="text-gray-600">
+              {(() => {
+                const baseCount = !location ? 4000 : 1000;
+                const totalDisplayCount = baseCount + totalCount;
+                return `${totalDisplayCount}+ ${totalDisplayCount === 1 ? "property" : "properties"} found`;
+              })()}
+            </p>
+          )}
         </div>
 
         <div className="flex gap-8">

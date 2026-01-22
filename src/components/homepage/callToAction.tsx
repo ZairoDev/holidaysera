@@ -32,13 +32,13 @@ export function CallToAction() {
                 Browse Properties
               </Button>
             </Link>
-            <Link href={user ? "/about" : "/signup"}>
+            <Link href={"/about" }>
               <Button
                 size="lg"
                 variant="outline"
                 className="border-white text-white bg-white/5 hover:bg-white/10"
               >
-                {user ? "Explore More" : "Sign Up Free"}
+                 "Explore More" 
               </Button>
             </Link>
           </div>
