@@ -686,4 +686,58 @@ export const propertyRouter = router({
           });
         }
       }),
+  getTopLocations: publicProcedure
+    .input(
+      z.object({
+        limit: z.number().default(10),
+      })
+    )
+    .query(async ({ input }) => {
+      try {
+        const { limit } = input;
+
+        // Aggregate properties by city and country to get top locations
+        const topLocations = await Properties.aggregate([
+          {
+            $match: {
+              isLive: true,
+              rentalType: "Short Term",
+              city: { $exists: true, $ne: "" },
+              country: { $exists: true, $ne: "" },
+            },
+          },
+          {
+            $group: {
+              _id: {
+                city: { $trim: { input: "$city" } },
+                country: { $trim: { input: "$country" } },
+              },
+              count: { $sum: 1 },
+            },
+          },
+          {
+            $sort: { count: -1 },
+          },
+          {
+            $limit: limit,
+          },
+          {
+            $project: {
+              _id: 0,
+              city: "$_id.city",
+              country: "$_id.country",
+              propertyCount: "$count",
+            },
+          },
+        ]);
+
+        return topLocations;
+      } catch (error) {
+        console.error("Error fetching top locations:", error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to fetch top locations",
+        });
+      }
+    }),
 });

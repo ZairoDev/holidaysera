@@ -108,9 +108,9 @@ function DiscountBanner() {
 
   const handleCopyCoupon = async () => {
     try {
-      await navigator.clipboard.writeText("ZAIRO");
+      await navigator.clipboard.writeText("WELCOME 2026");
       setCopied(true);
-      toast.success("Coupon code ZAIRO copied to clipboard!");
+      toast.success("Coupon code WELCOME 2026 copied to clipboard!");
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
       toast.error("Failed to copy coupon code");
@@ -135,7 +135,7 @@ function DiscountBanner() {
               Get 10% Off Your Next Booking!
             </h3>
             <p className="text-sm opacity-90 md:text-base">
-              Use coupon code <span className="font-bold">ZAIRO</span> when you rent a property now
+              Use coupon code <span className="font-bold">WELCOME 2026</span> when you rent a property now
             </p>
           </div>
         </div>
@@ -151,7 +151,7 @@ function DiscountBanner() {
           ) : (
             <>
               <Copy className="h-5 w-5" />
-              <span>Copy Code: ZAIRO</span>
+              <span>Copy Code: WELCOME 2026</span>
             </>
           )}
         </button>

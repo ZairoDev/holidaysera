@@ -45,7 +45,7 @@ const PlacesAutocomplete: React.FC<PlacesAutocompleteProps> = ({
     // Add listener for place selection
     const listener = autocompleteRef.current.addListener(
       "place_changed",
-      () => {
+      async () => {
         const place = autocompleteRef.current?.getPlace();
 
         if (!place || !place.geometry) {
@@ -85,8 +85,47 @@ const PlacesAutocomplete: React.FC<PlacesAutocompleteProps> = ({
           }
         });
 
-        const lat = place.geometry.location?.lat() || 0;
-        const lng = place.geometry.location?.lng() || 0;
+        // Handle both cases: location as method or as object
+        let lat = 0;
+        let lng = 0;
+        
+        const location = place.geometry.location;
+        if (location) {
+          try {
+            // Try calling as methods first (standard Google Maps API)
+            if (typeof (location as any).lat === "function") {
+              lat = (location as any).lat();
+              lng = (location as any).lng();
+            } else {
+              // Location is an object with properties
+              lat = (location as any).lat || 0;
+              lng = (location as any).lng || 0;
+            }
+          } catch (error) {
+            // Fallback: try accessing as properties
+            lat = (location as any).lat || 0;
+            lng = (location as any).lng || 0;
+          }
+        }
+        
+        // If coordinates are still 0, try to fetch from place details API
+        if (lat === 0 && lng === 0 && place.place_id) {
+          console.warn("Coordinates are 0, attempting to fetch place details...");
+          try {
+            const detailsResponse = await fetch(
+              `/api/places/details?place_id=${encodeURIComponent(place.place_id)}`
+            );
+            if (detailsResponse.ok) {
+              const detailsData = await detailsResponse.json();
+              if (detailsData.location) {
+                lat = detailsData.location.lat;
+                lng = detailsData.location.lng;
+              }
+            }
+          } catch (error) {
+            console.error("Error fetching place details:", error);
+          }
+        }
 
         onPlaceSelected({
           address: place.formatted_address || "",

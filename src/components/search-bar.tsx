@@ -14,6 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { trpc } from '@/trpc/client';
 
 interface SearchBarProps {
   variant?: 'hero' | 'compact';
@@ -51,6 +52,12 @@ interface PlaceDetails {
   addressComponents: any[];
 }
 
+interface TopLocation {
+  city: string;
+  country: string;
+  propertyCount: number;
+}
+
 export function SearchBar({ variant = 'compact' }: SearchBarProps) {
   const router = useRouter();
   const { location, checkIn, checkOut, guests, setLocation, setCheckIn, setCheckOut, setGuests } = useSearchStore();
@@ -58,6 +65,8 @@ export function SearchBar({ variant = 'compact' }: SearchBarProps) {
   const [autocompleteResults, setAutocompleteResults] = useState<AutocompletePrediction[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [showTopLocations, setShowTopLocations] = useState(false);
+  const [isInputFocused, setIsInputFocused] = useState(false);
   const [selectedPlace, setSelectedPlace] = useState<PlaceDetails | null>(null);
   const [isDetailsLoading, setIsDetailsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -66,16 +75,29 @@ export function SearchBar({ variant = 'compact' }: SearchBarProps) {
   const suggestionsRef = useRef<HTMLDivElement>(null);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Fetch top locations
+  const { data: topLocations, isLoading: isLoadingTopLocations } = trpc.property.getTopLocations.useQuery(
+    { limit: 10 },
+    { staleTime: 10 * 60 * 1000 } // Cache for 10 minutes
+  );
+
   // Debounced autocomplete search
   const searchAutocomplete = useCallback(async (input: string) => {
     if (!input || input.trim().length < 2) {
       setAutocompleteResults([]);
       setShowSuggestions(false);
+      // Show top locations if input is empty and focused
+      if (isInputFocused && !input.trim()) {
+        setShowTopLocations(true);
+      } else {
+        setShowTopLocations(false);
+      }
       return;
     }
 
     setIsLoading(true);
     setError(null);
+    setShowTopLocations(false);
 
     try {
       const response = await fetch(`/api/places/autocomplete?input=${encodeURIComponent(input)}`);
@@ -100,7 +122,7 @@ export function SearchBar({ variant = 'compact' }: SearchBarProps) {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [isInputFocused]);
 
   // Handle input change with debouncing
   const handleInputChange = useCallback((value: string) => {
@@ -112,11 +134,27 @@ export function SearchBar({ variant = 'compact' }: SearchBarProps) {
       clearTimeout(debounceTimerRef.current);
     }
 
+    // Show top locations if input is empty
+    if (!value.trim() && isInputFocused) {
+      setShowTopLocations(true);
+      setShowSuggestions(false);
+    } else {
+      setShowTopLocations(false);
+    }
+
     // Set new timer
     debounceTimerRef.current = setTimeout(() => {
       searchAutocomplete(value);
     }, 300);
-  }, [setLocation, searchAutocomplete]);
+  }, [setLocation, searchAutocomplete, isInputFocused]);
+
+  // Handle top location click
+  const handleTopLocationClick = useCallback((topLocation: TopLocation) => {
+    // Only use city name to avoid search errors
+    setLocation(topLocation.city);
+    setShowTopLocations(false);
+    setShowSuggestions(false);
+  }, [setLocation]);
 
   // Fetch place details
   const fetchPlaceDetails = useCallback(async (placeId: string) => {
@@ -158,6 +196,8 @@ export function SearchBar({ variant = 'compact' }: SearchBarProps) {
         !inputRef.current.contains(event.target as Node)
       ) {
         setShowSuggestions(false);
+        setShowTopLocations(false);
+        setIsInputFocused(false);
       }
     };
 
@@ -202,8 +242,11 @@ export function SearchBar({ variant = 'compact' }: SearchBarProps) {
                     value={location}
                     onChange={(e) => handleInputChange(e.target.value)}
                     onFocus={() => {
+                      setIsInputFocused(true);
                       if (autocompleteResults.length > 0) {
                         setShowSuggestions(true);
+                      } else if (!location.trim() && topLocations && topLocations.length > 0) {
+                        setShowTopLocations(true);
                       }
                     }}
                     className="pl-10"
@@ -211,6 +254,40 @@ export function SearchBar({ variant = 'compact' }: SearchBarProps) {
                   {isLoading && (
                     <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 animate-spin" />
                   )}
+
+                  {/* Top Locations Suggestions */}
+                  <AnimatePresence>
+                    {showTopLocations && topLocations && topLocations.length > 0 && !location.trim() && (
+                      <motion.div
+                        ref={suggestionsRef}
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 max-h-64 overflow-y-auto"
+                      >
+                        <div className="px-4 py-2 border-b border-gray-200 bg-gray-50">
+                          <h3 className="text-sm font-semibold text-gray-700">Popular Destinations</h3>
+                        </div>
+                        {topLocations.map((topLocation, index) => (
+                          <button
+                            key={`${topLocation.city}-${topLocation.country}-${index}`}
+                            onClick={() => handleTopLocationClick(topLocation)}
+                            className="w-full px-4 py-3 text-left hover:bg-sky-50 transition-colors border-b border-gray-100 last:border-b-0 flex items-start gap-3"
+                          >
+                            <MapPin className="w-5 h-5 text-sky-600 mt-0.5 flex-shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <div className="font-medium text-gray-900 truncate">
+                                {topLocation.city}
+                              </div>
+                              <div className="text-sm text-gray-500 truncate">
+                                {topLocation.country}
+                              </div>
+                            </div>
+                          </button>
+                        ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
 
                   {/* Autocomplete Suggestions */}
                   <AnimatePresence>
@@ -233,9 +310,11 @@ export function SearchBar({ variant = 'compact' }: SearchBarProps) {
                               <div className="font-medium text-gray-900 truncate">
                                 {prediction.structured_formatting.main_text}
                               </div>
-                              <div className="text-sm text-gray-500 truncate">
-                                {prediction.structured_formatting.secondary_text}
-                              </div>
+                              {prediction.structured_formatting.secondary_text && (
+                                <div className="text-sm text-gray-500 truncate">
+                                  {prediction.structured_formatting.secondary_text}
+                                </div>
+                              )}
                             </div>
                           </button>
                         ))}

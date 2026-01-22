@@ -15,9 +15,9 @@ export function DiscountBanner() {
 
   const handleCopyCoupon = async () => {
     try {
-      await navigator.clipboard.writeText("ZAIRO");
+      await navigator.clipboard.writeText("WELCOME 2026");
       setCopied(true);
-      toast.success("Coupon code ZAIRO copied to clipboard!");
+      toast.success("Coupon code WELCOME 2026 copied to clipboard!");
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
       toast.error("Failed to copy coupon code");
@@ -58,7 +58,7 @@ export function DiscountBanner() {
                     ) : (
                       <>
                         <Copy className="h-4 w-4" />
-                        <span>ZAIRO</span>
+                        <span>WELCOME 2026</span>
                       </>
                     )}
                   </button>

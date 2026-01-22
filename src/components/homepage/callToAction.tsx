@@ -3,8 +3,11 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import { useUserStore } from "@/lib/store";
 
 export function CallToAction() {
+  const { user } = useUserStore();
+
   return (
     <section className="py-20">
       <div className="container mx-auto px-4">
@@ -18,7 +21,7 @@ export function CallToAction() {
             Ready to Start Your Adventure?
           </h2>
           <p className="mb-8 text-xl opacity-90">
-            Join thousands of travelers who trust HolidaysEra
+            Join thousands of travellers who trust HolidaysEra
           </p>
           <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Link href="/properties">
@@ -29,13 +32,13 @@ export function CallToAction() {
                 Browse Properties
               </Button>
             </Link>
-            <Link href="/signup">
+            <Link href={user ? "/properties" : "/signup"}>
               <Button
                 size="lg"
                 variant="outline"
                 className="border-white text-white bg-white/5 hover:bg-white/10"
               >
-                Sign Up Free
+                {user ? "Explore More" : "Sign Up Free"}
               </Button>
             </Link>
           </div>

@@ -54,11 +54,39 @@ const PageAddListing2: FC = () => {
     lng: 23.7275,
   });
 
+  // Get API key from environment
+  const googleMapsApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "";
+
   // Load Google Maps script
   const { isLoaded: isMapsLoaded, loadError } = useLoadScript({
-    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
+    googleMapsApiKey: googleMapsApiKey,
     libraries,
   });
+
+  // Debug: Check if API key is loaded (only log first few chars for security)
+  useEffect(() => {
+    if (googleMapsApiKey) {
+      console.log("✅ Google Maps API Key loaded:", googleMapsApiKey.substring(0, 10) + "...");
+    } else {
+      console.error("❌ NEXT_PUBLIC_GOOGLE_MAPS_API_KEY is not set in environment variables");
+      console.error("Environment check:", {
+        hasKey: !!process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY,
+        keyLength: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY?.length || 0,
+      });
+    }
+  }, [googleMapsApiKey]);
+
+  // Debug: Log load errors
+  useEffect(() => {
+    if (loadError) {
+      console.error("❌ Google Maps Load Error:", loadError);
+      console.error("Error details:", {
+        message: loadError.message,
+        hasApiKey: !!googleMapsApiKey,
+        apiKeyPrefix: googleMapsApiKey.substring(0, 10),
+      });
+    }
+  }, [loadError, googleMapsApiKey]);
 
   // Load saved data from localStorage on mount
   useEffect(() => {
@@ -117,15 +145,39 @@ const PageAddListing2: FC = () => {
   const isAddressComplete = street && city && postalCode && country;
   const hasCoordinates = center.lat !== 0 && center.lng !== 0;
 
+  if (!googleMapsApiKey) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="text-center space-y-3 max-w-md">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto">
+            <MapPin className="w-8 h-8 text-red-600" />
+          </div>
+          <p className="text-red-600 font-medium">Google Maps API Key Missing</p>
+          <p className="text-sm text-gray-500">
+            The NEXT_PUBLIC_GOOGLE_MAPS_API_KEY environment variable is not set.
+            Please configure it in your production environment variables.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   if (loadError) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="text-center space-y-3">
+        <div className="text-center space-y-3 max-w-md">
           <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto">
             <MapPin className="w-8 h-8 text-red-600" />
           </div>
           <p className="text-red-600 font-medium">Failed to load Google Maps</p>
-          <p className="text-sm text-gray-500">Please check your API key</p>
+          <p className="text-sm text-gray-500">
+            {loadError.message || "Please check your API key configuration"}
+          </p>
+          {loadError.message?.includes("API key") && (
+            <p className="text-xs text-gray-400 mt-2">
+              Make sure NEXT_PUBLIC_GOOGLE_MAPS_API_KEY is set in your environment variables
+            </p>
+          )}
         </div>
       </div>
     );
