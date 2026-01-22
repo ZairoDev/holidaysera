@@ -244,7 +244,7 @@ const milestones: Milestone[] = [
     year: "2023",
     title: "5,500+ Properties",
     description:
-      "Reached 5,500+ properties and 2 million happy guests with sustainable tourism initiatives.",
+      "Reached 5,500+ properties and 1.2 million happy guests with sustainable tourism initiatives.",
     icon: Target,
   },
   {
@@ -800,7 +800,7 @@ const AboutPage: React.FC = () => {
               </Link>
             </div>
             <p className="text-sm text-gray-500 mt-8">
-              Join 5,500+ property owners and 2 million happy guests worldwide
+              Join 5,500+ property owners and 1.2 million happy guests worldwide
             </p>
           </div>
         </motion.div>

@@ -32,7 +32,7 @@ export function CallToAction() {
                 Browse Properties
               </Button>
             </Link>
-            <Link href={user ? "/properties" : "/signup"}>
+            <Link href={user ? "/about" : "/signup"}>
               <Button
                 size="lg"
                 variant="outline"

@@ -10,7 +10,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import FormItem from "../FormItem";
-import { X } from "lucide-react";
+import { Euro, X } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { DollarSign, Percent, Calendar } from "lucide-react";
@@ -286,7 +286,7 @@ const PageAddListing8: FC<PageAddListing8Props> = () => {
                   {/* Weekday Base Price */}
                   <div className="space-y-2">
                     <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-                      <DollarSign className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                      <Euro className="w-4 h-4 text-gray-600 dark:text-gray-400" />
                       Mon - Thu
                     </label>
                     <div className="relative">
@@ -310,7 +310,7 @@ const PageAddListing8: FC<PageAddListing8Props> = () => {
                   {/* Weekend Price */}
                   <div className="space-y-2">
                     <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-                      <DollarSign className="w-4 h-4 text-rose-600" />
+                      <Euro className="w-4 h-4 text-rose-600" />
                       Fri - Sun
                     </label>
                     <div className="relative">

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import {
   GoogleMap,
   Marker,
@@ -12,6 +12,8 @@ import { MapPin, Navigation2, ZoomIn, ZoomOut } from "lucide-react";
 interface MapProps {
   latitude: number;
   longitude: number;
+  onMarkerDrag?: (lat: number, lng: number) => void;
+  draggable?: boolean;
 }
 
 const containerStyle = {
@@ -19,9 +21,15 @@ const containerStyle = {
   height: "100%",
 };
 
-const LocationMap: React.FC<MapProps> = ({ latitude, longitude }) => {
+const LocationMap: React.FC<MapProps> = ({ 
+  latitude, 
+  longitude, 
+  onMarkerDrag,
+  draggable = false 
+}) => {
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [showInfo, setShowInfo] = useState(false);
+  const [markerPosition, setMarkerPosition] = useState({ lat: latitude, lng: longitude });
 
   const { isLoaded } = useJsApiLoader({
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
@@ -31,6 +39,24 @@ const LocationMap: React.FC<MapProps> = ({ latitude, longitude }) => {
     lat: latitude || 0,
     lng: longitude || 0,
   };
+
+  // Update marker position when latitude/longitude props change
+  useEffect(() => {
+    if (latitude !== 0 && longitude !== 0) {
+      setMarkerPosition({ lat: latitude, lng: longitude });
+    }
+  }, [latitude, longitude]);
+
+  const handleMarkerDragEnd = useCallback((e: google.maps.MapMouseEvent) => {
+    if (e.latLng) {
+      const newLat = e.latLng.lat();
+      const newLng = e.latLng.lng();
+      setMarkerPosition({ lat: newLat, lng: newLng });
+      if (onMarkerDrag) {
+        onMarkerDrag(newLat, newLng);
+      }
+    }
+  }, [onMarkerDrag]);
 
   const onLoad = useCallback((map: google.maps.Map) => {
     setMap(map);
@@ -93,13 +119,28 @@ const LocationMap: React.FC<MapProps> = ({ latitude, longitude }) => {
           ],
         }}
       >
-        {latitude !== 0 && longitude !== 0 && (
+        {markerPosition.lat !== 0 && markerPosition.lng !== 0 && (
           <>
-            <Marker position={center} onClick={() => setShowInfo(true)} />
+            <Marker 
+              position={markerPosition} 
+              onClick={() => setShowInfo(true)}
+              draggable={draggable}
+              onDragEnd={handleMarkerDragEnd}
+              icon={draggable ? {
+                url: 'data:image/svg+xml;base64,' + btoa(`
+                  <svg xmlns="http://www.w3.org/2000/svg" width="40" height="50" viewBox="0 0 24 24" fill="none">
+                    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" fill="#3b82f6"/>
+                    <circle cx="12" cy="9" r="2.5" fill="white"/>
+                  </svg>
+                `),
+                scaledSize: new google.maps.Size(40, 50),
+                anchor: new google.maps.Point(20, 50),
+              } : undefined}
+            />
 
             {showInfo && (
               <InfoWindow
-                position={center}
+                position={markerPosition}
                 onCloseClick={() => setShowInfo(false)}
               >
                 <div className="p-2">
@@ -107,11 +148,16 @@ const LocationMap: React.FC<MapProps> = ({ latitude, longitude }) => {
                     Property Location
                   </p>
                   <p className="text-xs text-gray-600">
-                    Lat: {latitude.toFixed(6)}
+                    Lat: {markerPosition.lat.toFixed(6)}
                   </p>
                   <p className="text-xs text-gray-600">
-                    Lng: {longitude.toFixed(6)}
+                    Lng: {markerPosition.lng.toFixed(6)}
                   </p>
+                  {draggable && (
+                    <p className="text-xs text-sky-600 mt-1 font-medium">
+                      💡 Drag the marker to adjust location
+                    </p>
+                  )}
                 </div>
               </InfoWindow>
             )}
@@ -147,14 +193,19 @@ const LocationMap: React.FC<MapProps> = ({ latitude, longitude }) => {
       </div>
 
       {/* Coordinates Badge */}
-      {latitude !== 0 && longitude !== 0 && (
+      {markerPosition.lat !== 0 && markerPosition.lng !== 0 && (
         <div className="absolute bottom-4 left-4 bg-white/95 backdrop-blur-sm px-4 py-2 rounded-lg shadow-lg border border-gray-200">
           <div className="flex items-center gap-2 text-xs">
             <MapPin className="w-4 h-4 text-sky-600" />
             <span className="font-mono text-gray-700">
-              {latitude.toFixed(4)}, {longitude.toFixed(4)}
+              {markerPosition.lat.toFixed(6)}, {markerPosition.lng.toFixed(6)}
             </span>
           </div>
+          {draggable && (
+            <p className="text-xs text-gray-500 mt-1">
+              Drag marker to adjust
+            </p>
+          )}
         </div>
       )}
     </div>

@@ -427,7 +427,14 @@ const PageAddListing2: FC = () => {
         <div className="relative w-full h-[400px] bg-gray-100">
           {isMapsLoaded ? (
             <>
-              <LocationMap latitude={center.lat} longitude={center.lng} />
+              <LocationMap 
+                latitude={center.lat} 
+                longitude={center.lng}
+                draggable={hasCoordinates}
+                onMarkerDrag={(lat, lng) => {
+                  setCenter({ lat, lng });
+                }}
+              />
 
               {!hasCoordinates && (
                 <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center">
@@ -444,6 +451,15 @@ const PageAddListing2: FC = () => {
                       </p>
                     </div>
                   </div>
+                </div>
+              )}
+
+              {hasCoordinates && (
+                <div className="absolute top-4 left-4 bg-white/95 backdrop-blur-sm px-3 py-2 rounded-lg shadow-lg border border-gray-200 z-10">
+                  <p className="text-xs font-medium text-gray-700 flex items-center gap-1">
+                    <MapPin className="w-3 h-3 text-sky-600" />
+                    Drag the marker to fine-tune location
+                  </p>
                 </div>
               )}
             </>
