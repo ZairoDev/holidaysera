@@ -1,4 +1,5 @@
 import { CallToAction } from "@/components/homepage/callToAction";
+import { FAQSection } from "@/components/homepage/faqSecion";
 import { FeaturedProperties } from "@/components/homepage/featuredDestinations";
 import { HeroSection } from "@/components/homepage/hero-section";
 import { PopularDestinations } from "@/components/homepage/popularDestinations";
@@ -21,6 +22,7 @@ export default async function Home() {
       <TrustIndicators />
       <Testimonials />
       <CallToAction />
+      <FAQSection />
     </div>
   );
 }
