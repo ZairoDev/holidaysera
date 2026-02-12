@@ -125,7 +125,11 @@ const userSchema = new mongoose.Schema(
     forgotPasswordTokenExpiry: Date,
     verifyToken: String,
     verifyTokenExpiry: Date,
+    origin: {
+      type: String,
+    },
   },
+  
   { timestamps: true }
 );
 const Users = mongoose.models?.users || mongoose.model("users", userSchema);

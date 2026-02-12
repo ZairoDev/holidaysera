@@ -58,6 +58,7 @@ export const authRouter = router({
           phone: input.phoneNumber,
           password: hashedPassword,
           role: input.role,
+          origin: "holidaysera",
         });
         // Create new user
         const token = signToken({

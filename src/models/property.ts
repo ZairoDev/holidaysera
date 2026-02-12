@@ -103,6 +103,10 @@ const PropertySchema = new Schema(
     lastUpdatedBy: { type: [String], default: [] },
     lastUpdates: { type: [[String]], default: [[]] },
     isLive: { type: Boolean, default: true },
+    origin: {
+      type: String,
+      default: "holidaysera",
+    },
   },
   { timestamps: true }
 );

@@ -168,6 +168,7 @@ export async function GET(request: NextRequest) {
         password: null,
         phone: "",
         countryCode: "+91",
+        origin: "holidaysera",
       });
     }
 

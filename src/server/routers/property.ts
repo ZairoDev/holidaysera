@@ -678,6 +678,7 @@ export const propertyRouter = router({
           listedOn: ["VacationSaga"],
           lastUpdatedBy: [ctx.user.email],
           lastUpdates: [[new Date().toISOString()]],
+          origin: "holidaysera",
         });
   
         // Map the response
