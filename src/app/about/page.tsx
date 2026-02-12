@@ -288,7 +288,7 @@ const achievements: Achievement[] = [
     icon: MessageCircle,
   },
   {
-    number: "98%",
+    number: "95%",
     label: "Satisfaction",
     description: "Guest satisfaction rate",
     icon: CheckCircle2,

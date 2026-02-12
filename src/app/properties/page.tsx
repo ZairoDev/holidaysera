@@ -2,9 +2,8 @@
 
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Filter, X, SlidersHorizontal, Loader2 } from "lucide-react";
+import { Filter, X, SlidersHorizontal, Loader2, Minus, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -33,6 +32,29 @@ export default function PropertiesPage() {
   const bedroomsTimerRef = useRef<NodeJS.Timeout | null>(null);
   const bathroomsTimerRef = useRef<NodeJS.Timeout | null>(null);
   const guestsTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const priceRangeTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const stepperDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Local state for stepper display (updates immediately); filters commit after debounce
+  const [stepperBedrooms, setStepperBedrooms] = useState(0);
+  const [stepperBathrooms, setStepperBathrooms] = useState(0);
+  const [stepperGuests, setStepperGuests] = useState(0);
+  const stepperBedroomsRef = useRef(0);
+  const stepperBathroomsRef = useRef(0);
+  const stepperGuestsRef = useRef(0);
+  
+  // Local state for slider value (for immediate UI feedback)
+  const [sliderValue, setSliderValue] = useState<[number, number]>([0, 1000]);
+  
+  const [filters, setFilters] = useState({
+    priceRange: [0, 1000] as [number, number],
+    propertyTypes: [] as string[],
+    minBedrooms: 0,
+    minBathrooms: 0,
+    minGuests: 0,
+    amenities: [] as string[],
+    sortBy: "rating" as  "price-low" | "price-high" | "rating",
+  });
   
   // Helper function to update filter with debounce
   const updateBedroomsFilter = (value: string) => {
@@ -98,24 +120,64 @@ export default function PropertiesPage() {
     }, 800); // 800ms delay
   };
   
+  // Helper function to update price range filter with debounce
+  const updatePriceRangeFilter = (value: [number, number]) => {
+    // Update local state immediately for smooth UI - no delay
+    setSliderValue(value);
+    
+    // Debounce the actual filter update (triggers API call)
+    if (priceRangeTimerRef.current) {
+      clearTimeout(priceRangeTimerRef.current);
+    }
+    
+    priceRangeTimerRef.current = setTimeout(() => {
+      setFilters((prev) => ({
+        ...prev,
+        priceRange: value,
+      }));
+    }, 300); // Reduced to 300ms for faster response
+  };
+  
+  // Commit stepper values to filters after debounce (reduces API calls)
+  const commitStepperFilters = () => {
+    setFilters((prev) => ({
+      ...prev,
+      minBedrooms: stepperBedroomsRef.current,
+      minBathrooms: stepperBathroomsRef.current,
+      minGuests: stepperGuestsRef.current,
+    }));
+  };
+  
+  const scheduleStepperCommit = () => {
+    if (stepperDebounceRef.current) clearTimeout(stepperDebounceRef.current);
+    stepperDebounceRef.current = setTimeout(commitStepperFilters, 500);
+  };
+  
   // Cleanup timers on unmount
   useEffect(() => {
     return () => {
       if (bedroomsTimerRef.current) clearTimeout(bedroomsTimerRef.current);
       if (bathroomsTimerRef.current) clearTimeout(bathroomsTimerRef.current);
       if (guestsTimerRef.current) clearTimeout(guestsTimerRef.current);
+      if (priceRangeTimerRef.current) clearTimeout(priceRangeTimerRef.current);
+      if (stepperDebounceRef.current) clearTimeout(stepperDebounceRef.current);
     };
   }, []);
-
-  const [filters, setFilters] = useState({
-    priceRange: [0, 1000] as [number, number],
-    propertyTypes: [] as string[],
-    minBedrooms: 0,
-    minBathrooms: 0,
-    minGuests: 0,
-    amenities: [] as string[],
-    sortBy: "rating" as  "price-low" | "price-high" | "rating",
-  });
+  
+  // Sync stepper display and refs when filters change externally (e.g., reset)
+  useEffect(() => {
+    setStepperBedrooms(filters.minBedrooms);
+    setStepperBathrooms(filters.minBathrooms);
+    setStepperGuests(filters.minGuests);
+    stepperBedroomsRef.current = filters.minBedrooms;
+    stepperBathroomsRef.current = filters.minBathrooms;
+    stepperGuestsRef.current = filters.minGuests;
+  }, [filters.minBedrooms, filters.minBathrooms, filters.minGuests]);
+  
+  // Sync slider value with filters when filters change externally (e.g., reset)
+  useEffect(() => {
+    setSliderValue(filters.priceRange);
+  }, [filters.priceRange]);
 
   const propertyTypes = [
     "Villa",
@@ -262,24 +324,15 @@ export default function PropertiesPage() {
       </div>
 
       <div>
-        <h4 className="mb-8 font-medium text-gray-900">Price Range</h4>
+        <h4 className="mb-6 font-medium text-gray-900">Price Range</h4>
         <Slider
           min={0}
           max={1000}
           step={10}
-          value={filters.priceRange}
-          onValueChange={(value) =>
-            setFilters((prev) => ({
-              ...prev,
-              priceRange: value as [number, number],
-            }))
-          }
+          value={sliderValue}
+          onValueChange={(value) => updatePriceRangeFilter(value as [number, number])}
           className="mb-2"
         />
-        <div className="flex items-center justify-between text-sm text-gray-600">
-          <span>€{filters.priceRange[0]}</span>
-          <span>€{filters.priceRange[1]}+</span>
-        </div>
       </div>
 
       <div>
@@ -310,137 +363,134 @@ export default function PropertiesPage() {
             <label className="mb-2 block text-sm text-gray-700">
               Min Bedrooms
             </label>
-            <Input
-              type="number"
-              min="0"
-              max="20"
-              placeholder="Any"
-              value={bedroomsInput}
-              onChange={(e) => {
-                const value = e.target.value;
-                // Update local input state immediately
-                setBedroomsInput(value);
-                // Clear existing timer and set new one
-                if (bedroomsTimerRef.current) {
-                  clearTimeout(bedroomsTimerRef.current);
-                }
-                // Debounce filter update
-                updateBedroomsFilter(value);
-              }}
-              onKeyDown={(e) => {
-                // Update filter immediately on Enter key
-                if (e.key === "Enter") {
-                  if (bedroomsTimerRef.current) {
-                    clearTimeout(bedroomsTimerRef.current);
-                  }
-                  const value = e.currentTarget.value.trim();
-                  if (value === "") {
-                    setFilters((prev) => ({ ...prev, minBedrooms: 0 }));
-                    setBedroomsInput("");
-                  } else {
-                    const num = parseInt(value);
-                    if (!isNaN(num) && num >= 0) {
-                      setFilters((prev) => ({ ...prev, minBedrooms: num }));
-                    } else {
-                      setBedroomsInput(filters.minBedrooms === 0 ? "" : filters.minBedrooms.toString());
-                    }
-                  }
-                  e.currentTarget.blur();
-                }
-              }}
-              className="h-10"
-            />
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                className="h-9 w-9 shrink-0 rounded-full"
+                onClick={() => {
+                  const next = Math.max(0, stepperBedrooms - 1);
+                  setStepperBedrooms(next);
+                  stepperBedroomsRef.current = next;
+                  setBedroomsInput(next === 0 ? "" : next.toString());
+                  scheduleStepperCommit();
+                }}
+                disabled={stepperBedrooms === 0}
+                aria-label="Decrease bedrooms"
+              >
+                <Minus className="h-4 w-4" />
+              </Button>
+              <span className="min-w-[2rem] text-center text-sm font-medium tabular-nums">
+                {stepperBedrooms === 0 ? "Any" : stepperBedrooms}
+              </span>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                className="h-9 w-9 shrink-0 rounded-full"
+                onClick={() => {
+                  const next = Math.min(20, stepperBedrooms + 1);
+                  setStepperBedrooms(next);
+                  stepperBedroomsRef.current = next;
+                  setBedroomsInput(next.toString());
+                  scheduleStepperCommit();
+                }}
+                disabled={stepperBedrooms >= 20}
+                aria-label="Increase bedrooms"
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
           <div>
             <label className="mb-2 block text-sm text-gray-700">
               Min Bathrooms
             </label>
-            <Input
-              type="number"
-              min="0"
-              max="20"
-              placeholder="Any"
-              value={bathroomsInput}
-              onChange={(e) => {
-                const value = e.target.value;
-                // Update local input state immediately
-                setBathroomsInput(value);
-                // Clear existing timer and set new one
-                if (bathroomsTimerRef.current) {
-                  clearTimeout(bathroomsTimerRef.current);
-                }
-                // Debounce filter update
-                updateBathroomsFilter(value);
-              }}
-              onKeyDown={(e) => {
-                // Update filter immediately on Enter key
-                if (e.key === "Enter") {
-                  if (bathroomsTimerRef.current) {
-                    clearTimeout(bathroomsTimerRef.current);
-                  }
-                  const value = e.currentTarget.value.trim();
-                  if (value === "") {
-                    setFilters((prev) => ({ ...prev, minBathrooms: 0 }));
-                    setBathroomsInput("");
-                  } else {
-                    const num = parseInt(value);
-                    if (!isNaN(num) && num >= 0) {
-                      setFilters((prev) => ({ ...prev, minBathrooms: num }));
-                    } else {
-                      setBathroomsInput(filters.minBathrooms === 0 ? "" : filters.minBathrooms.toString());
-                    }
-                  }
-                  e.currentTarget.blur();
-                }
-              }}
-              className="h-10"
-            />
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                className="h-9 w-9 shrink-0 rounded-full"
+                onClick={() => {
+                  const next = Math.max(0, stepperBathrooms - 1);
+                  setStepperBathrooms(next);
+                  stepperBathroomsRef.current = next;
+                  setBathroomsInput(next === 0 ? "" : next.toString());
+                  scheduleStepperCommit();
+                }}
+                disabled={stepperBathrooms === 0}
+                aria-label="Decrease bathrooms"
+              >
+                <Minus className="h-4 w-4" />
+              </Button>
+              <span className="min-w-[2rem] text-center text-sm font-medium tabular-nums">
+                {stepperBathrooms === 0 ? "Any" : stepperBathrooms}
+              </span>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                className="h-9 w-9 shrink-0 rounded-full"
+                onClick={() => {
+                  const next = Math.min(20, stepperBathrooms + 1);
+                  setStepperBathrooms(next);
+                  stepperBathroomsRef.current = next;
+                  setBathroomsInput(next.toString());
+                  scheduleStepperCommit();
+                }}
+                disabled={stepperBathrooms >= 20}
+                aria-label="Increase bathrooms"
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </div>
       </div>
 
       <div>
         <h4 className="mb-3 font-medium text-gray-900">Guests</h4>
-        <Input
-          type="number"
-          min="0"
-          max="50"
-          placeholder="Any"
-          value={guestsInput}
-          onChange={(e) => {
-            const value = e.target.value;
-            // Update local input state immediately
-            setGuestsInput(value);
-            // Clear existing timer and set new one
-            if (guestsTimerRef.current) {
-              clearTimeout(guestsTimerRef.current);
-            }
-            // Debounce filter update
-            updateGuestsFilter(value);
-          }}
-          onKeyDown={(e) => {
-            // Update filter immediately on Enter key
-            if (e.key === "Enter") {
-              if (guestsTimerRef.current) {
-                clearTimeout(guestsTimerRef.current);
-              }
-              const value = e.currentTarget.value.trim();
-              if (value === "") {
-                setFilters((prev) => ({ ...prev, minGuests: 0 }));
-                setGuestsInput("");
-              } else {
-                const num = parseInt(value);
-                if (!isNaN(num) && num >= 0) {
-                  setFilters((prev) => ({ ...prev, minGuests: num }));
-                } else {
-                  setGuestsInput(filters.minGuests === 0 ? "" : filters.minGuests.toString());
-                }
-              }
-              e.currentTarget.blur();
-            }
-          }}
-          className="h-10"
-        />
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="h-9 w-9 shrink-0 rounded-full"
+            onClick={() => {
+              const next = Math.max(0, stepperGuests - 1);
+              setStepperGuests(next);
+              stepperGuestsRef.current = next;
+              setGuestsInput(next === 0 ? "" : next.toString());
+              scheduleStepperCommit();
+            }}
+            disabled={stepperGuests === 0}
+            aria-label="Decrease guests"
+          >
+            <Minus className="h-4 w-4" />
+          </Button>
+          <span className="min-w-[2rem] text-center text-sm font-medium tabular-nums">
+            {stepperGuests === 0 ? "Any" : stepperGuests}
+          </span>
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="h-9 w-9 shrink-0 rounded-full"
+            onClick={() => {
+              const next = Math.min(50, stepperGuests + 1);
+              setStepperGuests(next);
+              stepperGuestsRef.current = next;
+              setGuestsInput(next.toString());
+              scheduleStepperCommit();
+            }}
+            disabled={stepperGuests >= 50}
+            aria-label="Increase guests"
+          >
+            <Plus className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
       <div>
@@ -497,7 +547,7 @@ export default function PropertiesPage() {
                   Filters
                 </Button>
 
-                <Select
+                {/* <Select
                   value={filters.sortBy}
                   onValueChange={(value) =>
                     setFilters((prev) => ({
@@ -510,7 +560,7 @@ export default function PropertiesPage() {
                     <SelectValue placeholder="Sort by" />
                   </SelectTrigger>
                   <SelectContent>
-                    {/* <SelectItem value="featured">Featured</SelectItem> */}
+                   
                     <SelectItem value="price-low">
                       Price: Low to High
                     </SelectItem>
@@ -519,7 +569,7 @@ export default function PropertiesPage() {
                     </SelectItem>
                     <SelectItem value="rating">Highest Rated</SelectItem>
                   </SelectContent>
-                </Select>
+                </Select> */}
               </div>
               <FilterSection />
             </div>
