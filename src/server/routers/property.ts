@@ -652,9 +652,11 @@ export const propertyRouter = router({
           // Descriptions - NOW STRING
           reviews: input.reviews || "",
   
-          // Images
-          propertyCoverFileUrl: input.propertyCoverFileUrl,
-          propertyPictureUrls: input.propertyPictureUrls || [],
+        // Images
+        propertyCoverFileUrl: input.propertyCoverFileUrl,
+        propertyPictureUrls: input.propertyPictureUrls || [],
+        // Keep legacy propertyImages in sync with propertyPictureUrls
+        propertyImages: input.propertyPictureUrls || [],
   
           // Pricing - NOW NUMBERS
           basePrice: input.basePrice,
@@ -756,6 +758,10 @@ export const propertyRouter = router({
               const removed = existingPics.filter((p) => p && !newPics.includes(p));
               for (const url of removed) {
                 await deleteBunnyImageByUrl(url);
+              }
+              // Keep legacy propertyImages in sync when picture URLs are updated
+              if (!updates.propertyImages) {
+                updates.propertyImages = newPics;
               }
             }
 

@@ -243,6 +243,13 @@ const PageAddListing10: FC<PageAddListing10Props> = ({ searchParams }) => {
         ? JSON.parse(localStorage.getItem("page9")!)
         : {};
 
+      // Image data is stored separately in localStorage by step 7
+      const storedPropertyPictureUrlsRaw =
+        localStorage.getItem("propertyPictureUrls");
+      const storedPropertyPictureUrls: string[] = storedPropertyPictureUrlsRaw
+        ? JSON.parse(storedPropertyPictureUrlsRaw)
+        : [];
+
       // Build listing object with all necessary fields
       // Update the handleGoLive function to send correct data types
       const listingData = {
@@ -286,8 +293,13 @@ const PageAddListing10: FC<PageAddListing10Props> = ({ searchParams }) => {
 
         // Images (Page 7)
         propertyCoverFileUrl:
-          localStorage.getItem("propertyCoverFileUrl") || "",
-        propertyPictureUrls: page7.propertyPictureUrls || [],
+          localStorage.getItem("propertyCoverFileUrl") ||
+          page7.propertyCoverFileUrl ||
+          "",
+        propertyPictureUrls:
+          storedPropertyPictureUrls.length > 0
+            ? storedPropertyPictureUrls
+            : page7.propertyPictureUrls || [],
 
         // Pricing (Page 8) - EXTRACT FIRST VALUES
         basePrice: page8.basePrice?.[0] || 0,

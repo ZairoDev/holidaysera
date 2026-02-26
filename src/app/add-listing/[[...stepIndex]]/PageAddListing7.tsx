@@ -11,15 +11,19 @@ import Image from "next/image";
 export interface PageAddListing7Props {}
 
 const PageAddListing7: FC<PageAddListing7Props> = () => {
+  const isBrowser = typeof window !== "undefined";
+
   let portions = 0;
-  const data = localStorage.getItem("page1") || "";
-  if (data) {
-    const value = JSON.parse(data)["numberOfPortions"];
-    if (value) {
-      portions = parseInt(value, 10);
+  if (isBrowser) {
+    const data = window.localStorage.getItem("page1") || "";
+    if (data) {
+      const value = JSON.parse(data)["numberOfPortions"];
+      if (value) {
+        portions = parseInt(value, 10);
+      }
     }
   }
-  let checkPortion = portions > 1 ? portions : 0;
+  const checkPortion = portions > 1 ? portions : 0;
 
   const booleanArray = Array.from({ length: portions }, () => false);
   const emptyStringArrayGenerator = (size: number) => {
@@ -30,7 +34,10 @@ const PageAddListing7: FC<PageAddListing7Props> = () => {
   // States for property and portion images
   const [portionCoverFileUrls, setPortionCoverFileUrls] = useState<string[]>(
     () => {
-      const savedUrls = localStorage.getItem("portionCoverFileUrls");
+      if (!isBrowser) {
+        return emptyStringArrayGenerator(portions);
+      }
+      const savedUrls = window.localStorage.getItem("portionCoverFileUrls");
       if (savedUrls?.length != portions) {
         return emptyStringArrayGenerator(portions);
       }
@@ -42,14 +49,20 @@ const PageAddListing7: FC<PageAddListing7Props> = () => {
 
   const [propertyCoverFileUrl, setPropertyCoverFileUrl] = useState<string>(
     () => {
-      const savedUrls = localStorage.getItem("propertyCoverFileUrl");
+      if (!isBrowser) {
+        return "";
+      }
+      const savedUrls = window.localStorage.getItem("propertyCoverFileUrl");
       return savedUrls ? savedUrls : "";
     }
   );
 
   const [portionPictureUrls, setPortionPictureUrls] = useState<string[][]>(
     () => {
-      const savedUrls = localStorage.getItem("portionPictureUrls") || "";
+      if (!isBrowser) {
+        return Array(portions).fill(Array(5).fill(""));
+      }
+      const savedUrls = window.localStorage.getItem("portionPictureUrls") || "";
       const arrayOf5 = Array(5).fill("");
 
       if (savedUrls.length != portions) {
@@ -61,24 +74,36 @@ const PageAddListing7: FC<PageAddListing7Props> = () => {
   );
 
   const [isPortionPictures, setIsPortionPictures] = useState<boolean[]>(() => {
-    const savedFlags = localStorage.getItem("isPortionPictures");
+    if (!isBrowser) {
+      return Array(portions).fill(false);
+    }
+    const savedFlags = window.localStorage.getItem("isPortionPictures");
     return savedFlags ? JSON.parse(savedFlags) : Array(portions).fill(false);
   });
 
   const [propertyPictureUrls, setPropertyPictureUrls] = useState<string[]>(
     () => {
-      const savedUrls = localStorage.getItem("propertyPictureUrls");
+      if (!isBrowser) {
+        return Array(5).fill("");
+      }
+      const savedUrls = window.localStorage.getItem("propertyPictureUrls");
       return savedUrls ? JSON.parse(savedUrls) : Array(5).fill("");
     }
   );
 
   const [isPropertyPictures, setIsPropertyPictures] = useState<boolean>(() => {
-    const savedFlag = localStorage.getItem("isPropertyPictures");
+    if (!isBrowser) {
+      return false;
+    }
+    const savedFlag = window.localStorage.getItem("isPropertyPictures");
     return savedFlag ? JSON.parse(savedFlag) : false;
   });
 
   const [isImages, setIsImages] = useState<boolean[]>(() => {
-    const savedFlag = localStorage.getItem("isImages");
+    if (!isBrowser) {
+      return booleanArray;
+    }
+    const savedFlag = window.localStorage.getItem("isImages");
     return savedFlag ? JSON.parse(savedFlag) : booleanArray;
   });
 
@@ -96,8 +121,18 @@ const PageAddListing7: FC<PageAddListing7Props> = () => {
   const { uploadFiles, loading: bunnyLoading } = useBunnyUpload();
 
   // Get place name for folder structure
-  let placeName = JSON.parse(localStorage.getItem("page1") || "").placeName;
-  placeName = placeName.toLowerCase().split(" ").join("_");
+  let placeName = "";
+  if (isBrowser) {
+    const page1Raw = window.localStorage.getItem("page1") || "";
+    try {
+      const parsed = page1Raw ? JSON.parse(page1Raw) : {};
+      if (parsed.placeName && typeof parsed.placeName === "string") {
+        placeName = parsed.placeName.toLowerCase().split(" ").join("_");
+      }
+    } catch {
+      placeName = "";
+    }
+  }
 
   // Persist to localStorage
   useEffect(() => {

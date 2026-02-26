@@ -264,10 +264,10 @@ const PageAddListing1: FC<PageAddListing1Props> = ({ searchParams }) => {
       {/* Header */}
       <div className="space-y-3">
         <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
-          Let's start with the basics
+          Let&apos;s start with the basics
         </h2>
         <p className="text-lg text-gray-600 dark:text-gray-300">
-          Tell us about your property and how you'd like to rent it out
+          Tell us about your property and how you&apos;d like to rent it out
         </p>
       </div>
 

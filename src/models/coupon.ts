@@ -74,7 +74,6 @@ const couponSchema = new mongoose.Schema<ICoupon>(
 );
 
 // Index for efficient coupon lookup
-couponSchema.index({ code: 1 });
 couponSchema.index({ isActive: 1, validFrom: 1, validUntil: 1 });
 
 // Method to check if coupon is valid

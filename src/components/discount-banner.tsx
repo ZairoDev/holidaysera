@@ -15,7 +15,7 @@ export function DiscountBanner() {
 
   // Check if banner should be shown on current page
   const allowedPaths = ["/", "/properties", "/login", "/signup"];
-  const shouldShowOnPage = allowedPaths.includes(pathname);
+  const shouldShowOnPage = allowedPaths.includes(pathname || "");
 
   useEffect(() => {
     // Check localStorage to see if banner was dismissed

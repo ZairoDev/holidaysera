@@ -86,12 +86,22 @@ export default function PropertyDetailsPage() {
     );
   }
 
-  // Get property images
+  // Get property images: combine cover, gallery URLs, and legacy images
+  const imageSources: string[] = [
+    property.propertyCoverFileUrl || "",
+    ...(property.propertyPictureUrls || []),
+    ...(property.propertyImages || []),
+  ].filter((src) => typeof src === "string" && src.trim().length > 0);
+
+  // Deduplicate while preserving order
+  const seen = new Set<string>();
   const propertyImages =
-    property.propertyImages && property.propertyImages.length > 0
-      ? property.propertyImages
-      : property.propertyCoverFileUrl
-      ? [property.propertyCoverFileUrl]
+    imageSources.length > 0
+      ? imageSources.filter((src) => {
+          if (seen.has(src)) return false;
+          seen.add(src);
+          return true;
+        })
       : ["/placeholder-property.jpg"];
 
   // Filter similar properties
