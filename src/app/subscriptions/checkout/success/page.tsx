@@ -1,4 +1,4 @@
-"use client";
+      "use client";
 
 import React, { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
@@ -45,6 +45,9 @@ function SuccessContent() {
   const planId = searchParams?.get("plan");
 
   const plan = planId ? subscriptionPlans[planId] : null;
+  const isFreeCouponActivation = Boolean(
+    paymentId?.startsWith("free_")
+  );
 
   const colorClasses: Record<string, string> = {
     blue: "from-blue-500 to-blue-700",
@@ -68,10 +71,14 @@ function SuccessContent() {
 
           {/* Success Message */}
           <h1 className="text-4xl font-black text-gray-900 mb-4">
-            Payment Successful! 🎉
+            {isFreeCouponActivation
+              ? "Subscription activated! 🎉"
+              : "Payment Successful! 🎉"}
           </h1>
           <p className="text-xl text-gray-600 mb-8">
-            Thank you for your subscription. Your payment has been processed successfully.
+            {isFreeCouponActivation
+              ? "Your plan is active. Thank you for subscribing with HolidaysEra."
+              : "Thank you for your subscription. Your payment has been processed successfully."}
           </p>
 
           {/* Order Details */}
@@ -100,7 +107,9 @@ function SuccessContent() {
               )}
               {paymentId && (
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Payment ID</span>
+                  <span className="text-gray-600">
+                    {isFreeCouponActivation ? "Reference" : "Payment ID"}
+                  </span>
                   <span className="font-mono text-sm text-gray-900">
                     {paymentId}
                   </span>
@@ -130,7 +139,7 @@ function SuccessContent() {
           <div className="bg-blue-50 rounded-2xl p-6 mb-8 text-left border border-blue-200">
             <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
               <span className="text-2xl">📋</span>
-              What's Next?
+              What&apos;s Next?
             </h2>
             <ul className="space-y-3 text-gray-700">
               <li className="flex items-start gap-3">

@@ -25,18 +25,122 @@ const planNames: Record<string, string> = {
   master: "Master Plan",
 };
 
+/** Authoritative prices (major units) — must match checkout UI. Client-sent amounts are not trusted. */
+const subscriptionPlanPrices: Record<string, number> = {
+  action: 299,
+  game: 399,
+  master: 499,
+};
+
+type RazorpayOrderCurrency = "INR" | "EUR" | "USD";
+
+function getSubscriptionPlanPrice(planId: string): number {
+  const price = subscriptionPlanPrices[planId];
+  if (price === undefined) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: "Invalid subscription plan",
+    });
+  }
+  return price;
+}
+
+/** Razorpay India accounts use INR + paise; set RAZORPAY_CURRENCY=EUR if international is enabled on your account. */
+function getRazorpayOrderCurrency(): RazorpayOrderCurrency {
+  const raw = (process.env.RAZORPAY_CURRENCY || "INR").toUpperCase();
+  if (raw === "EUR" || raw === "USD" || raw === "INR") {
+    return raw;
+  }
+  return "INR";
+}
+
+function minimumAmountInSmallestUnits(currency: RazorpayOrderCurrency): number {
+  return currency === "INR" ? 100 : 0;
+}
+
+function formatRazorpayOrderFailureMessage(error: unknown): string {
+  if (error && typeof error === "object" && "error" in error) {
+    const err = (error as { error?: { description?: string } }).error;
+    if (typeof err?.description === "string" && err.description.length > 0) {
+      return err.description;
+    }
+  }
+  return "Failed to create payment order";
+}
+
+async function incrementCouponUsage(couponCode: string | null | undefined) {
+  if (!couponCode) return;
+  await Coupon.findOneAndUpdate(
+    { code: couponCode.toUpperCase() },
+    { $inc: { usedCount: 1 } }
+  );
+}
+
+async function activateSubscriptionForUser(params: {
+  userId: string;
+  userEmail: string;
+  planId: string;
+  planName: string;
+  originalAmount: number;
+  discountAmount: number;
+  finalAmount: number;
+  couponCode: string | null;
+  razorpayOrderId: string;
+  razorpayPaymentId: string;
+  razorpaySignature: string;
+}) {
+  const startDate = new Date();
+  const durationMonths = planDurations[params.planId] || 12;
+  const endDate = new Date();
+  endDate.setMonth(endDate.getMonth() + durationMonths);
+
+  const resolvedPlanName =
+    params.planName || planNames[params.planId] || "Subscription Plan";
+
+  const subscription = await Subscription.create({
+    userId: params.userId,
+    userEmail: params.userEmail,
+    planId: params.planId,
+    planName: resolvedPlanName,
+    duration: `${durationMonths} months`,
+    originalAmount: params.originalAmount,
+    discountAmount: params.discountAmount,
+    finalAmount: params.finalAmount,
+    couponCode: params.couponCode,
+    razorpayOrderId: params.razorpayOrderId,
+    razorpayPaymentId: params.razorpayPaymentId,
+    razorpaySignature: params.razorpaySignature,
+    status: "active",
+    startDate,
+    endDate,
+  });
+
+  await Users.findByIdAndUpdate(params.userId, {
+    subscription: {
+      planId: params.planId,
+      planName: resolvedPlanName,
+      status: "active",
+      startDate,
+      endDate,
+      subscriptionId: subscription._id,
+    },
+  });
+
+  return { subscription, startDate, endDate, durationMonths };
+}
+
 export const subscriptionRouter = router({
   // Validate coupon code
   validateCoupon: publicProcedure
     .input(
       z.object({
         code: z.string().min(1, "Coupon code is required"),
-        planId: z.string().optional(),
-        amount: z.number().optional(),
+        planId: z.string().min(1, "Plan ID is required"),
       })
     )
     .mutation(async ({ input }) => {
-      const { code, planId, amount } = input;
+      const { code, planId } = input;
+      const amount = getSubscriptionPlanPrice(planId);
 
       const coupon = await Coupon.findOne({ code: code.toUpperCase() });
 
@@ -57,8 +161,8 @@ export const subscriptionRouter = router({
       }
 
       // Calculate discount
-      const discount = coupon.calculateDiscount(amount || 0);
-      const finalAmount = (amount || 0) - discount;
+      const discount = coupon.calculateDiscount(amount);
+      const finalAmount = amount - discount;
 
       return {
         success: true,
@@ -79,12 +183,12 @@ export const subscriptionRouter = router({
       z.object({
         planId: z.string().min(1, "Plan ID is required"),
         planName: z.string(),
-        amount: z.number().positive("Amount must be positive"),
         couponCode: z.string().optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const { planId, planName, amount, couponCode } = input;
+      const { planId, planName, couponCode } = input;
+      const amount = getSubscriptionPlanPrice(planId);
       const userId = ctx.user.id;
       const user = await Users.findById(userId);
 
@@ -115,22 +219,78 @@ export const subscriptionRouter = router({
         }
       }
 
-      // Razorpay expects amount in paise (smallest currency unit)
-      // Since we're using EUR, we'll convert to cents (multiply by 100)
+      // 100% (or over) discount: activate without Razorpay
+      if (finalAmount <= 0) {
+        if (!appliedCoupon) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Invalid order total",
+          });
+        }
+
+        const freePaymentId = `free_${Date.now()}_${crypto.randomBytes(8).toString("hex")}`;
+
+        await incrementCouponUsage(appliedCoupon.code);
+
+        const { subscription, startDate, endDate } =
+          await activateSubscriptionForUser({
+            userId: String(userId),
+            userEmail: user.email ?? "",
+            planId,
+            planName,
+            originalAmount: amount,
+            discountAmount: appliedCoupon.discount,
+            finalAmount: 0,
+            couponCode: appliedCoupon.code,
+            razorpayOrderId: "FREE_COUPON",
+            razorpayPaymentId: freePaymentId,
+            razorpaySignature: "FREE_COUPON_ACTIVATION",
+          });
+
+        return {
+          success: true,
+          isFreeActivation: true,
+          order: null,
+          freePaymentId,
+          subscription: {
+            id: subscription._id,
+            planId,
+            planName: subscription.planName,
+            startDate,
+            endDate,
+            status: "active" as const,
+          },
+          appliedCoupon,
+          finalAmount: 0,
+        };
+      }
+
+      const currency = getRazorpayOrderCurrency();
+      // INR: paise; EUR/USD: cents
       const amountInSmallestUnit = Math.round(finalAmount * 100);
+      const minSmallest = minimumAmountInSmallestUnits(currency);
+
+      if (amountInSmallestUnit < minSmallest) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message:
+            "This order total is below the minimum charge allowed for this currency.",
+        });
+      }
 
       const options = {
         amount: amountInSmallestUnit,
-        currency: "EUR",
+        currency,
         receipt: `receipt_${planId}_${Date.now()}`,
+        payment_capture: 1,
         notes: {
-          planId: planId,
-          planName: planName,
-          userId: userId,
-          userEmail: user.email,
+          planId,
+          planName,
+          userId: String(userId),
+          userEmail: user.email ?? "",
           couponCode: couponCode || "",
-          originalAmount: amount,
-          finalAmount: finalAmount,
+          originalAmount: String(amount),
+          finalAmount: String(finalAmount),
         },
       };
 
@@ -139,20 +299,28 @@ export const subscriptionRouter = router({
 
         return {
           success: true,
+          isFreeActivation: false,
           order: {
             id: order.id,
             amount: order.amount,
             currency: order.currency,
             receipt: order.receipt,
           },
+          freePaymentId: null,
+          subscription: null,
           appliedCoupon,
           finalAmount,
         };
-      } catch (error) {
+      } catch (error: unknown) {
         console.error("Razorpay order creation error:", error);
+        const message = formatRazorpayOrderFailureMessage(error);
+        const statusCode =
+          error && typeof error === "object" && "statusCode" in error
+            ? (error as { statusCode?: number }).statusCode
+            : undefined;
         throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "Failed to create payment order",
+          code: statusCode === 400 ? "BAD_REQUEST" : "INTERNAL_SERVER_ERROR",
+          message,
         });
       }
     }),
@@ -209,50 +377,22 @@ export const subscriptionRouter = router({
         });
       }
 
-      // If a coupon was used, increment its usage count
-      if (couponCode) {
-        await Coupon.findOneAndUpdate(
-          { code: couponCode.toUpperCase() },
-          { $inc: { usedCount: 1 } }
-        );
-      }
+      await incrementCouponUsage(couponCode);
 
-      // Calculate subscription dates
-      const startDate = new Date();
-      const durationMonths = planDurations[planId] || 12;
-      const endDate = new Date();
-      endDate.setMonth(endDate.getMonth() + durationMonths);
-
-      // Create subscription record
-      const subscription = await Subscription.create({
-        userId,
-        userEmail: user.email,
-        planId,
-        planName: planName || planNames[planId] || "Subscription Plan",
-        duration: `${durationMonths} months`,
-        originalAmount: originalAmount || finalAmount,
-        discountAmount: discountAmount || 0,
-        finalAmount,
-        couponCode: couponCode || null,
-        razorpayOrderId: razorpay_order_id,
-        razorpayPaymentId: razorpay_payment_id,
-        razorpaySignature: razorpay_signature,
-        status: "active",
-        startDate,
-        endDate,
-      });
-
-      // Update user's subscription status
-      await Users.findByIdAndUpdate(userId, {
-        subscription: {
+      const { subscription, startDate, endDate } =
+        await activateSubscriptionForUser({
+          userId: String(userId),
+          userEmail: user.email ?? "",
           planId,
-          planName: planName || planNames[planId] || "Subscription Plan",
-          status: "active",
-          startDate,
-          endDate,
-          subscriptionId: subscription._id,
-        },
-      });
+          planName,
+          originalAmount: originalAmount || finalAmount,
+          discountAmount: discountAmount ?? 0,
+          finalAmount,
+          couponCode: couponCode || null,
+          razorpayOrderId: razorpay_order_id,
+          razorpayPaymentId: razorpay_payment_id,
+          razorpaySignature: razorpay_signature,
+        });
 
       return {
         success: true,

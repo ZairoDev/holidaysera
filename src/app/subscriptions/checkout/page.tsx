@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, Suspense } from "react";
+import React, { useState, useEffect, Suspense, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import Script from "next/script";
@@ -173,6 +173,8 @@ function CheckoutContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const planId = searchParams?.get("plan");
+  const offerCouponCode = (searchParams?.get("coupon") ?? "").trim().toUpperCase();
+  const hasOfferCouponCode = offerCouponCode.length > 0;
   const { user } = useUserStore();
 
   const [plan, setPlan] = useState<SubscriptionPlan | null>(null);
@@ -180,6 +182,7 @@ function CheckoutContent() {
   const [appliedCoupon, setAppliedCoupon] = useState<AppliedCoupon | null>(null);
   const [couponError, setCouponError] = useState("");
   const [couponLoading, setCouponLoading] = useState(false);
+  const [didAutoApplyOfferCoupon, setDidAutoApplyOfferCoupon] = useState(false);
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [isRazorpayLoaded, setIsRazorpayLoaded] = useState(false);
 
@@ -215,31 +218,60 @@ function CheckoutContent() {
     return plan.price;
   };
 
-  const handleApplyCoupon = async () => {
-    if (!couponCode.trim()) {
-      setCouponError("Please enter a coupon code");
-      return;
-    }
+  const applyCouponCode = useCallback(
+    async (rawCouponCode: string, opts?: { silent?: boolean }) => {
+      if (!plan) return;
 
-    setCouponLoading(true);
-    setCouponError("");
+      const normalizedCode = rawCouponCode.trim().toUpperCase();
+      if (!normalizedCode) {
+        if (!opts?.silent) {
+          setCouponError("Please enter a coupon code");
+        }
+        return;
+      }
 
-    try {
-      const data = await validateCouponMutation.mutateAsync({
-        code: couponCode,
-        planId: plan?.id,
-        amount: plan?.price,
-      });
-
-      setAppliedCoupon(data.coupon);
+      setCouponLoading(true);
       setCouponError("");
-    } catch (error: any) {
-      setCouponError(error.message || "Invalid coupon code");
-      setAppliedCoupon(null);
-    } finally {
-      setCouponLoading(false);
-    }
-  };
+
+      try {
+        const data = await validateCouponMutation.mutateAsync({
+          code: normalizedCode,
+          planId: plan.id,
+        });
+
+        setCouponCode(normalizedCode);
+        setAppliedCoupon(data.coupon);
+        setCouponError("");
+      } catch (error: unknown) {
+        const message =
+          error instanceof Error ? error.message : "Invalid coupon code";
+        if (!opts?.silent) {
+          setCouponError(message);
+        }
+        setAppliedCoupon(null);
+      } finally {
+        setCouponLoading(false);
+      }
+    },
+    [plan, validateCouponMutation],
+  );
+
+  const handleApplyCoupon = useCallback(async () => {
+    await applyCouponCode(couponCode, { silent: false });
+  }, [applyCouponCode, couponCode]);
+
+  useEffect(() => {
+    if (!plan || !hasOfferCouponCode || didAutoApplyOfferCoupon) return;
+
+    setDidAutoApplyOfferCoupon(true);
+    void applyCouponCode(offerCouponCode, { silent: true });
+  }, [
+    applyCouponCode,
+    didAutoApplyOfferCoupon,
+    hasOfferCouponCode,
+    offerCouponCode,
+    plan,
+  ]);
 
   const handleRemoveCoupon = () => {
     setAppliedCoupon(null);
@@ -254,27 +286,40 @@ function CheckoutContent() {
       return;
     }
 
-    if (!plan || !isRazorpayLoaded) return;
+    if (!plan) return;
+
+    const totalDue = calculateFinalAmount();
+    if (totalDue > 0 && !isRazorpayLoaded) return;
 
     setPaymentLoading(true);
 
     try {
-      // Create order using tRPC
+      // Create order using tRPC (paid → Razorpay order; 100% coupon → server activates immediately)
       const orderData = await createOrderMutation.mutateAsync({
         planId: plan.id,
         planName: plan.name,
-        amount: plan.price,
         couponCode: appliedCoupon?.code,
       });
+
+      if (orderData.isFreeActivation && orderData.freePaymentId) {
+        router.push(
+          `/subscriptions/checkout/success?payment_id=${encodeURIComponent(orderData.freePaymentId)}&plan=${plan.id}`
+        );
+        return;
+      }
+
+      if (!orderData.order) {
+        throw new Error("No payment order returned");
+      }
 
       // Initialize Razorpay
       const options = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_API_KEY,
-        amount: orderData.order.amount,
-        currency: orderData.order.currency,
+        amount: orderData.order!.amount,
+        currency: orderData.order!.currency,
         name: "HolidaysEra",
         description: `${plan.name} - ${plan.duration}`,
-        order_id: orderData.order.id,
+        order_id: orderData.order!.id,
         handler: async function (response: any) {
           try {
             // Verify payment using tRPC
@@ -387,8 +432,13 @@ function CheckoutContent() {
               {/* Plan Duration & Price */}
               <div className="flex items-end gap-3 mb-8 pb-6 border-b border-gray-200">
                 <span className="text-5xl font-black text-gray-900">
-                  €{plan.price}
+                  €{calculateFinalAmount().toFixed(2)}
                 </span>
+                {appliedCoupon && (
+                  <span className="text-xl text-gray-400 line-through mb-1">
+                    €{plan.price.toFixed(2)}
+                  </span>
+                )}
                 <span className="text-xl text-gray-500 mb-1">
                   / {plan.duration}
                 </span>
@@ -468,7 +518,7 @@ function CheckoutContent() {
               {/* Coupon Section */}
               <div className="mb-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Have a coupon code?
+                  {hasOfferCouponCode ? "Offer discount" : "Have a coupon code?"}
                 </label>
                 {appliedCoupon ? (
                   <div className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-xl">
@@ -487,12 +537,20 @@ function CheckoutContent() {
                         </p>
                       </div>
                     </div>
-                    <button
-                      onClick={handleRemoveCoupon}
-                      className="text-red-500 hover:text-red-700 text-sm font-medium"
-                    >
-                      Remove
-                    </button>
+                    {!hasOfferCouponCode && (
+                      <button
+                        onClick={handleRemoveCoupon}
+                        className="text-red-500 hover:text-red-700 text-sm font-medium"
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+                ) : hasOfferCouponCode ? (
+                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-sm text-blue-700">
+                    {couponLoading
+                      ? "Applying offer discount..."
+                      : "Offer discount will be applied automatically."}
                   </div>
                 ) : (
                   <div className="space-y-2">
@@ -565,7 +623,10 @@ function CheckoutContent() {
               {/* Pay Button */}
               <button
                 onClick={handlePayment}
-                disabled={paymentLoading || !isRazorpayLoaded}
+                disabled={
+                  paymentLoading ||
+                  (calculateFinalAmount() > 0 && !isRazorpayLoaded)
+                }
                 className={`w-full py-4 px-6 rounded-xl font-bold text-lg transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none bg-gradient-to-r ${colorClasses[plan.color]} text-white`}
               >
                 {paymentLoading ? (

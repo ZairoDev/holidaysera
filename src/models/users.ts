@@ -132,5 +132,5 @@ const userSchema = new mongoose.Schema(
   
   { timestamps: true }
 );
-const Users = mongoose.models?.users || mongoose.model("users", userSchema);
+const Users = mongoose.models?.holidayUsers || mongoose.model("holidayUsers", userSchema);
 export default Users;
