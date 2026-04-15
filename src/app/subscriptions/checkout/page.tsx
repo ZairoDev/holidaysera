@@ -194,7 +194,10 @@ function CheckoutContent() {
   useEffect(() => {
     // Redirect to login if not authenticated
     if (!user && planId) {
-      router.push(`/login?redirect=/subscriptions/checkout?plan=${planId}`);
+      const loginRedirect = offerCouponCode
+        ? `/subscriptions/checkout?plan=${planId}&coupon=${offerCouponCode}`
+        : `/subscriptions/checkout?plan=${planId}`;
+      router.push(`/login?redirect=${encodeURIComponent(loginRedirect)}`);
       return;
     }
     
@@ -208,7 +211,7 @@ function CheckoutContent() {
     } else {
       router.push("/subscriptions");
     }
-  }, [planId, router, user]);
+  }, [offerCouponCode, planId, router, user]);
 
   const calculateFinalAmount = () => {
     if (!plan) return 0;
@@ -282,7 +285,10 @@ function CheckoutContent() {
   const handlePayment = async () => {
     // Double-check authentication (should already be redirected, but just in case)
     if (!user) {
-      router.push(`/login?redirect=/subscriptions/checkout?plan=${plan?.id}`);
+      const loginRedirect = offerCouponCode
+        ? `/subscriptions/checkout?plan=${plan?.id}&coupon=${offerCouponCode}`
+        : `/subscriptions/checkout?plan=${plan?.id}`;
+      router.push(`/login?redirect=${encodeURIComponent(loginRedirect)}`);
       return;
     }
 
@@ -454,7 +460,7 @@ function CheckoutContent() {
               {/* Features List */}
               <div className="mb-6">
                 <h3 className="text-lg font-bold text-gray-900 mb-4">
-                  What's Included:
+                  What&apos;s Included:
                 </h3>
                 <div className="grid md:grid-cols-2 gap-3">
                   {plan.features.map((feature, index) => (
