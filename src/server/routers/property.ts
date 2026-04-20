@@ -2,6 +2,7 @@ import { Property, PropertyDocument } from "@/lib/type";
 import { router, publicProcedure, TRPCError, protectedProcedure } from "../trpc";
 import { Properties } from "@/models/property";
 import Review from "@/models/review";
+import Users from "@/models/users";
 import mongoose from "mongoose";
 import z from "zod";
 import axios from "axios";
@@ -496,6 +497,22 @@ export const propertyRouter = router({
 
       return properties;
     }),
+    getQuota: protectedProcedure.query(async ({ ctx }) => {
+      const user = await Users.findById(ctx.user.id)
+        .select("allowedProperties usedProperties")
+        .lean<{
+          allowedProperties?: number;
+          usedProperties?: number;
+        } | null>();
+
+      const allowed = Math.max(0, user?.allowedProperties ?? 0);
+      const used = Math.max(0, user?.usedProperties ?? 0);
+      return {
+        allowed,
+        used,
+        remaining: Math.max(0, allowed - used),
+      };
+    }),
 
     deleteProperty: protectedProcedure
       .input(z.object({ propertyId: z.string() }))
@@ -609,10 +626,27 @@ export const propertyRouter = router({
           });
         }
   
-        // Create new property document
-        const newProperty = await Properties.create({
-          userId: ctx.user.id,
-          email: ctx.user.email,
+        const reserved = await Users.findOneAndUpdate(
+          {
+            _id: ctx.user.id,
+            $expr: { $lt: ["$usedProperties", "$allowedProperties"] },
+          },
+          { $inc: { usedProperties: 1 } },
+          { new: true },
+        ).select("_id");
+        if (!reserved) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Property listing limit reached",
+          });
+        }
+
+        const newProperty = await (async () => {
+          try {
+            // Create new property document
+            return await Properties.create({
+              userId: ctx.user.id,
+              email: ctx.user.email,
   
           // Basic Info
           propertyType: input.propertyType,
@@ -680,8 +714,13 @@ export const propertyRouter = router({
           listedOn: ["VacationSaga"],
           lastUpdatedBy: [ctx.user.email],
           lastUpdates: [[new Date().toISOString()]],
-          origin: "holidaysera",
-        });
+              origin: "holidaysera",
+            });
+          } catch (creationError) {
+            await Users.updateOne({ _id: ctx.user.id }, { $inc: { usedProperties: -1 } });
+            throw creationError;
+          }
+        })();
   
         // Map the response
         const mappedProperty = mapPropertyDocument(newProperty.toObject());
@@ -694,6 +733,10 @@ export const propertyRouter = router({
         }
   
         console.log("Property created successfully:", mappedProperty._id);
+        console.info("[Holidaysera Listing] created", {
+          userId: ctx.user.id,
+          propertyId: mappedProperty._id,
+        });
   
         return {
           success: true,

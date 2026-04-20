@@ -13,6 +13,14 @@ export interface ISubscription {
   razorpayOrderId: string;
   razorpayPaymentId: string;
   razorpaySignature: string;
+  propertiesAllowedSnapshot: number;
+  pricePerPropertySnapshot: number;
+  discountSnapshot?: {
+    type: "PER_PROPERTY" | "TOTAL";
+    unit: "FIXED" | "PERCENT";
+    value: number;
+  };
+  entitlementGranted: boolean;
   status: "pending" | "active" | "expired" | "cancelled";
   startDate: Date;
   endDate: Date;
@@ -70,6 +78,35 @@ const subscriptionSchema = new mongoose.Schema<ISubscription>(
     razorpaySignature: {
       type: String,
       required: [true, "Razorpay signature is required"],
+    },
+    propertiesAllowedSnapshot: {
+      type: Number,
+      min: 1,
+      default: 1,
+    },
+    pricePerPropertySnapshot: {
+      type: Number,
+      min: 0,
+      default: 0,
+    },
+    discountSnapshot: {
+      type: {
+        type: String,
+        enum: ["PER_PROPERTY", "TOTAL"],
+      },
+      unit: {
+        type: String,
+        enum: ["FIXED", "PERCENT"],
+      },
+      value: {
+        type: Number,
+        min: 0,
+      },
+    },
+    entitlementGranted: {
+      type: Boolean,
+      default: false,
+      index: true,
     },
     status: {
       type: String,

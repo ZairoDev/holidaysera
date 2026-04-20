@@ -29,6 +29,13 @@ interface AppliedCoupon {
   discountType: string;
   discountValue: number;
   discount: number;
+  originalAmount: number;
+  discountAmount: number;
+  finalAmount: number;
+  pricePerProperty: number;
+  propertiesAllowed: number;
+  offerDiscountScope: "PER_PROPERTY" | "TOTAL";
+  perPropertyEffectivePrice: number;
 }
 
 // Subscription Plans Data
@@ -181,6 +188,7 @@ function CheckoutContent() {
   const [couponCode, setCouponCode] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState<AppliedCoupon | null>(null);
   const [couponError, setCouponError] = useState("");
+  const [offerCouponError, setOfferCouponError] = useState("");
   const [couponLoading, setCouponLoading] = useState(false);
   const [didAutoApplyOfferCoupon, setDidAutoApplyOfferCoupon] = useState(false);
   const [paymentLoading, setPaymentLoading] = useState(false);
@@ -216,7 +224,7 @@ function CheckoutContent() {
   const calculateFinalAmount = () => {
     if (!plan) return 0;
     if (appliedCoupon) {
-      return plan.price - appliedCoupon.discount;
+      return appliedCoupon.finalAmount;
     }
     return plan.price;
   };
@@ -245,11 +253,13 @@ function CheckoutContent() {
         setCouponCode(normalizedCode);
         setAppliedCoupon(data.coupon);
         setCouponError("");
+        setOfferCouponError("");
       } catch (error: unknown) {
-        const message =
-          error instanceof Error ? error.message : "Invalid coupon code";
+        const message = "This offer is invalid or not applicable to the selected plan";
         if (!opts?.silent) {
           setCouponError(message);
+        } else {
+          setOfferCouponError(message);
         }
         setAppliedCoupon(null);
       } finally {
@@ -280,6 +290,7 @@ function CheckoutContent() {
     setAppliedCoupon(null);
     setCouponCode("");
     setCouponError("");
+    setOfferCouponError("");
   };
 
   const handlePayment = async () => {
@@ -336,9 +347,9 @@ function CheckoutContent() {
               planId: plan.id,
               planName: plan.name,
               couponCode: appliedCoupon?.code,
-              originalAmount: plan.price,
+              originalAmount: orderData.originalAmount,
               finalAmount: orderData.finalAmount,
-              discountAmount: appliedCoupon?.discount || 0,
+              discountAmount: orderData.discountAmount,
             });
 
             if (verifyData.success) {
@@ -442,7 +453,7 @@ function CheckoutContent() {
                 </span>
                 {appliedCoupon && (
                   <span className="text-xl text-gray-400 line-through mb-1">
-                    €{plan.price.toFixed(2)}
+                    €{appliedCoupon.originalAmount.toFixed(2)}
                   </span>
                 )}
                 <span className="text-xl text-gray-500 mb-1">
@@ -553,11 +564,17 @@ function CheckoutContent() {
                     )}
                   </div>
                 ) : hasOfferCouponCode ? (
-                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-sm text-blue-700">
-                    {couponLoading
-                      ? "Applying offer discount..."
-                      : "Offer discount will be applied automatically."}
-                  </div>
+                  offerCouponError ? (
+                    <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">
+                      {offerCouponError}
+                    </div>
+                  ) : (
+                    <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-sm text-blue-700">
+                      {couponLoading
+                        ? "Applying offer discount..."
+                        : "Offer discount will be applied automatically."}
+                    </div>
+                  )
                 ) : (
                   <div className="space-y-2">
                     <div className="flex gap-2">
@@ -589,15 +606,44 @@ function CheckoutContent() {
               <div className="space-y-3 mb-6 pb-6 border-b border-gray-200">
                 <div className="flex justify-between text-gray-600">
                   <span>{plan.name}</span>
-                  <span>€{plan.price.toFixed(2)}</span>
+                  <span>€{(appliedCoupon?.originalAmount ?? plan.price).toFixed(2)}</span>
                 </div>
                 {appliedCoupon && (
                   <div className="flex justify-between text-green-600">
                     <span>Discount ({appliedCoupon.code})</span>
-                    <span>-€{appliedCoupon.discount.toFixed(2)}</span>
+                    <span>-€{appliedCoupon.discountAmount.toFixed(2)}</span>
                   </div>
                 )}
               </div>
+
+              {/* Offer Pricing Details */}
+              {appliedCoupon && (
+                <div className="space-y-3 mb-6 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                  <h3 className="text-sm font-semibold text-amber-900">
+                    Offer Pricing Details
+                  </h3>
+                  <div className="flex justify-between text-sm text-amber-900">
+                    <span>Price per Property</span>
+                    <span>₹{appliedCoupon.pricePerProperty.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm text-amber-900">
+                    <span>Properties Allowed</span>
+                    <span>{appliedCoupon.propertiesAllowed}</span>
+                  </div>
+                  <div className="flex justify-between text-sm text-amber-900">
+                    <span>Base Price</span>
+                    <span>₹{appliedCoupon.originalAmount.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm text-green-700">
+                    <span>Discount</span>
+                    <span>-₹{appliedCoupon.discountAmount.toFixed(2)}</span>
+                  </div>
+                  <div className="pt-2 border-t border-amber-300 flex justify-between text-sm font-semibold text-amber-900">
+                    <span>You Pay</span>
+                    <span>₹{appliedCoupon.finalAmount.toFixed(2)}</span>
+                  </div>
+                </div>
+              )}
 
               {/* Total */}
               <div className="flex justify-between items-center mb-6">
@@ -605,7 +651,7 @@ function CheckoutContent() {
                 <div className="text-right">
                   {appliedCoupon && (
                     <span className="text-sm text-gray-400 line-through mr-2">
-                      €{plan.price.toFixed(2)}
+                      €{appliedCoupon.originalAmount.toFixed(2)}
                     </span>
                   )}
                   <span className="text-2xl font-black text-gray-900">

@@ -4,10 +4,14 @@ export interface ICoupon {
   code: string;
   discountType: "percentage" | "fixed";
   discountValue: number;
+  propertiesAllowed?: number;
+  pricePerProperty?: number;
+  offerDiscountScope?: "PER_PROPERTY" | "TOTAL";
   minPurchaseAmount?: number;
   maxDiscountAmount?: number;
   validFrom: Date;
   validUntil: Date;
+  expiresAt?: Date | null;
   usageLimit?: number;
   usedCount: number;
   applicablePlans?: string[]; // Plan IDs that this coupon can be applied to
@@ -35,6 +39,21 @@ const couponSchema = new mongoose.Schema<ICoupon>(
       required: [true, "Discount value is required"],
       min: [0, "Discount value cannot be negative"],
     },
+    propertiesAllowed: {
+      type: Number,
+      min: [1, "Properties allowed must be at least 1"],
+      default: 1,
+    },
+    pricePerProperty: {
+      type: Number,
+      min: [0, "Price per property cannot be negative"],
+      default: 0,
+    },
+    offerDiscountScope: {
+      type: String,
+      enum: ["PER_PROPERTY", "TOTAL"],
+      default: "TOTAL",
+    },
     minPurchaseAmount: {
       type: Number,
       default: 0,
@@ -50,6 +69,10 @@ const couponSchema = new mongoose.Schema<ICoupon>(
     validUntil: {
       type: Date,
       required: [true, "Valid until date is required"],
+    },
+    expiresAt: {
+      type: Date,
+      default: null,
     },
     usageLimit: {
       type: Number,
@@ -88,7 +111,8 @@ couponSchema.methods.isValid = function (planId?: string, purchaseAmount?: numbe
     return { valid: false, message: "This coupon is not yet valid" };
   }
 
-  if (now > this.validUntil) {
+  const expiryDate = this.expiresAt ?? this.validUntil;
+  if (now > expiryDate) {
     return { valid: false, message: "This coupon has expired" };
   }
 
@@ -97,7 +121,11 @@ couponSchema.methods.isValid = function (planId?: string, purchaseAmount?: numbe
   }
 
   if (this.applicablePlans && this.applicablePlans.length > 0 && planId) {
-    if (!this.applicablePlans.includes(planId)) {
+    const normalizedPlanId = planId.trim().toLowerCase();
+    const normalizedApplicablePlans = this.applicablePlans.map((plan: string) =>
+      plan.trim().toLowerCase()
+    );
+    if (!normalizedApplicablePlans.includes(normalizedPlanId)) {
       return { valid: false, message: "This coupon is not applicable to the selected plan" };
     }
   }

@@ -3,6 +3,7 @@
 import React, { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { trpc } from "@/trpc/client";
 
 // Subscription Plans Data for display
 const subscriptionPlans: Record<string, { name: string; duration: string; color: string }> = {
@@ -43,6 +44,9 @@ function SuccessContent() {
   const searchParams = useSearchParams();
   const paymentId = searchParams?.get("payment_id");
   const planId = searchParams?.get("plan");
+  const quotaQuery = trpc.property.getQuota.useQuery(undefined, {
+    retry: false,
+  });
 
   const plan = planId ? subscriptionPlans[planId] : null;
   const isFreeCouponActivation = Boolean(
@@ -134,6 +138,30 @@ function SuccessContent() {
               </div>
             </div>
           </div>
+
+          {/* Quota Visibility */}
+          {quotaQuery.data && (
+            <div className="bg-emerald-50 rounded-2xl p-6 mb-8 text-left border border-emerald-200">
+              <h2 className="text-lg font-bold text-gray-900 mb-3">
+                Listing Quota
+              </h2>
+              <div className="space-y-2 text-gray-700">
+                <p>
+                  You can list{" "}
+                  <span className="font-semibold text-emerald-700">
+                    {quotaQuery.data.allowed}
+                  </span>{" "}
+                  properties
+                </p>
+                <p>
+                  <span className="font-semibold text-emerald-700">
+                    {quotaQuery.data.remaining}
+                  </span>{" "}
+                  remaining
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Next Steps */}
           <div className="bg-blue-50 rounded-2xl p-6 mb-8 text-left border border-blue-200">

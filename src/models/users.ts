@@ -120,6 +120,16 @@ const userSchema = new mongoose.Schema(
         status: "none",
       },
     },
+    allowedProperties: {
+      type: Number,
+      min: 0,
+      default: 0,
+    },
+    usedProperties: {
+      type: Number,
+      min: 0,
+      default: 0,
+    },
     Payment: Object,
     forgotPasswordToken: String,
     forgotPasswordTokenExpiry: Date,
