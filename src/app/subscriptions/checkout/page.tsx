@@ -255,7 +255,12 @@ function CheckoutContent() {
         setCouponError("");
         setOfferCouponError("");
       } catch (error: unknown) {
-        const message = "This offer is invalid or not applicable to the selected plan";
+        const rawMessage =
+          error instanceof Error ? error.message : "";
+        const message =
+          rawMessage && rawMessage.length > 0 && rawMessage !== "Invalid or inapplicable coupon"
+            ? rawMessage
+            : "This offer is invalid or not applicable to the selected plan";
         if (!opts?.silent) {
           setCouponError(message);
         } else {

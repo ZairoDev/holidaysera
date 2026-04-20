@@ -148,6 +148,7 @@ async function getValidatedCouponForPlan(params: {
 }) {
   const normalizedCouponCode = normalizeCouponCode(params.rawCouponCode);
   if (!normalizedCouponCode) {
+    console.error("[Coupon] Rejected: empty code after normalization", { planId: params.planId });
     throw new TRPCError({
       code: "BAD_REQUEST",
       message: "Invalid or inapplicable coupon",
@@ -156,6 +157,7 @@ async function getValidatedCouponForPlan(params: {
 
   const coupon = await Coupon.findOne({ code: normalizedCouponCode });
   if (!coupon) {
+    console.error("[Coupon] Rejected: not found in DB", { code: normalizedCouponCode, planId: params.planId });
     throw new TRPCError({
       code: "BAD_REQUEST",
       message: "Invalid or inapplicable coupon",
@@ -164,9 +166,54 @@ async function getValidatedCouponForPlan(params: {
 
   const validation = coupon.isValid(params.planId, params.amount);
   if (!validation.valid) {
+    console.error("[Coupon] Rejected by isValid()", {
+      code: normalizedCouponCode,
+      planId: params.planId,
+      reason: validation.message,
+      isActive: coupon.isActive,
+      validFrom: coupon.validFrom,
+      validUntil: coupon.validUntil,
+      expiresAt: coupon.expiresAt,
+      usageLimit: coupon.usageLimit,
+      usedCount: coupon.usedCount,
+      applicablePlans: coupon.applicablePlans,
+      now: new Date(),
+    });
     throw new TRPCError({
       code: "BAD_REQUEST",
       message: "Invalid or inapplicable coupon",
+    });
+  }
+
+  return { coupon, normalizedCouponCode };
+}
+
+async function getValidatedCouponForPlanVerbose(params: {
+  rawCouponCode: string;
+  planId: SubscriptionPlanId;
+  amount: number;
+}) {
+  const normalizedCouponCode = normalizeCouponCode(params.rawCouponCode);
+  if (!normalizedCouponCode) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: "Please enter a coupon code",
+    });
+  }
+
+  const coupon = await Coupon.findOne({ code: normalizedCouponCode });
+  if (!coupon) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: "Coupon code not found",
+    });
+  }
+
+  const validation = coupon.isValid(params.planId, params.amount);
+  if (!validation.valid) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: validation.message,
     });
   }
 
@@ -310,7 +357,7 @@ export const subscriptionRouter = router({
     .mutation(async ({ input }) => {
       const normalizedPlanId = normalizePlanId(input.planId);
       const amount = getSubscriptionPlanPrice(normalizedPlanId);
-      const { coupon } = await getValidatedCouponForPlan({
+      const { coupon } = await getValidatedCouponForPlanVerbose({
         rawCouponCode: input.code,
         planId: normalizedPlanId,
         amount,
