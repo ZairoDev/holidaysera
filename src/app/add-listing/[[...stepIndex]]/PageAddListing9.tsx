@@ -23,50 +23,47 @@ interface Page9State {
 }
 
 const PageAddListing9: FC<PageAddListing9Props> = () => {
-  const [portions, setPortions] = useState<number>(() => {
-    const savedPage = localStorage.getItem("page1") || "";
-    if (!savedPage) {
-      return 0;
+  const parseStorageValue = <T,>(key: string, fallback: T): T => {
+    const raw = localStorage.getItem(key);
+    if (!raw) return fallback;
+    try {
+      return JSON.parse(raw) as T;
+    } catch {
+      return fallback;
     }
-    const savedPortions = JSON.parse(savedPage)["numberOfPortions"];
-    return savedPortions || 0;
+  };
+
+  const [portions, setPortions] = useState<number>(() => {
+    const savedPage = parseStorageValue<Record<string, number>>("page1", {});
+    return savedPage["numberOfPortions"] || 0;
   });
 
   const [myArray, setMyArray] = useState<number[]>(Array(portions).fill(1));
 
   const [night, setNight] = useState<number[]>(() => {
-    const savedPage = localStorage.getItem("page9") || "";
-    if (!savedPage) {
-      return [3, 21];
-    }
-    const value = JSON.parse(savedPage)["night"];
+    const savedPage = parseStorageValue<Record<string, number[]>>("page9", {});
+    const value = savedPage["night"];
     return value || [3, 21];
   });
 
   const [month, setMonth] = useState<number[]>(() => {
-    const savedPage = localStorage.getItem("page9") || "";
-    if (!savedPage) {
-      return [1, 12];
-    }
-    const value = JSON.parse(savedPage)["month"];
+    const savedPage = parseStorageValue<Record<string, number[]>>("page9", {});
+    const value = savedPage["month"];
     return value || [1, 12];
   });
 
   const [time, setTime] = useState<number[]>(() => {
-    const savedPage = localStorage.getItem("page9") || "";
-    if (!savedPage) {
-      return [0, 24];
-    }
-    const value = JSON.parse(savedPage)["time"];
+    const savedPage = parseStorageValue<Record<string, number[]>>("page9", {});
+    const value = savedPage["time"];
     return value || [0, 24];
   });
 
   const [datesPerPortion, setDatesPerPortion] = useState<number[][]>(() => {
-    const savedPage = localStorage.getItem("page9") || "";
-    if (!savedPage) {
+    const savedPage = parseStorageValue<Record<string, number[][]>>("page9", {});
+    const value = savedPage["datesPerPortion"];
+    if (!value) {
       return Array.from({ length: portions }, () => []);
     }
-    const value = JSON.parse(savedPage)["datesPerPortion"];
     if (value?.length !== portions) {
       return Array.from({ length: portions }, () => []);
     }

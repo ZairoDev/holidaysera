@@ -68,7 +68,7 @@ export function mapPropertyDocument(doc: any) {
     cooking: doc.cooking || undefined,
     additionalRules: doc.additionalRules || [],
 
-    reviews: doc.reviews || [],
+    reviews: typeof doc.reviews === "string" ? doc.reviews : "",
     newReviews: doc.newReviews || [],
     rating: doc.rating || undefined,
 

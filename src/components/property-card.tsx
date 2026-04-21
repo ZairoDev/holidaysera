@@ -45,17 +45,19 @@ export function PropertyCard({ property }: PropertyCardProps) {
   const rating = useMemo(() => {
     // Helper function to generate consistent random rating based on property ID
     const generateRandomRating = () => {
-      const hash = property._id.split('').reduce((acc, char) => {
+      const safeId = typeof property._id === "string" ? property._id : "fallback-property-id";
+      const hash = safeId.split("").reduce((acc, char) => {
         return ((acc << 5) - acc) + char.charCodeAt(0);
       }, 0);
       const random = Math.abs(Math.sin(hash)) * 0.5; // 0 to 0.5
       return 4.5 + random; // 4.5 to 5.0
     };
 
-    if (property.reviews && property.reviews.trim() !== "") {
+    const reviewsText = typeof property.reviews === "string" ? property.reviews.trim() : "";
+    if (reviewsText !== "") {
       // If reviews exist, try to parse a numeric rating from the reviews string
       // Check if reviews is a number string (e.g., "4.8")
-      const parsedRating = parseFloat(property.reviews);
+      const parsedRating = parseFloat(reviewsText);
       if (!isNaN(parsedRating) && parsedRating >= 0 && parsedRating <= 5) {
         return parsedRating;
       }
@@ -69,7 +71,7 @@ export function PropertyCard({ property }: PropertyCardProps) {
   const pictureUrls =
     property.propertyPictureUrls
       ?.filter(Boolean)
-      .filter((url) => url.trim() !== "") || [];
+      .filter((url) => typeof url === "string" && url.trim() !== "") || [];
   const fallbackImages = property.propertyImages || [];
   const allImages = pictureUrls.length ? pictureUrls : fallbackImages;
   const activeImage =

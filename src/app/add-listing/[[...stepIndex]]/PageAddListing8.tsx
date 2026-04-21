@@ -44,21 +44,29 @@ export const MONTHS = [
 ];
 
 const PageAddListing8: FC<PageAddListing8Props> = () => {
-  let portions = 0;
-  const data = localStorage.getItem("page1") || "";
-  if (data) {
-    const value = JSON.parse(data)["numberOfPortions"];
-    if (value) {
-      portions = parseInt(value, 10);
+  const parseStorageValue = <T,>(key: string, fallback: T): T => {
+    const raw = localStorage.getItem(key);
+    if (!raw) return fallback;
+    try {
+      return JSON.parse(raw) as T;
+    } catch {
+      return fallback;
     }
+  };
+
+  let portions = 0;
+  const page1 = parseStorageValue<Record<string, unknown>>("page1", {});
+  const numberOfPortions = page1["numberOfPortions"];
+  if (typeof numberOfPortions === "number") {
+    portions = numberOfPortions;
+  } else if (typeof numberOfPortions === "string") {
+    const parsedPortions = parseInt(numberOfPortions, 10);
+    portions = Number.isNaN(parsedPortions) ? 0 : parsedPortions;
   }
 
   const [rentalType, setRentalType] = useState<string>(() => {
-    const savedRentalType = localStorage.getItem("page1");
-    if (!savedRentalType) {
-      return "Short Term";
-    }
-    const type = JSON.parse(savedRentalType)["rentalType"];
+    const savedRentalType = parseStorageValue<Record<string, string>>("page1", {});
+    const type = savedRentalType["rentalType"];
     return type || "Short Term";
   });
 
@@ -86,64 +94,44 @@ const PageAddListing8: FC<PageAddListing8Props> = () => {
       return MONTHS;
     }
 
-    const savedPage = localStorage.getItem("page8") || "";
-    if (!savedPage) {
-      return [];
-    }
-    const value = JSON.parse(savedPage)["longTermMonths"];
+    const savedPage = parseStorageValue<Record<string, string[]>>("page8", {});
+    const value = savedPage["longTermMonths"];
     return value || [];
   });
 
   const [basePrice, setBasePrice] = useState<number[]>(() => {
-    const savedPage = localStorage.getItem("page8") || "";
-    if (!savedPage) {
-      return emptyNumberArrayGenerator(portions);
-    }
-    const value = JSON.parse(savedPage)["basePrice"];
+    const savedPage = parseStorageValue<Record<string, number[]>>("page8", {});
+    const value = savedPage["basePrice"];
     return value || emptyNumberArrayGenerator(portions);
   });
 
   const [basePriceLongTerm, setBasePriceLongTerm] = useState<number[]>(() => {
-    const savedPage = localStorage.getItem("page8") || "";
-    if (!savedPage) {
-      return emptyNumberArrayGenerator(portions);
-    }
-    const value = JSON.parse(savedPage)["basePriceLongTerm"];
+    const savedPage = parseStorageValue<Record<string, number[]>>("page8", {});
+    const value = savedPage["basePriceLongTerm"];
     return value || emptyNumberArrayGenerator(portions);
   });
 
   const [weekendPrice, setWeekendPrice] = useState<number[]>(() => {
-    const savedPage = localStorage.getItem("page8") || "";
-    if (!savedPage) {
-      return emptyNumberArrayGenerator(portions);
-    }
-    const value = JSON.parse(savedPage)["weekendPrice"];
+    const savedPage = parseStorageValue<Record<string, number[]>>("page8", {});
+    const value = savedPage["weekendPrice"];
     return value || emptyNumberArrayGenerator(portions);
   });
 
   const [weeklyDiscount, setWeeklyDiscount] = useState<number[]>(() => {
-    const savedPage = localStorage.getItem("page8");
-    if (!savedPage) {
-      return emptyNumberArrayGenerator(portions);
-    }
-    const value = JSON.parse(savedPage)["weeklyDiscount"];
+    const savedPage = parseStorageValue<Record<string, number[]>>("page8", {});
+    const value = savedPage["weeklyDiscount"];
     return value || emptyNumberArrayGenerator(portions);
   });
 
   const [monthlyDiscount, setMonthlyDiscount] = useState<number[]>(() => {
-    const savedPage = localStorage.getItem("page8");
-    if (!savedPage) {
-      return emptyNumberArrayGenerator(portions);
-    }
-    const value = JSON.parse(savedPage)["monthlyDiscount"];
+    const savedPage = parseStorageValue<Record<string, number[]>>("page8", {});
+    const value = savedPage["monthlyDiscount"];
     return value || emptyNumberArrayGenerator(portions);
   });
 
   const [page8, setPage8] = useState<Page8State>(() => {
-    const savedPage = localStorage.getItem("page8");
-    return savedPage
-      ? JSON.parse(savedPage)
-      : {
+    const savedPage = parseStorageValue<Page8State | null>("page8", null);
+    return savedPage || {
           currency: "EURO",
           isPortion: false,
           basePrice: emptyNumberArrayGenerator(portions),
@@ -157,11 +145,8 @@ const PageAddListing8: FC<PageAddListing8Props> = () => {
   });
 
   const [monthState, setMonthState] = useState<boolean[]>(() => {
-    const savedPage = localStorage.getItem("page8") || "";
-    if (!savedPage) {
-      return Array.from({ length: 12 }, () => false);
-    }
-    const value = JSON.parse(savedPage)["monthState"];
+    const savedPage = parseStorageValue<Record<string, boolean[]>>("page8", {});
+    const value = savedPage["monthState"];
     return value || Array.from({ length: 12 }, () => false);
   });
 

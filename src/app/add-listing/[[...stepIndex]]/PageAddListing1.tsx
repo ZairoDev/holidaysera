@@ -33,6 +33,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Button } from "@/components/ui/button";
 
 const PageAddListing1: FC<PageAddListing1Props> = ({ searchParams }) => {
+  const parsePage1Storage = (): Record<string, unknown> => {
+    const savedPage = localStorage.getItem("page1");
+    if (!savedPage) return {};
+    try {
+      return JSON.parse(savedPage) as Record<string, unknown>;
+    } catch {
+      return {};
+    }
+  };
   // If opened with ?edit=<propertyId>, fetch property and prefill page1
   const editParam = searchParams?.edit;
   const editId = Array.isArray(editParam) ? editParam[0] : editParam;
@@ -95,57 +104,40 @@ const PageAddListing1: FC<PageAddListing1Props> = ({ searchParams }) => {
     }
   }, [getPropertyQuery.data]);
   const [propertyType, setPropertyType] = useState<string>(() => {
-    const savedPage = localStorage.getItem("page1") || "";
-    if (!savedPage) {
-      return "Hotel";
-    }
-    const value = JSON.parse(savedPage)["propertyType"];
-    return value || "Hotel";
+    const value = parsePage1Storage().propertyType;
+    return typeof value === "string" && value.length > 0 ? value : "Hotel";
   });
 
   const [placeName, setPlaceName] = useState<string>(() => {
-    const savedPage = localStorage.getItem("page1") || "";
-    if (!savedPage) {
-      return "";
-    }
-    const value = JSON.parse(savedPage)["placeName"];
-    return value || "";
+    const value = parsePage1Storage().placeName;
+    return typeof value === "string" ? value : "";
   });
 
   const [rentalForm, setRentalForm] = useState<string>(() => {
-    const savedPage = localStorage.getItem("page1") || "";
-    if (!savedPage) {
-      return "Private Room";
-    }
-    const value = JSON.parse(savedPage)["rentalForm"];
-    return value || "Private Room";
+    const value = parsePage1Storage().rentalForm;
+    return typeof value === "string" && value.length > 0 ? value : "Private Room";
   });
 
   const [numberOfPortions, setNumberOfPortions] = useState<number>(() => {
-    const savedPage = localStorage.getItem("page1") || "";
-    if (!savedPage) {
-      return 1;
+    const value = parsePage1Storage().numberOfPortions;
+    if (typeof value === "number") return value;
+    if (typeof value === "string") {
+      const parsed = parseInt(value, 10);
+      return Number.isNaN(parsed) ? 1 : parsed;
     }
-    const value = JSON.parse(savedPage)["numberOfPortions"];
-    return value ? parseInt(value, 10) : 1;
+    return 1;
   });
 
   const [showPortionsInput, setShowPortionsInput] = useState<boolean>(() => {
-    const savedPage = localStorage.getItem("page1") || "";
-    if (!savedPage) {
-      return false;
-    }
-    const value = JSON.parse(savedPage)["showPortionsInput"];
-    return value ? JSON.parse(value) : false;
+    const value = parsePage1Storage().showPortionsInput;
+    if (typeof value === "boolean") return value;
+    if (typeof value === "string") return value.toLowerCase() === "true";
+    return false;
   });
 
   const [rentalType, setRentalType] = useState<string>(() => {
-    const savedRentalType = localStorage.getItem("page1") || "";
-    if (!savedRentalType){
-      return "Short Term";
-    }
-    const value = JSON.parse(savedRentalType)["rentalType"];
-    return value || "Short Term";
+    const value = parsePage1Storage().rentalType;
+    return typeof value === "string" && value.length > 0 ? value : "Short Term";
   })
 
   const [page1, setPage1] = useState<Page1State>({

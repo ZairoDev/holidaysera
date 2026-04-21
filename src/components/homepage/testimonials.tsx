@@ -167,6 +167,11 @@ function TestimonialCard({
   testimonial: Testimonial;
   index: number;
 }) {
+  const safeRating = Math.max(
+    0,
+    Math.min(5, Math.floor(Number.isFinite(testimonial.rating) ? testimonial.rating : 0))
+  );
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -176,7 +181,7 @@ function TestimonialCard({
       className="rounded-xl bg-white p-6 shadow-lg"
     >
       <div className="mb-4 flex items-center gap-1">
-        {[...Array(testimonial.rating)].map((_, i) => (
+        {[...Array(safeRating)].map((_, i) => (
           <Star key={i} className="h-5 w-5 fill-amber-400 text-amber-400" />
         ))}
       </div>

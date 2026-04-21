@@ -236,7 +236,7 @@ export default function PropertiesPage() {
   }, [inView, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   // Flatten all pages into a single array
-  const properties = data?.pages.flatMap((page) => page.items) ?? [];
+  const properties = data?.pages?.flatMap((page) => page.items) ?? [];
   const totalCount = data?.pages[0]?.totalCount ?? 0;
 
   // Check if any filters are applied

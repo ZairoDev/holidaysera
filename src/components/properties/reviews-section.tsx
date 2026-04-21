@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { format } from "date-fns";
+import { format, isValid } from "date-fns";
 import { Star, MessageSquare, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -68,6 +68,10 @@ export function ReviewsSection({ propertyId }: ReviewsSectionProps) {
     reviews.length > 0
       ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
       : 0;
+  const getReviewDateLabel = (value: string) => {
+    const date = new Date(value);
+    return isValid(date) ? format(date, "MMMM yyyy") : "Date unavailable";
+  };
 
   return (
     <>
@@ -140,7 +144,7 @@ export function ReviewsSection({ propertyId }: ReviewsSectionProps) {
                         <p className="text-sm text-gray-600">{review.location}</p>
                       )}
                       <p className="text-xs text-gray-500">
-                        {format(new Date(review.createdAt), "MMMM yyyy")}
+                        {getReviewDateLabel(review.createdAt)}
                       </p>
                     </div>
                   </div>

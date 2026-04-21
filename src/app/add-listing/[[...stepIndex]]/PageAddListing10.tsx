@@ -92,6 +92,74 @@ interface CombinedData {
 
 const PageAddListing10: FC<PageAddListing10Props> = ({ searchParams }) => {
   const router = useRouter();
+  const parseStorageValue = <T,>(key: string, fallback: T): T => {
+    const raw = localStorage.getItem(key);
+    if (!raw) return fallback;
+    try {
+      return JSON.parse(raw) as T;
+    } catch {
+      return fallback;
+    }
+  };
+  const getString = (value: unknown, fallback = ""): string =>
+    typeof value === "string" ? value : fallback;
+  const getNumber = (value: unknown, fallback = 0): number => {
+    if (typeof value === "number" && Number.isFinite(value)) return value;
+    if (typeof value === "string") {
+      const parsed = Number(value);
+      return Number.isFinite(parsed) ? parsed : fallback;
+    }
+    return fallback;
+  };
+  const getNumberArray = (value: unknown): number[] =>
+    Array.isArray(value) ? value.map((item) => getNumber(item, 0)) : [];
+  const getStringArray = (value: unknown): string[] =>
+    Array.isArray(value) ? value.map((item) => getString(item, "")) : [];
+  const getRecord = (value: unknown): Record<string, unknown> =>
+    value && typeof value === "object" && !Array.isArray(value)
+      ? (value as Record<string, unknown>)
+      : {};
+  const getBooleanRecord = (value: unknown): Record<string, boolean> => {
+    const record = getRecord(value);
+    return Object.entries(record).reduce<Record<string, boolean>>((acc, [key, val]) => {
+      if (typeof val === "boolean") {
+        acc[key] = val;
+      }
+      return acc;
+    }, {});
+  };
+  const getStringRecord = (value: unknown): Record<string, string> => {
+    const record = getRecord(value);
+    return Object.entries(record).reduce<Record<string, string>>((acc, [key, val]) => {
+      if (typeof val === "string") {
+        acc[key] = val;
+      }
+      return acc;
+    }, {});
+  };
+  const getRentalType = (
+    value: unknown
+  ): "Short Term" | "Long Term" | "Both" => {
+    if (value === "Short Term" || value === "Long Term" || value === "Both") {
+      return value;
+    }
+    return "Short Term";
+  };
+  const getDatesPerPortion = (value: unknown): string[] => {
+    if (!Array.isArray(value)) return [];
+    return value.flatMap((dates) =>
+      Array.isArray(dates) ? dates.map((item) => String(item)) : []
+    );
+  };
+  const getCenter = (value: unknown): { lat: number; lng: number } | undefined => {
+    const record = getRecord(value);
+    const lat = getNumber(record.lat, Number.NaN);
+    const lng = getNumber(record.lng, Number.NaN);
+    if (Number.isNaN(lat) || Number.isNaN(lng)) {
+      return undefined;
+    }
+    return { lat, lng };
+  };
   const [isLoading, setIsLoading] = useState(false);
   const [propertyCoverFileUrl, setPropertyCoverFileUrl] = useState<string>("");
   const [page3, setPage3] = useState<Page3State | null>(null);
@@ -178,7 +246,15 @@ const PageAddListing10: FC<PageAddListing10Props> = ({ searchParams }) => {
         const propertyCoverUrl = localStorage.getItem("propertyCoverFileUrl") || "";
 
         if (page3Data) {
-          const parsedPage3 = JSON.parse(page3Data);
+          const parsedPage3 = parseStorageValue<Page3State>("page3", {
+            portionName: [],
+            portionSize: [],
+            guests: [],
+            bedrooms: [],
+            beds: [],
+            bathroom: [],
+            kitchen: [],
+          });
           setPage3(parsedPage3);
           // Extract beds and bathrooms
           if (parsedPage3.beds && parsedPage3.beds[0]) {
@@ -190,7 +266,7 @@ const PageAddListing10: FC<PageAddListing10Props> = ({ searchParams }) => {
         }
 
         if (page2Data) {
-          setPage2(JSON.parse(page2Data));
+          setPage2(parseStorageValue<Page2State | null>("page2", null));
         }
 
         if (propertyCoverUrl) {
@@ -198,9 +274,18 @@ const PageAddListing10: FC<PageAddListing10Props> = ({ searchParams }) => {
         }
         
         if (page8Data) {
-          const page8 = JSON.parse(page8Data);
-          if (page8.basePrice && page8.basePrice[0]) {
-            setBasePrice(parseInt(page8.basePrice[0]));
+          const page8 = parseStorageValue<{ basePrice?: Array<number | string> }>(
+            "page8",
+            {}
+          );
+          const firstBasePrice = page8.basePrice?.[0];
+          if (typeof firstBasePrice === "number") {
+            setBasePrice(firstBasePrice);
+          } else if (typeof firstBasePrice === "string") {
+            const parsedBasePrice = parseInt(firstBasePrice, 10);
+            if (!Number.isNaN(parsedBasePrice)) {
+              setBasePrice(parsedBasePrice);
+            }
           }
         }
       } catch (error) {
@@ -215,107 +300,86 @@ const PageAddListing10: FC<PageAddListing10Props> = ({ searchParams }) => {
     setIsLoading(true);
     try {
       // Collect all data from localStorage
-      const page1 = localStorage.getItem("page1")
-        ? JSON.parse(localStorage.getItem("page1")!)
-        : {};
-      const page2Data = localStorage.getItem("page2")
-        ? JSON.parse(localStorage.getItem("page2")!)
-        : {};
-      const page3Data = localStorage.getItem("page3")
-        ? JSON.parse(localStorage.getItem("page3")!)
-        : {};
-      const page4 = localStorage.getItem("page4")
-        ? JSON.parse(localStorage.getItem("page4")!)
-        : {};
-      const page5 = localStorage.getItem("page5")
-        ? JSON.parse(localStorage.getItem("page5")!)
-        : {};
-      const page6 = localStorage.getItem("page6")
-        ? JSON.parse(localStorage.getItem("page6")!)
-        : {};
-      const page7 = localStorage.getItem("page7")
-        ? JSON.parse(localStorage.getItem("page7")!)
-        : {};
-      const page8 = localStorage.getItem("page8")
-        ? JSON.parse(localStorage.getItem("page8")!)
-        : {};
-      const page9 = localStorage.getItem("page9")
-        ? JSON.parse(localStorage.getItem("page9")!)
-        : {};
+      const page1 = parseStorageValue<Record<string, unknown>>("page1", {});
+      const page2Data = parseStorageValue<Record<string, unknown>>("page2", {});
+      const page3Data = parseStorageValue<Record<string, unknown>>("page3", {});
+      const page4 = parseStorageValue<Record<string, unknown>>("page4", {});
+      const page5 = parseStorageValue<Record<string, unknown>>("page5", {});
+      const page6 = parseStorageValue<Record<string, unknown>>("page6", {});
+      const page7 = parseStorageValue<Record<string, unknown>>("page7", {});
+      const page8 = parseStorageValue<Record<string, unknown>>("page8", {});
+      const page9 = parseStorageValue<Record<string, unknown>>("page9", {});
 
       // Image data is stored separately in localStorage by step 7
-      const storedPropertyPictureUrlsRaw =
-        localStorage.getItem("propertyPictureUrls");
-      const storedPropertyPictureUrls: string[] = storedPropertyPictureUrlsRaw
-        ? JSON.parse(storedPropertyPictureUrlsRaw)
-        : [];
+      const storedPropertyPictureUrls: string[] = parseStorageValue<string[]>(
+        "propertyPictureUrls",
+        []
+      );
 
       // Build listing object with all necessary fields
       // Update the handleGoLive function to send correct data types
       const listingData = {
         // Basic Info (Page 1)
-        propertyType: page1.propertyType || "House",
-        propertyName: page1.placeName || "Untitled Property",
-        placeName: page1.placeName || "",
-        rentalType: page1.rentalType || "Short Term",
-        rentalForm: page1.rentalForm || "",
+        propertyType: getString(page1.propertyType, "House"),
+        propertyName: getString(page1.placeName, "Untitled Property"),
+        placeName: getString(page1.placeName, ""),
+        rentalType: getRentalType(page1.rentalType),
+        rentalForm: getString(page1.rentalForm, ""),
 
         // Location (Page 2)
-        street: page2Data.street || "",
-        postalCode: page2Data.postalCode || "",
-        city: page2Data.city || "",
-        state: page2Data.state || "",
-        country: page2Data.country || "",
-        center: page2Data.center,
+        street: getString(page2Data.street, ""),
+        postalCode: getString(page2Data.postalCode, ""),
+        city: getString(page2Data.city, ""),
+        state: getString(page2Data.state, ""),
+        country: getString(page2Data.country, ""),
+        center: getCenter(page2Data.center),
 
         // Spaces (Page 3) - EXTRACT FIRST VALUE FROM ARRAYS
-        guests: page3Data.guests?.[0] || 1,
-        bedrooms: page3Data.bedrooms?.[0] || 0,
-        beds: page3Data.beds?.[0] || 0,
-        bathroom: page3Data.bathroom?.[0] || 0,
-        kitchen: page3Data.kitchen?.[0] || 0,
-        size: page3Data.portionSize?.[0] || 0,
+        guests: getNumberArray(page3Data.guests)[0] || 1,
+        bedrooms: getNumberArray(page3Data.bedrooms)[0] || 0,
+        beds: getNumberArray(page3Data.beds)[0] || 0,
+        bathroom: getNumberArray(page3Data.bathroom)[0] || 0,
+        kitchen: getNumberArray(page3Data.kitchen)[0] || 0,
+        size: getNumberArray(page3Data.portionSize)[0] || 0,
 
         // Amenities (Page 4)
-        generalAmenities: page4.generalAmenities || {},
-        otherAmenities: page4.otherAmenities || {},
-        safeAmenities: page4.safeAmenities || {},
+        generalAmenities: getBooleanRecord(page4.generalAmenities),
+        otherAmenities: getBooleanRecord(page4.otherAmenities),
+        safeAmenities: getBooleanRecord(page4.safeAmenities),
 
         // House Rules (Page 5)
-        smoking: page5.smoking || "",
-        pet: page5.pet || "",
-        party: page5.party || "",
-        cooking: page5.cooking || "",
-        additionalRules: page5.additionalRules || [],
+        smoking: getString(page5.smoking, ""),
+        pet: getString(page5.pet, ""),
+        party: getString(page5.party, ""),
+        cooking: getString(page5.cooking, ""),
+        additionalRules: getStringArray(page5.additionalRules),
 
         // Description (Page 6) - JOIN ARRAY TO STRING
-        reviews: page6.reviews?.join("\n\n") || "",
+        reviews: getStringArray(page6.reviews).join("\n\n"),
 
         // Images (Page 7)
         propertyCoverFileUrl:
           localStorage.getItem("propertyCoverFileUrl") ||
-          page7.propertyCoverFileUrl ||
+          getString(page7.propertyCoverFileUrl, "") ||
           "",
         propertyPictureUrls:
           storedPropertyPictureUrls.length > 0
             ? storedPropertyPictureUrls
-            : page7.propertyPictureUrls || [],
+            : getStringArray(page7.propertyPictureUrls),
 
         // Pricing (Page 8) - EXTRACT FIRST VALUES
-        basePrice: page8.basePrice?.[0] || 0,
-        weekendPrice: page8.weekendPrice?.[0],
-        weeklyDiscount: page8.weeklyDiscount?.[0],
-        basePriceLongTerm: page8.basePriceLongTerm?.[0],
-        monthlyDiscount: page8.monthlyDiscount?.[0],
-        currency: page8.currency || "USD",
+        basePrice: getNumberArray(page8.basePrice)[0] || 0,
+        weekendPrice: getNumberArray(page8.weekendPrice)[0],
+        weeklyDiscount: getNumberArray(page8.weeklyDiscount)[0],
+        basePriceLongTerm: getNumberArray(page8.basePriceLongTerm)[0],
+        monthlyDiscount: getNumberArray(page8.monthlyDiscount)[0],
+        currency: getString(page8.currency, "USD"),
 
         // Availability (Page 9) - CONVERT datesPerPortion TO STRINGS
-        night: page9.night || [],
-        time: page9.time || [],
-        datesPerPortion: (page9.datesPerPortion || [])
-          .map((dates: number[]) => dates.map((d) => d.toString()))
-          .flat(),
-        icalLinks: page9.icalLinks || {},
+        night: getNumberArray(page9.night),
+        time: getNumberArray(page9.time),
+        datesPerPortion: getDatesPerPortion(page9.datesPerPortion),
+        icalLinks: getStringRecord(page9.icalLinks),
 
         // Additional
         isInstantBooking: false,

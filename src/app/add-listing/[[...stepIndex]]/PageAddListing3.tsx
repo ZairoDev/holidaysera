@@ -28,14 +28,25 @@ interface Page3State {
 }
 
 const PageAddListing3: FC<PageAddListing3Props> = () => {
+  const parseStorageValue = <T,>(key: string, fallback: T): T => {
+    const raw = localStorage.getItem(key);
+    if (!raw) return fallback;
+    try {
+      return JSON.parse(raw) as T;
+    } catch {
+      return fallback;
+    }
+  };
+
   // TODO: declaring the type of object which is used as the value in array of input fields
   let portions = 0;
-  const data = localStorage.getItem("page1") || "";
-  if (data) {
-    const value = JSON.parse(data)["numberOfPortions"];
-    if (value) {
-      portions = parseInt(value, 10);
-    }
+  const page1 = parseStorageValue<Record<string, unknown>>("page1", {});
+  const numberOfPortions = page1["numberOfPortions"];
+  if (typeof numberOfPortions === "number") {
+    portions = numberOfPortions;
+  } else if (typeof numberOfPortions === "string") {
+    const parsedPortions = parseInt(numberOfPortions, 10);
+    portions = Number.isNaN(parsedPortions) ? 0 : parsedPortions;
   }
   const emptyStringArrayGenerator = (size: number) => {
     const emptyStringArray = Array.from({ length: size }, () => "");
@@ -48,74 +59,50 @@ const PageAddListing3: FC<PageAddListing3Props> = () => {
 
   const [myArray, setMyArray] = useState<number[]>([]);
   const [portionName, setPortionName] = useState<string[]>(() => {
-    const savedPage = localStorage.getItem("page3") || "";
-    if (!savedPage) {
-      return emptyStringArrayGenerator(portions);
-    }
-    const value = JSON.parse(savedPage)["portionName"];
+    const savedPage = parseStorageValue<Record<string, string[]>>("page3", {});
+    const value = savedPage["portionName"];
     return value || emptyStringArrayGenerator(portions);
   });
 
   const [portionSize, setPortionSize] = useState<number[]>(() => {
-    const savedPage = localStorage.getItem("page3") || "";
-    if (!savedPage) {
-      return emptyNumberArrayGenerator(portions);
-    }
-    const value = JSON.parse(savedPage)["portionSize"];
+    const savedPage = parseStorageValue<Record<string, number[]>>("page3", {});
+    const value = savedPage["portionSize"];
     return value || emptyNumberArrayGenerator(portions);
   });
 
   const [guests, setGuests] = useState<number[]>(() => {
-    const savedPage = localStorage.getItem("page3") || "";
-    if (!savedPage) {
-      return emptyNumberArrayGenerator(portions);
-    }
-    const value = JSON.parse(savedPage)["guests"];
+    const savedPage = parseStorageValue<Record<string, number[]>>("page3", {});
+    const value = savedPage["guests"];
     return value || emptyNumberArrayGenerator(portions);
   });
 
   const [bedrooms, setBedrooms] = useState<number[]>(() => {
-    const savedPage = localStorage.getItem("page3") || "";
-    if (!savedPage) {
-      return emptyNumberArrayGenerator(portions);
-    }
-    const value = JSON.parse(savedPage)["bedrooms"];
+    const savedPage = parseStorageValue<Record<string, number[]>>("page3", {});
+    const value = savedPage["bedrooms"];
     return value || emptyNumberArrayGenerator(portions);
   });
 
   const [beds, setBeds] = useState<number[]>(() => {
-    const savedPage = localStorage.getItem("page3") || "";
-    if (!savedPage) {
-      return emptyNumberArrayGenerator(portions);
-    }
-    const value = JSON.parse(savedPage)["beds"];
+    const savedPage = parseStorageValue<Record<string, number[]>>("page3", {});
+    const value = savedPage["beds"];
     return value || emptyNumberArrayGenerator(portions);
   });
 
   const [bathroom, setBathroom] = useState<number[]>(() => {
-    const savedPage = localStorage.getItem("page3") || "";
-    if (!savedPage) {
-      return emptyNumberArrayGenerator(portions);
-    }
-    const value = JSON.parse(savedPage)["bathroom"];
+    const savedPage = parseStorageValue<Record<string, number[]>>("page3", {});
+    const value = savedPage["bathroom"];
     return value || emptyNumberArrayGenerator(portions);
   });
 
   const [kitchen, setKitchen] = useState<number[]>(() => {
-    const savedPage = localStorage.getItem("page3") || "";
-    if (!savedPage) {
-      return emptyNumberArrayGenerator(portions);
-    }
-    const value = JSON.parse(savedPage)["kitchen"];
+    const savedPage = parseStorageValue<Record<string, number[]>>("page3", {});
+    const value = savedPage["kitchen"];
     return value || emptyNumberArrayGenerator(portions);
   });
 
   const [childrenAge, setChildrenAge] = useState<number[]>(() => {
-    const savedPage = localStorage.getItem("page3") || "";
-    if (!savedPage) {
-      return emptyNumberArrayGenerator(portions);
-    }
-    const value = JSON.parse(savedPage)["childrenAge"];
+    const savedPage = parseStorageValue<Record<string, number[]>>("page3", {});
+    const value = savedPage["childrenAge"];
     return value || emptyNumberArrayGenerator(portions);
   });
 

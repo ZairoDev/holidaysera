@@ -17,6 +17,16 @@ interface Page5State {
 }
 
 const PageAddListing5: FC<PageAddListing5Props> = () => {
+  const parseStorageValue = <T,>(key: string, fallback: T): T => {
+    const raw = localStorage.getItem(key);
+    if (!raw) return fallback;
+    try {
+      return JSON.parse(raw) as T;
+    } catch {
+      return fallback;
+    }
+  };
+
   const handleRadioChange = (name: string, value: string) => {
     setPage5((prevState) => {
       return {
@@ -40,33 +50,25 @@ const PageAddListing5: FC<PageAddListing5Props> = () => {
   };
 
   const [additionalRules, setAdditionalRules] = useState<string[]>(() => {
-    const savedPage = localStorage.getItem("page5") || "";
-    if (!savedPage) {
-      return ["No smoking in common areas", "Do not wear shoes/shoes in the house", "No cooking in the bedroom"];
-    }
-    const value = JSON.parse(savedPage)["additionalRules"];
+    const defaultRules = ["No smoking in common areas", "Do not wear shoes/shoes in the house", "No cooking in the bedroom"];
+    const savedPage = parseStorageValue<Record<string, string[]>>("page5", {});
+    const value = savedPage["additionalRules"];
     return (
-      value || [
-        "No smoking in common areas",
-        "Do not wear shoes/shoes in the house",
-        "No cooking in the bedroom",
-      ]
+      value || defaultRules
     );
   });
 
   const [rulesInput, setRulesInput] = useState<string>("");
 
   const [page5, setPage5] = useState<Page5State>(() => {
-    const savedPage = localStorage.getItem("page5");
-    return savedPage
-      ? JSON.parse(savedPage)
-      : {
-          smoking: "Do not allow",
-          pet: "Allow",
-          party: "Allow",
-          cooking: "Allow",
-          additionalRules: additionalRules
-        };
+    const savedPage = parseStorageValue<Page5State | null>("page5", null);
+    return savedPage || {
+      smoking: "Do not allow",
+      pet: "Allow",
+      party: "Allow",
+      cooking: "Allow",
+      additionalRules: additionalRules
+    };
   });
 
   useEffect(() => {

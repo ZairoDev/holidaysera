@@ -12,15 +12,26 @@ export interface PageAddListing7Props {}
 
 const PageAddListing7: FC<PageAddListing7Props> = () => {
   const isBrowser = typeof window !== "undefined";
+  const parseStorageValue = <T,>(key: string, fallback: T): T => {
+    if (!isBrowser) return fallback;
+    const raw = window.localStorage.getItem(key);
+    if (!raw) return fallback;
+    try {
+      return JSON.parse(raw) as T;
+    } catch {
+      return fallback;
+    }
+  };
 
   let portions = 0;
   if (isBrowser) {
-    const data = window.localStorage.getItem("page1") || "";
-    if (data) {
-      const value = JSON.parse(data)["numberOfPortions"];
-      if (value) {
-        portions = parseInt(value, 10);
-      }
+    const page1 = parseStorageValue<Record<string, unknown>>("page1", {});
+    const value = page1["numberOfPortions"];
+    if (typeof value === "number") {
+      portions = value;
+    } else if (typeof value === "string") {
+      const parsed = parseInt(value, 10);
+      portions = Number.isNaN(parsed) ? 0 : parsed;
     }
   }
   const checkPortion = portions > 1 ? portions : 0;
@@ -41,9 +52,10 @@ const PageAddListing7: FC<PageAddListing7Props> = () => {
       if (savedUrls?.length != portions) {
         return emptyStringArrayGenerator(portions);
       }
-      return savedUrls
-        ? JSON.parse(savedUrls)
-        : emptyStringArrayGenerator(portions);
+      return parseStorageValue<string[]>(
+        "portionCoverFileUrls",
+        emptyStringArrayGenerator(portions)
+      );
     }
   );
 
@@ -69,7 +81,10 @@ const PageAddListing7: FC<PageAddListing7Props> = () => {
         return Array(portions).fill(arrayOf5);
       }
 
-      return savedUrls ? JSON.parse(savedUrls) : Array(portions).fill(arrayOf5);
+      return parseStorageValue<string[][]>(
+        "portionPictureUrls",
+        Array(portions).fill(arrayOf5)
+      );
     }
   );
 
@@ -77,8 +92,7 @@ const PageAddListing7: FC<PageAddListing7Props> = () => {
     if (!isBrowser) {
       return Array(portions).fill(false);
     }
-    const savedFlags = window.localStorage.getItem("isPortionPictures");
-    return savedFlags ? JSON.parse(savedFlags) : Array(portions).fill(false);
+    return parseStorageValue<boolean[]>("isPortionPictures", Array(portions).fill(false));
   });
 
   const [propertyPictureUrls, setPropertyPictureUrls] = useState<string[]>(
@@ -86,8 +100,7 @@ const PageAddListing7: FC<PageAddListing7Props> = () => {
       if (!isBrowser) {
         return Array(5).fill("");
       }
-      const savedUrls = window.localStorage.getItem("propertyPictureUrls");
-      return savedUrls ? JSON.parse(savedUrls) : Array(5).fill("");
+      return parseStorageValue<string[]>("propertyPictureUrls", Array(5).fill(""));
     }
   );
 
@@ -95,16 +108,14 @@ const PageAddListing7: FC<PageAddListing7Props> = () => {
     if (!isBrowser) {
       return false;
     }
-    const savedFlag = window.localStorage.getItem("isPropertyPictures");
-    return savedFlag ? JSON.parse(savedFlag) : false;
+    return parseStorageValue<boolean>("isPropertyPictures", false);
   });
 
   const [isImages, setIsImages] = useState<boolean[]>(() => {
     if (!isBrowser) {
       return booleanArray;
     }
-    const savedFlag = window.localStorage.getItem("isImages");
-    return savedFlag ? JSON.parse(savedFlag) : booleanArray;
+    return parseStorageValue<boolean[]>("isImages", booleanArray);
   });
 
   // Loading states
@@ -123,14 +134,9 @@ const PageAddListing7: FC<PageAddListing7Props> = () => {
   // Get place name for folder structure
   let placeName = "";
   if (isBrowser) {
-    const page1Raw = window.localStorage.getItem("page1") || "";
-    try {
-      const parsed = page1Raw ? JSON.parse(page1Raw) : {};
-      if (parsed.placeName && typeof parsed.placeName === "string") {
-        placeName = parsed.placeName.toLowerCase().split(" ").join("_");
-      }
-    } catch {
-      placeName = "";
+    const parsed = parseStorageValue<Record<string, unknown>>("page1", {});
+    if (typeof parsed.placeName === "string") {
+      placeName = parsed.placeName.toLowerCase().split(" ").join("_");
     }
   }
 

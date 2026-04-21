@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect } from "react";
+import React, { Suspense, useEffect } from "react";
 import { FC } from "react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -26,7 +26,16 @@ const stepTitles = [
   "Review",
 ];
 
-const CommonLayout: FC<CommonLayoutProps> = ({ children, params }) => {
+const parseLocalStorageJson = <T,>(value: string | null, fallback: T): T => {
+  if (!value) return fallback;
+  try {
+    return JSON.parse(value) as T;
+  } catch {
+    return fallback;
+  }
+};
+
+const CommonLayoutContent: FC<CommonLayoutProps> = ({ children, params }) => {
   const searchParams = useSearchParams();
   const index = Number(params.stepIndex) || 1;
   
@@ -42,10 +51,11 @@ const CommonLayout: FC<CommonLayoutProps> = ({ children, params }) => {
   useEffect(() => {
     if (index === 9 && nextBtnText === "Publish listing") {
       // Get data from local storage
-      const data = localStorage.getItem("yourStorageKey");
-      if (data) {
-        // Convert data to JSON format
-        const jsonData = JSON.parse(data);
+      const jsonData = parseLocalStorageJson<Record<string, unknown> | null>(
+        localStorage.getItem("yourStorageKey"),
+        null
+      );
+      if (jsonData) {
 
         // Create a new Blob object containing the JSON data
         const blob = new Blob([JSON.stringify(jsonData, null, 2)], {
@@ -130,6 +140,14 @@ const CommonLayout: FC<CommonLayoutProps> = ({ children, params }) => {
         </div>
       </div>
     </>
+  );
+};
+
+const CommonLayout: FC<CommonLayoutProps> = (props) => {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-800" />}>
+      <CommonLayoutContent {...props} />
+    </Suspense>
   );
 };
 

@@ -275,7 +275,7 @@ function BookingPaymentContent() {
           </div>
           <div className="flex justify-between items-center text-blue-600">
             <p className="font-semibold">Service Charge (12%)</p>
-            <p className="font-bold text-lg">€{bookingData.serviceCharge.toFixed(2)}</p>
+            <p className="font-bold text-lg">€{(bookingData.serviceCharge ?? 0).toFixed(2)}</p>
           </div>
           <div className="mt-4 bg-blue-50 p-4 rounded">
             <p className="text-sm text-blue-700">
@@ -361,7 +361,7 @@ function BookingPaymentContent() {
               >
                 {isProcessing
                   ? "Processing Payment..."
-                  : `Pay €${bookingData.serviceCharge.toFixed(2)}`}
+                  : `Pay €${(bookingData.serviceCharge ?? 0).toFixed(2)}`}
               </Button>
             </div>
           </form>

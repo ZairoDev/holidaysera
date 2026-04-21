@@ -13,14 +13,24 @@ interface Page6State {
 }
 
 const PageAddListing6: FC<PageAddListing6Props> = () => {
+  const parseStorageValue = <T,>(key: string, fallback: T): T => {
+    const raw = localStorage.getItem(key);
+    if (!raw) return fallback;
+    try {
+      return JSON.parse(raw) as T;
+    } catch {
+      return fallback;
+    }
+  };
 
   let portions = 0;
-  const data = localStorage.getItem("page1") || "";
-  if (data) {
-    const value = JSON.parse(data)["numberOfPortions"];
-    if (value) {
-      portions = parseInt(value, 10);
-    }
+  const page1 = parseStorageValue<Record<string, unknown>>("page1", {});
+  const numberOfPortions = page1["numberOfPortions"];
+  if (typeof numberOfPortions === "number") {
+    portions = numberOfPortions;
+  } else if (typeof numberOfPortions === "string") {
+    const parsedPortions = parseInt(numberOfPortions, 10);
+    portions = Number.isNaN(parsedPortions) ? 0 : parsedPortions;
   }
 
   const [myArray, setMyArray] = useState<number[]>(Array(portions).fill(1));
@@ -28,20 +38,14 @@ const PageAddListing6: FC<PageAddListing6Props> = () => {
 
 
   const [portionNames, setPortionNames] = useState<string[]>(() => {
-    const savedPage = localStorage.getItem("page3") || "";
-    if (!savedPage) {
-      return [];
-    }
-    const value = JSON.parse(savedPage)["portionName"];
+    const savedPage = parseStorageValue<Record<string, string[]>>("page3", {});
+    const value = savedPage["portionName"];
     return value || [];
   });
 
   const [reviews, setReviews] = useState<string[]>(() => {
-    const savedPage = localStorage.getItem("page6") || "";
-    if (!savedPage) {
-      return [];
-    }
-    const value = JSON.parse(savedPage)["reviews"];
+    const savedPage = parseStorageValue<Record<string, string[]>>("page6", {});
+    const value = savedPage["reviews"];
     return value || [];
   });
 

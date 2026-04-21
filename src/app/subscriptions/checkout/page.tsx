@@ -458,7 +458,7 @@ function CheckoutContent() {
                 </span>
                 {appliedCoupon && (
                   <span className="text-xl text-gray-400 line-through mb-1">
-                    €{appliedCoupon.originalAmount.toFixed(2)}
+                    €{(appliedCoupon.originalAmount ?? 0).toFixed(2)}
                   </span>
                 )}
                 <span className="text-xl text-gray-500 mb-1">
@@ -616,7 +616,7 @@ function CheckoutContent() {
                 {appliedCoupon && (
                   <div className="flex justify-between text-green-600">
                     <span>Discount ({appliedCoupon.code})</span>
-                    <span>-€{appliedCoupon.discountAmount.toFixed(2)}</span>
+                    <span>-€{(appliedCoupon.discountAmount ?? 0).toFixed(2)}</span>
                   </div>
                 )}
               </div>
@@ -629,7 +629,7 @@ function CheckoutContent() {
                   </h3>
                   <div className="flex justify-between text-sm text-amber-900">
                     <span>Price per Property</span>
-                    <span>€{appliedCoupon.pricePerProperty.toFixed(2)}</span>
+                    <span>€{(appliedCoupon.pricePerProperty ?? 0).toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-sm text-amber-900">
                     <span>Properties Allowed</span>
@@ -637,15 +637,15 @@ function CheckoutContent() {
                   </div>
                   <div className="flex justify-between text-sm text-amber-900">
                     <span>Base Price</span>
-                    <span>€{appliedCoupon.originalAmount.toFixed(2)}</span>
+                    <span>€{(appliedCoupon.originalAmount ?? 0).toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-sm text-green-700">
                     <span>Discount</span>
-                    <span>-€{appliedCoupon.discountAmount.toFixed(2)}</span>
+                    <span>-€{(appliedCoupon.discountAmount ?? 0).toFixed(2)}</span>
                   </div>
                   <div className="pt-2 border-t border-amber-300 flex justify-between text-sm font-semibold text-amber-900">
                     <span>You Pay</span>
-                    <span>€{appliedCoupon.finalAmount.toFixed(2)}</span>
+                    <span>€{(appliedCoupon.finalAmount ?? 0).toFixed(2)}</span>
                   </div>
                 </div>
               )}
@@ -656,7 +656,7 @@ function CheckoutContent() {
                 <div className="text-right">
                   {appliedCoupon && (
                     <span className="text-sm text-gray-400 line-through mr-2">
-                      €{appliedCoupon.originalAmount.toFixed(2)}
+                      €{(appliedCoupon.originalAmount ?? 0).toFixed(2)}
                     </span>
                   )}
                   <span className="text-2xl font-black text-gray-900">

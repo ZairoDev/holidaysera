@@ -19,15 +19,26 @@ type MainState = {
 };
 
 const PageAddListing4: FC<PageAddListing4Props> = () => {
-  const savedAmenities = JSON.parse(localStorage.getItem("page4") || "[]");
+  const parseStorageValue = <T,>(key: string, fallback: T): T => {
+    const raw = localStorage.getItem(key);
+    if (!raw) return fallback;
+    try {
+      return JSON.parse(raw) as T;
+    } catch {
+      return fallback;
+    }
+  };
+  const savedAmenities = parseStorageValue<Record<string, unknown>>("page4", {});
 
   const [amenitiesState, setAmenitiesState] = useState<MainState>(() => {
-    const savedPage = localStorage.getItem("page4") || "";
-    if (!savedPage) {
-      return { key1: {}, key2: {}, key3: {} };
-    }
-    const value = JSON.parse(savedPage);
-    return value || { key1: {}, key2: {}, key3: {} };
+    const value = parseStorageValue<MainState | null>("page4", null);
+    return (
+      value || {
+        generalAmenities: {},
+        otherAmenities: {},
+        safeAmenities: {},
+      }
+    );
   });
 
 	const generalAmenities = useMemo(
