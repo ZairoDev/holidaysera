@@ -100,7 +100,7 @@ export function TravellerBookings() {
                     <div>
                       <p className="text-xs text-gray-500 mb-1">Total Price</p>
                       <p className="text-2xl font-bold bg-gradient-to-r from-sky-600 to-blue-600 bg-clip-text text-transparent">
-                        ₹{booking.price}
+                        €{booking.price}
                       </p>
                     </div>
 
@@ -112,7 +112,7 @@ export function TravellerBookings() {
                             className="flex-1 sm:flex-none"
                           >
                             <Button className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-md hover:shadow-lg h-10">
-                              Pay ₹
+                              Pay €
                               {booking.serviceCharge?.toFixed
                                 ? booking.serviceCharge.toFixed(2)
                                 : booking.serviceCharge}

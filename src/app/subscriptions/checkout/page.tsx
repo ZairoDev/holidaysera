@@ -629,7 +629,7 @@ function CheckoutContent() {
                   </h3>
                   <div className="flex justify-between text-sm text-amber-900">
                     <span>Price per Property</span>
-                    <span>₹{appliedCoupon.pricePerProperty.toFixed(2)}</span>
+                    <span>€{appliedCoupon.pricePerProperty.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-sm text-amber-900">
                     <span>Properties Allowed</span>
@@ -637,15 +637,15 @@ function CheckoutContent() {
                   </div>
                   <div className="flex justify-between text-sm text-amber-900">
                     <span>Base Price</span>
-                    <span>₹{appliedCoupon.originalAmount.toFixed(2)}</span>
+                    <span>€{appliedCoupon.originalAmount.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-sm text-green-700">
                     <span>Discount</span>
-                    <span>-₹{appliedCoupon.discountAmount.toFixed(2)}</span>
+                    <span>-€{appliedCoupon.discountAmount.toFixed(2)}</span>
                   </div>
                   <div className="pt-2 border-t border-amber-300 flex justify-between text-sm font-semibold text-amber-900">
                     <span>You Pay</span>
-                    <span>₹{appliedCoupon.finalAmount.toFixed(2)}</span>
+                    <span>€{appliedCoupon.finalAmount.toFixed(2)}</span>
                   </div>
                 </div>
               )}

@@ -264,18 +264,18 @@ function BookingPaymentContent() {
           </div>
           <div>
             <p className="text-sm text-gray-600">Total Price</p>
-            <p className="font-semibold">₹{bookingData.price}</p>
+            <p className="font-semibold">€{bookingData.price}</p>
           </div>
         </div>
 
         <div className="border-t pt-6">
           <div className="flex justify-between items-center mb-2">
             <p className="text-gray-600">Total Price</p>
-            <p className="font-semibold">₹{bookingData.price}</p>
+            <p className="font-semibold">€{bookingData.price}</p>
           </div>
           <div className="flex justify-between items-center text-blue-600">
             <p className="font-semibold">Service Charge (12%)</p>
-            <p className="font-bold text-lg">₹{bookingData.serviceCharge.toFixed(2)}</p>
+            <p className="font-bold text-lg">€{bookingData.serviceCharge.toFixed(2)}</p>
           </div>
           <div className="mt-4 bg-blue-50 p-4 rounded">
             <p className="text-sm text-blue-700">
@@ -361,7 +361,7 @@ function BookingPaymentContent() {
               >
                 {isProcessing
                   ? "Processing Payment..."
-                  : `Pay ₹${bookingData.serviceCharge.toFixed(2)}`}
+                  : `Pay €${bookingData.serviceCharge.toFixed(2)}`}
               </Button>
             </div>
           </form>

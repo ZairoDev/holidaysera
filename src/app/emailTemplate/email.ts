@@ -67,7 +67,7 @@ export const TravellerBookingConfirmationTemplate = (
             </div>
             <div class="price-row">
               <div class="price-label">Total Amount</div>
-              <div class="price-value">₹${price}</div>
+              <div class="price-value">€${price}</div>
             </div>
           </div>
           
@@ -149,7 +149,7 @@ export const OwnerBookingTemplate = (
             </div>
             <div class="detail-row">
               <span class="detail-label">Booking Amount</span>
-              <span class="detail-value">₹${price}</span>
+              <span class="detail-value">€${price}</span>
             </div>
           </div>
           
@@ -215,7 +215,7 @@ export const TravellerBookingTemplate = (
             </div>
             <div class="detail-row">
               <span class="detail-label">Estimated Total</span>
-              <span class="detail-value">₹${price}</span>
+              <span class="detail-value">€${price}</span>
             </div>
           </div>
           

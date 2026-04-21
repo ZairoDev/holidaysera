@@ -267,7 +267,7 @@ export default function OwnerDashboard() {
                       <DetailItem
                         icon={DollarSign}
                         label="Total Price"
-                        value={`₹${booking.price}`}
+                        value={`€${booking.price}`}
                       />
                     </div>
 
@@ -283,7 +283,7 @@ export default function OwnerDashboard() {
                           </p>
                         </div>
                         <p className="text-2xl font-bold text-blue-900">
-                          ₹{booking.serviceCharge.toFixed(2)}
+                          €{booking.serviceCharge.toFixed(2)}
                         </p>
                       </div>
                     </div>
@@ -340,7 +340,7 @@ export default function OwnerDashboard() {
                     </p>
                     <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                       <p className="font-semibold text-green-900">
-                        Your earnings: ₹
+                        Your earnings: €
                         {selectedBooking?.serviceCharge.toFixed(2)}
                       </p>
                     </div>

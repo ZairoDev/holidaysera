@@ -67,13 +67,9 @@ function normalizeCouponCode(code: string): string {
   return code.trim().toUpperCase();
 }
 
-/** Razorpay India accounts use INR + paise; set RAZORPAY_CURRENCY=EUR if international is enabled on your account. */
+/** Force EUR for Holidaysera subscription checkout. */
 function getRazorpayOrderCurrency(): RazorpayOrderCurrency {
-  const raw = (process.env.RAZORPAY_CURRENCY || "INR").toUpperCase();
-  if (raw === "EUR" || raw === "USD" || raw === "INR") {
-    return raw;
-  }
-  return "INR";
+  return "EUR";
 }
 
 function minimumAmountInSmallestUnits(currency: RazorpayOrderCurrency): number {
