@@ -8,7 +8,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 
-const faqData = [
+export const faqData = [
   {
     question: "How does the Holidays Era work?",
     answer: (

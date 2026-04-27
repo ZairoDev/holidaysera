@@ -27,6 +27,7 @@ export function Footer() {
       title: 'Hosting',
       links: [
         { label: 'List Your Property', href: '/list-property' },
+        { label: "Owner's FAQ", href: '/owners-faq' },
         // { label: 'Host Resources', href: '/host-resources' },
         // { label: 'Community', href: '/community' },
         // { label: 'Responsible Hosting', href: '/responsible' },
