@@ -38,6 +38,8 @@ interface AppliedCoupon {
   perPropertyEffectivePrice: number;
 }
 
+const MAX_PROPERTY_SLOTS = 500;
+
 // Subscription Plans Data
 const subscriptionPlans: SubscriptionPlan[] = [
   {
@@ -190,6 +192,7 @@ function CheckoutContent() {
   const [couponError, setCouponError] = useState("");
   const [offerCouponError, setOfferCouponError] = useState("");
   const [couponLoading, setCouponLoading] = useState(false);
+  const [listingCount, setListingCount] = useState(1);
   const [didAutoApplyOfferCoupon, setDidAutoApplyOfferCoupon] = useState(false);
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [isRazorpayLoaded, setIsRazorpayLoaded] = useState(false);
@@ -198,6 +201,15 @@ function CheckoutContent() {
   const validateCouponMutation = trpc.subscription.validateCoupon.useMutation();
   const createOrderMutation = trpc.subscription.createOrder.useMutation();
   const verifyPaymentMutation = trpc.subscription.verifyPayment.useMutation();
+  const {
+    data: quota,
+    isLoading: isQuotaLoading,
+    error: quotaError,
+    refetch: refetchQuota,
+  } = trpc.property.getQuota.useQuery(undefined, {
+    enabled: Boolean(user),
+    retry: 1,
+  });
 
   useEffect(() => {
     // Redirect to login if not authenticated
@@ -226,7 +238,7 @@ function CheckoutContent() {
     if (appliedCoupon) {
       return appliedCoupon.finalAmount;
     }
-    return plan.price;
+    return plan.price * listingCount;
   };
 
   const applyCouponCode = useCallback(
@@ -248,6 +260,7 @@ function CheckoutContent() {
         const data = await validateCouponMutation.mutateAsync({
           code: normalizedCode,
           planId: plan.id,
+          listingCount,
         });
 
         setCouponCode(normalizedCode);
@@ -271,7 +284,7 @@ function CheckoutContent() {
         setCouponLoading(false);
       }
     },
-    [plan, validateCouponMutation],
+    [listingCount, plan, validateCouponMutation],
   );
 
   const handleApplyCoupon = useCallback(async () => {
@@ -290,6 +303,19 @@ function CheckoutContent() {
     offerCouponCode,
     plan,
   ]);
+
+  useEffect(() => {
+    if (!appliedCoupon?.code || !plan) return;
+    void applyCouponCode(appliedCoupon.code, { silent: true });
+  }, [applyCouponCode, appliedCoupon?.code, listingCount, plan]);
+
+  const handleDecreaseListingCount = () => {
+    setListingCount((prev) => Math.max(1, prev - 1));
+  };
+
+  const handleIncreaseListingCount = () => {
+    setListingCount((prev) => Math.min(MAX_PROPERTY_SLOTS, prev + 1));
+  };
 
   const handleRemoveCoupon = () => {
     setAppliedCoupon(null);
@@ -321,6 +347,7 @@ function CheckoutContent() {
         planId: plan.id,
         planName: plan.name,
         couponCode: appliedCoupon?.code,
+        listingCount,
       });
 
       if (orderData.isFreeActivation && orderData.freePaymentId) {
@@ -379,6 +406,7 @@ function CheckoutContent() {
           planId: plan.id,
           planName: plan.name,
           userId: user.id,
+          listingCount: String(listingCount),
         },
         theme: {
           color: "#4F46E5",
@@ -470,6 +498,66 @@ function CheckoutContent() {
                   >
                     💡 {plan.savings}
                   </span>
+                )}
+              </div>
+
+              <div className="mb-8 rounded-2xl border border-gray-200 p-4">
+                <p className="text-sm font-semibold text-gray-900 mb-2">
+                  Number of properties to list
+                </p>
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={handleDecreaseListingCount}
+                    disabled={listingCount <= 1 || paymentLoading || couponLoading}
+                    className="h-10 w-10 rounded-xl border border-gray-300 text-lg disabled:opacity-50"
+                  >
+                    -
+                  </button>
+                  <span className="min-w-[3rem] text-center text-lg font-semibold">
+                    {listingCount}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleIncreaseListingCount}
+                    disabled={listingCount >= MAX_PROPERTY_SLOTS || paymentLoading || couponLoading}
+                    className="h-10 w-10 rounded-xl border border-gray-300 text-lg disabled:opacity-50"
+                  >
+                    +
+                  </button>
+                  <span className="text-sm text-gray-500">
+                    €{plan.price.toFixed(2)} per property
+                  </span>
+                </div>
+                {appliedCoupon && (
+                  <p className="mt-2 text-xs text-amber-700">
+                    Coupon pricing is recalculated automatically when quantity changes.
+                  </p>
+                )}
+              </div>
+
+              <div className="mb-8 rounded-2xl border border-gray-200 p-4">
+                <p className="text-sm font-semibold text-gray-900 mb-2">
+                  Current listing quota
+                </p>
+                {isQuotaLoading ? (
+                  <p className="text-sm text-gray-500">Loading quota...</p>
+                ) : quotaError ? (
+                  <div className="text-sm text-red-600">
+                    <p>Unable to load quota details.</p>
+                    <button
+                      type="button"
+                      onClick={() => void refetchQuota()}
+                      className="mt-1 underline"
+                    >
+                      Retry
+                    </button>
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-700">
+                    Used {quota?.used ?? 0} of {quota?.allowed ?? 0} listings
+                    ({quota?.remaining ?? 0} remaining)
+                  </p>
                 )}
               </div>
 
@@ -610,8 +698,10 @@ function CheckoutContent() {
               {/* Price Breakdown */}
               <div className="space-y-3 mb-6 pb-6 border-b border-gray-200">
                 <div className="flex justify-between text-gray-600">
-                  <span>{plan.name}</span>
-                  <span>€{(appliedCoupon?.originalAmount ?? plan.price).toFixed(2)}</span>
+                  <span>
+                    {plan.name} x {listingCount}
+                  </span>
+                  <span>€{(appliedCoupon?.originalAmount ?? plan.price * listingCount).toFixed(2)}</span>
                 </div>
                 {appliedCoupon && (
                   <div className="flex justify-between text-green-600">

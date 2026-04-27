@@ -114,6 +114,28 @@ type OfferPricingMetadata = {
   perPropertyEffectivePrice: number;
 };
 
+const PROPERTY_QUANTITY_LIMIT = 500;
+
+function normalizeListingCount(rawListingCount?: number): number {
+  if (typeof rawListingCount !== "number" || !Number.isFinite(rawListingCount)) {
+    return 1;
+  }
+  const integerCount = Math.floor(rawListingCount);
+  if (integerCount < 1) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: "Property quantity must be at least 1",
+    });
+  }
+  if (integerCount > PROPERTY_QUANTITY_LIMIT) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: `Property quantity cannot exceed ${PROPERTY_QUANTITY_LIMIT}`,
+    });
+  }
+  return integerCount;
+}
+
 function buildOfferPricingMetadata(params: {
   originalAmount: number;
   discountAmount: number;
@@ -348,11 +370,14 @@ export const subscriptionRouter = router({
       z.object({
         code: z.string().min(1, "Coupon code is required"),
         planId: z.string().min(1, "Plan ID is required"),
+        listingCount: z.number().int().min(1).max(PROPERTY_QUANTITY_LIMIT).optional(),
       })
     )
     .mutation(async ({ input }) => {
       const normalizedPlanId = normalizePlanId(input.planId);
-      const amount = getSubscriptionPlanPrice(normalizedPlanId);
+      const listingCount = normalizeListingCount(input.listingCount);
+      const unitPrice = getSubscriptionPlanPrice(normalizedPlanId);
+      const amount = unitPrice * listingCount;
       const { coupon } = await getValidatedCouponForPlanVerbose({
         rawCouponCode: input.code,
         planId: normalizedPlanId,
@@ -362,8 +387,11 @@ export const subscriptionRouter = router({
       const discount = coupon.calculateDiscount(amount);
       const finalAmount = amount - discount;
       const snapshot: CouponSnapshot = {
-        propertiesAllowedSnapshot: Math.max(1, coupon.propertiesAllowed ?? 1),
-        pricePerPropertySnapshot: Math.max(0, coupon.pricePerProperty ?? amount),
+        propertiesAllowedSnapshot: Math.max(
+          listingCount,
+          Math.max(1, coupon.propertiesAllowed ?? 1),
+        ),
+        pricePerPropertySnapshot: Math.max(0, coupon.pricePerProperty ?? unitPrice),
         discountSnapshot: {
           type: coupon.offerDiscountScope ?? "TOTAL",
           unit: coupon.discountType === "percentage" ? "PERCENT" : "FIXED",
@@ -403,12 +431,15 @@ export const subscriptionRouter = router({
         planId: z.string().min(1, "Plan ID is required"),
         planName: z.string(),
         couponCode: z.string().optional(),
+        listingCount: z.number().int().min(1).max(PROPERTY_QUANTITY_LIMIT).optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
       const normalizedPlanId = normalizePlanId(input.planId);
       const { planName } = input;
-      const amount = getSubscriptionPlanPrice(normalizedPlanId);
+      const listingCount = normalizeListingCount(input.listingCount);
+      const unitPrice = getSubscriptionPlanPrice(normalizedPlanId);
+      const amount = unitPrice * listingCount;
       const userId = ctx.user.id;
       const user = await Users.findById(userId);
 
@@ -428,8 +459,8 @@ export const subscriptionRouter = router({
           }
         | null = null;
       let snapshot: CouponSnapshot = {
-        propertiesAllowedSnapshot: 1,
-        pricePerPropertySnapshot: amount,
+        propertiesAllowedSnapshot: listingCount,
+        pricePerPropertySnapshot: unitPrice,
       };
 
       // If coupon code is provided, validate and apply it
@@ -446,8 +477,11 @@ export const subscriptionRouter = router({
           code: coupon.code,
           discount: discount,
           snapshot: {
-            propertiesAllowedSnapshot: Math.max(1, coupon.propertiesAllowed ?? 1),
-            pricePerPropertySnapshot: Math.max(0, coupon.pricePerProperty ?? amount),
+            propertiesAllowedSnapshot: Math.max(
+              listingCount,
+              Math.max(1, coupon.propertiesAllowed ?? 1),
+            ),
+            pricePerPropertySnapshot: Math.max(0, coupon.pricePerProperty ?? unitPrice),
             discountSnapshot: {
               type: coupon.offerDiscountScope ?? "TOTAL",
               unit: coupon.discountType === "percentage" ? "PERCENT" : "FIXED",

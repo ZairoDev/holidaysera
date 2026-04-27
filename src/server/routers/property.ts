@@ -637,7 +637,8 @@ export const propertyRouter = router({
         if (!reserved) {
           throw new TRPCError({
             code: "FORBIDDEN",
-            message: "Property listing limit reached",
+            message:
+              "You\u2019ve reached your property listing limit. Please upgrade or purchase additional slots to add more properties.",
           });
         }
 
