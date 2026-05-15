@@ -242,7 +242,10 @@ function CheckoutContent() {
   };
 
   const applyCouponCode = useCallback(
-    async (rawCouponCode: string, opts?: { silent?: boolean }) => {
+    async (
+      rawCouponCode: string,
+      opts?: { silent?: boolean; listingCountOverride?: number }
+    ) => {
       if (!plan) return;
 
       const normalizedCode = rawCouponCode.trim().toUpperCase();
@@ -253,6 +256,8 @@ function CheckoutContent() {
         return;
       }
 
+      const countForValidation = opts?.listingCountOverride ?? listingCount;
+
       setCouponLoading(true);
       setCouponError("");
 
@@ -260,7 +265,7 @@ function CheckoutContent() {
         const data = await validateCouponMutation.mutateAsync({
           code: normalizedCode,
           planId: plan.id,
-          listingCount,
+          listingCount: countForValidation,
         });
 
         setCouponCode(normalizedCode);
@@ -284,7 +289,7 @@ function CheckoutContent() {
         setCouponLoading(false);
       }
     },
-    [listingCount, plan, validateCouponMutation],
+    [listingCount, plan, validateCouponMutation.mutateAsync],
   );
 
   const handleApplyCoupon = useCallback(async () => {
@@ -304,17 +309,27 @@ function CheckoutContent() {
     plan,
   ]);
 
-  useEffect(() => {
-    if (!appliedCoupon?.code || !plan) return;
-    void applyCouponCode(appliedCoupon.code, { silent: true });
-  }, [applyCouponCode, appliedCoupon?.code, listingCount, plan]);
+  const recalculateAppliedCoupon = useCallback(
+    async (nextListingCount: number) => {
+      if (!appliedCoupon?.code) return;
+      await applyCouponCode(appliedCoupon.code, {
+        silent: true,
+        listingCountOverride: nextListingCount,
+      });
+    },
+    [appliedCoupon?.code, applyCouponCode]
+  );
 
   const handleDecreaseListingCount = () => {
-    setListingCount((prev) => Math.max(1, prev - 1));
+    const next = Math.max(1, listingCount - 1);
+    setListingCount(next);
+    void recalculateAppliedCoupon(next);
   };
 
   const handleIncreaseListingCount = () => {
-    setListingCount((prev) => Math.min(MAX_PROPERTY_SLOTS, prev + 1));
+    const next = Math.min(MAX_PROPERTY_SLOTS, listingCount + 1);
+    setListingCount(next);
+    void recalculateAppliedCoupon(next);
   };
 
   const handleRemoveCoupon = () => {

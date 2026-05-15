@@ -89,6 +89,10 @@ export interface PropertyDocument {
   listedOn: string[];
   lastUpdatedBy: string[];
   lastUpdates: string[][];
+  approvalStatus?: "pending" | "approved" | "rejected";
+  approvalNote?: string;
+  approvedBy?: string;
+  approvedAt?: Date | null;
   isLive: boolean;
 
   createdAt?: Date;
@@ -185,6 +189,10 @@ export interface Property {
   listedOn?: string[];
   lastUpdatedBy?: string[];
   lastUpdates?: string[][];
+  approvalStatus?: "pending" | "approved" | "rejected";
+  approvalNote?: string;
+  approvedBy?: string;
+  approvedAt?: Date | null;
   isLive?: boolean;
 
   createdAt?: Date;

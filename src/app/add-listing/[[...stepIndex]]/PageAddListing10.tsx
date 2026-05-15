@@ -172,7 +172,9 @@ const PageAddListing10: FC<PageAddListing10Props> = ({ searchParams }) => {
   const addListingMutation = trpc.property.addListing.useMutation({
     onSuccess: (data) => {
       toast.success("Success! 🎉", {
-        description: "Your property listing has been published successfully!",
+        description:
+          data?.message ||
+          "Your property has been submitted and is pending admin approval.",
       });
       
       // Clear localStorage

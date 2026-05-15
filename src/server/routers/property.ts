@@ -7,6 +7,26 @@ import mongoose from "mongoose";
 import z from "zod";
 import axios from "axios";
 
+const APPROVAL_ALLOWED_ROLES = new Set(["SuperAdmin", "HAdmin", "HeadAdmin"]);
+
+function ensurePropertyApproverRole(userRole: unknown) {
+  const role = typeof userRole === "string" ? userRole : "";
+  if (!APPROVAL_ALLOWED_ROLES.has(role)) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "Only Super Admin or Head Admin can approve properties",
+    });
+  }
+}
+
+function buildPublicPropertyFilter(extraFilter: Record<string, any> = {}): Record<string, any> {
+  return {
+    ...extraFilter,
+    isLive: true,
+    $or: [{ approvalStatus: "approved" }, { approvalStatus: { $exists: false } }],
+  };
+}
+
 export function mapPropertyDocument(doc: any) {
   // Safety check: if doc is null/undefined, return null
   if (!doc) {
@@ -105,6 +125,10 @@ export function mapPropertyDocument(doc: any) {
     listedOn: doc.listedOn || [],
     lastUpdatedBy: doc.lastUpdatedBy || undefined,
     lastUpdates: doc.lastUpdates || [],
+    approvalStatus: doc.approvalStatus || "pending",
+    approvalNote: doc.approvalNote || "",
+    approvedBy: doc.approvedBy || "",
+    approvedAt: doc.approvedAt || null,
     isLive: doc.isLive !== undefined ? doc.isLive : true,
 
     createdAt: doc.createdAt || undefined,
@@ -119,7 +143,7 @@ export const propertyRouter = router({
     try {
       // Fetch only necessary fields for PropertyCard
       const featured = await Properties.find(
-        { rentalType: "Short Term", isLive: true },
+        buildPublicPropertyFilter({ rentalType: "Short Term" }),
         {
           VSID: 1,
           propertyName: 1,
@@ -132,6 +156,7 @@ export const propertyRouter = router({
           bedrooms: 1,
           bathroom: 1,
           reviews: 1,
+          approvalStatus: 1,
         }
       )
         .sort({ _id: -1 })
@@ -188,11 +213,11 @@ export const propertyRouter = router({
         limit: z.number().default(12),
       })
     )
-    .query(async ({ input }) => {
+    .query(async ({ input, ctx }) => {
       try {
         const { cursor, limit } = input;
 
-        const filter: Record<string, any> = { isLive: true };
+        const filter: Record<string, any> = buildPublicPropertyFilter();
 
         // Location search
         if (input.location) {
@@ -447,7 +472,7 @@ export const propertyRouter = router({
         _id: z.string(),
       })
     )
-    .query(async ({ input }) => {
+    .query(async ({ input, ctx }) => {
       try {
         // Validate ObjectId format (if using MongoDB ObjectId)
         if (!input._id || input._id.length < 1) {
@@ -457,9 +482,26 @@ export const propertyRouter = router({
           });
         }
 
-        const doc = await Properties.findOne({ _id: input._id }).lean();
+        const doc = await Properties.findOne({ _id: input._id }).lean<{
+          isLive?: boolean;
+          approvalStatus?: "pending" | "approved" | "rejected";
+          userId?: string;
+        } | null>();
 
         if (!doc) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Property not found",
+          });
+        }
+
+        const canViewPublicly =
+          doc.isLive &&
+          (doc.approvalStatus === "approved" || doc.approvalStatus === undefined);
+        const viewerId = ctx.user?.id;
+        const isOwner = Boolean(viewerId && String(doc.userId) === String(viewerId));
+        const isApprover = APPROVAL_ALLOWED_ROLES.has(String(ctx.user?.role ?? ""));
+        if (!canViewPublicly && !isOwner && !isApprover) {
           throw new TRPCError({
             code: "NOT_FOUND",
             message: "Property not found",
@@ -709,7 +751,11 @@ export const propertyRouter = router({
   
           // Additional
           isInstantBooking: input.isInstantBooking || false,
-          isLive: input.isLive,
+          isLive: false,
+          approvalStatus: "pending",
+          approvalNote: "Pending approval by Super Admin/Head Admin",
+          approvedBy: "",
+          approvedAt: null,
           hostedBy: input.hostedBy || ctx.user.email,
           hostedFrom: new Date().toISOString(),
           listedOn: ["VacationSaga"],
@@ -742,7 +788,7 @@ export const propertyRouter = router({
         return {
           success: true,
           property: mappedProperty,
-          message: "Property listing created successfully",
+          message: "Property submitted and is pending approval",
         };
       } catch (error) {
         // Re-throw TRPCErrors as-is
@@ -889,13 +935,72 @@ export const propertyRouter = router({
           });
         }
       }),
+  approveProperty: protectedProcedure
+    .input(
+      z.object({
+        propertyId: z.string().min(1, "Property ID is required"),
+      }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      ensurePropertyApproverRole(ctx.user.role);
+      const updated = await Properties.findByIdAndUpdate(
+        input.propertyId,
+        {
+          $set: {
+            approvalStatus: "approved",
+            approvalNote: "Approved by admin",
+            approvedBy: ctx.user.email ?? "",
+            approvedAt: new Date(),
+            isLive: true,
+          },
+        },
+        { new: true },
+      );
+      if (!updated) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Property not found",
+        });
+      }
+      return { success: true, message: "Property approved", property: updated };
+    }),
+  rejectProperty: protectedProcedure
+    .input(
+      z.object({
+        propertyId: z.string().min(1, "Property ID is required"),
+        reason: z.string().min(3, "Rejection reason is required"),
+      }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      ensurePropertyApproverRole(ctx.user.role);
+      const updated = await Properties.findByIdAndUpdate(
+        input.propertyId,
+        {
+          $set: {
+            approvalStatus: "rejected",
+            approvalNote: input.reason,
+            approvedBy: ctx.user.email ?? "",
+            approvedAt: new Date(),
+            isLive: false,
+          },
+        },
+        { new: true },
+      );
+      if (!updated) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Property not found",
+        });
+      }
+      return { success: true, message: "Property rejected", property: updated };
+    }),
   getTopLocations: publicProcedure
     .input(
       z.object({
         limit: z.number().default(10),
       })
     )
-    .query(async ({ input }) => {
+    .query(async ({ input, ctx }) => {
       try {
         const { limit } = input;
 
@@ -903,7 +1008,7 @@ export const propertyRouter = router({
         const topLocations = await Properties.aggregate([
           {
             $match: {
-              isLive: true,
+              ...buildPublicPropertyFilter(),
               rentalType: "Short Term",
               city: { $exists: true, $ne: "" },
               country: { $exists: true, $ne: "" },

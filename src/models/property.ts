@@ -102,6 +102,23 @@ const PropertySchema = new Schema(
     listedOn: { type: [String], default: ["VacationSaga"] },
     lastUpdatedBy: { type: [String], default: [] },
     lastUpdates: { type: [[String]], default: [[]] },
+    approvalStatus: {
+      type: String,
+      enum: ["pending", "approved", "rejected"],
+      default: "pending",
+    },
+    approvalNote: {
+      type: String,
+      default: "",
+    },
+    approvedBy: {
+      type: String,
+      default: "",
+    },
+    approvedAt: {
+      type: Date,
+      default: null,
+    },
     isLive: { type: Boolean, default: true },
     origin: {
       type: String,
