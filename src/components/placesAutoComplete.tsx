@@ -4,6 +4,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
+import { countries } from "country-data-list";
 
 interface PlacesAutocompleteProps {
   onPlaceSelected: (place: {
@@ -31,13 +32,15 @@ const PlacesAutocomplete: React.FC<PlacesAutocompleteProps> = ({
     if (!inputRef.current || typeof window === "undefined" || !window.google)
       return;
 
+    const isoCountry = getCountryCode(countryCode);
+
     // Initialize autocomplete
     autocompleteRef.current = new window.google.maps.places.Autocomplete(
       inputRef.current,
       {
         types: ["address"],
-        componentRestrictions: countryCode
-          ? { country: getCountryCode(countryCode) }
+        componentRestrictions: isoCountry
+          ? { country: isoCountry }
           : undefined,
       }
     );
@@ -85,27 +88,14 @@ const PlacesAutocomplete: React.FC<PlacesAutocompleteProps> = ({
           }
         });
 
-        // Handle both cases: location as method or as object
         let lat = 0;
         let lng = 0;
-        
-        const location = place.geometry.location;
+
+        const location = place.geometry?.location;
         if (location) {
-          try {
-            // Try calling as methods first (standard Google Maps API)
-            if (typeof (location as any).lat === "function") {
-              lat = (location as any).lat();
-              lng = (location as any).lng();
-            } else {
-              // Location is an object with properties
-              lat = (location as any).lat || 0;
-              lng = (location as any).lng || 0;
-            }
-          } catch (error) {
-            // Fallback: try accessing as properties
-            lat = (location as any).lat || 0;
-            lng = (location as any).lng || 0;
-          }
+          // google.maps.places.PlaceResult.geometry.location is a google.maps.LatLng
+          lat = location.lat();
+          lng = location.lng();
         }
         
         // If coordinates are still 0, try to fetch from place details API
@@ -151,9 +141,10 @@ const PlacesAutocomplete: React.FC<PlacesAutocompleteProps> = ({
   // Update country restriction when countryCode changes
   useEffect(() => {
     if (autocompleteRef.current && countryCode) {
-      autocompleteRef.current.setComponentRestrictions({
-        country: getCountryCode(countryCode),
-      });
+      const isoCountry = getCountryCode(countryCode);
+      autocompleteRef.current.setComponentRestrictions(
+        isoCountry ? { country: isoCountry } : null
+      );
     }
   }, [countryCode]);
 
@@ -172,42 +163,41 @@ const PlacesAutocomplete: React.FC<PlacesAutocompleteProps> = ({
   );
 };
 
-// Helper function to convert country names to ISO codes
-function getCountryCode(countryName: string): string {
-  const countryMap: { [key: string]: string } = {
-    Greece: "gr",
-    Italy: "it",
-    Cyprus: "cy",
-    US: "us",
-    "United States": "us",
-    Netherlands: "nl",
-    UK: "gb",
-    "United Kingdom": "gb",
-    Hungary: "hu",
-    Turkey: "tr",
-    Bulgaria: "bg",
-    Lithuania: "lt",
-    Malta: "mt",
-    Romania: "ro",
-    Spain: "es",
-    Croatia: "hr",
-    Portugal: "pt",
-    Slovenia: "si",
-    Slovakia: "sk",
-    "Viet Nam": "vn",
-    Vietnam: "vn",
-    Thailand: "th",
-    France: "fr",
-    Singapore: "sg",
-    Japan: "jp",
-    Korea: "kr",
-    "South Korea": "kr",
-    India: "in",
-    Canada: "ca",
-    Australia: "au",
-  };
+function normalizeCountryName(input: string): string {
+  return input.trim().toLowerCase().replace(/\s+/g, " ");
+}
 
-  return countryMap[countryName] || countryName.toLowerCase();
+/**
+ * Converts a country input (alpha-2 code, alpha-3 code, or country name)
+ * into a valid ISO 3166-1 alpha-2 code for Google Places.
+ *
+ * Google expects a 2-letter code like "ad" or "mv".
+ */
+function getCountryCode(countryInput: string): string | undefined {
+  const trimmed = countryInput.trim();
+  if (!trimmed) return undefined;
+
+  // If it's already a valid alpha-2 code, use it.
+  if (/^[a-zA-Z]{2}$/.test(trimmed)) {
+    return trimmed.toLowerCase();
+  }
+
+  // If it's an alpha-3 code, map it to alpha-2.
+  if (/^[a-zA-Z]{3}$/.test(trimmed)) {
+    const upperAlpha3 = trimmed.toUpperCase();
+    const matchByAlpha3 = countries.all.find(
+      (c) => c.alpha3.toUpperCase() === upperAlpha3
+    );
+    return matchByAlpha3?.alpha2.toLowerCase();
+  }
+
+  // Otherwise treat it as a country name and match (case-insensitive).
+  const normalized = normalizeCountryName(trimmed);
+  const matchByName = countries.all.find(
+    (c) => normalizeCountryName(c.name) === normalized
+  );
+
+  return matchByName?.alpha2.toLowerCase();
 }
 
 export default PlacesAutocomplete;
