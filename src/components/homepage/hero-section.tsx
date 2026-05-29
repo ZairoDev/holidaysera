@@ -13,7 +13,7 @@ export function HeroSection() {
   ];
 
   return (
-    <section className="relative min-h-[90vh] bg-gradient-to-br from-hero-from to-hero-to overflow-hidden flex items-center">
+    <section className="relative min-h-[90vh] bg-gradient-to-br from-hero-from to-hero-to overflow-x-hidden overflow-y-visible flex items-center">
       <div className="container relative mx-auto px-4 py-16  lg:py-10">
         {/* Main Content Grid */}
         <div className="relative grid gap-8 lg:grid-cols-2 lg:gap-16">

@@ -41,7 +41,7 @@ export function Navbar() {
   // Handle query results with useEffect instead of deprecated callbacks
   useEffect(() => {
     if (meQuery.data) {
-      console.log("my query data",meQuery.data);
+      // console.log("my query data",meQuery.data);
       setUser(meQuery.data);
     }
   }, [meQuery.data, setUser]);

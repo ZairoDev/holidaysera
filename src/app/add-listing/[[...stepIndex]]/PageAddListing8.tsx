@@ -14,6 +14,7 @@ import { Euro, X } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { DollarSign, Percent, Calendar } from "lucide-react";
+import { normalizeRentalType, parsePriceInput } from "@/lib/listing-pricing";
 
 export interface PageAddListing8Props {}
 
@@ -64,11 +65,16 @@ const PageAddListing8: FC<PageAddListing8Props> = () => {
     portions = Number.isNaN(parsedPortions) ? 0 : parsedPortions;
   }
 
-  const [rentalType, setRentalType] = useState<string>(() => {
-    const savedRentalType = parseStorageValue<Record<string, string>>("page1", {});
-    const type = savedRentalType["rentalType"];
-    return type || "Short Term";
-  });
+  const [rentalType, setRentalType] = useState<string>(() =>
+    normalizeRentalType(
+      parseStorageValue<Record<string, unknown>>("page1", {}).rentalType
+    )
+  );
+
+  useEffect(() => {
+    const savedPage1 = parseStorageValue<Record<string, unknown>>("page1", {});
+    setRentalType(normalizeRentalType(savedPage1.rentalType));
+  }, []);
 
   const emptyStringArrayGenerator = (size: number) => {
     const emptyStringArray = Array.from({ length: size }, () => "");
@@ -283,7 +289,7 @@ const PageAddListing8: FC<PageAddListing8Props> = () => {
                         onChange={(e) =>
                           setBasePrice((prev) => {
                             const newArray = [...prev];
-                            newArray[index] = parseInt(e.target.value) || 0;
+                            newArray[index] = parsePriceInput(e.target.value);
                             return newArray;
                           })
                         }
@@ -307,7 +313,7 @@ const PageAddListing8: FC<PageAddListing8Props> = () => {
                         onChange={(e) =>
                           setWeekendPrice((prev) => {
                             const newArray = [...prev];
-                            newArray[index] = parseInt(e.target.value) || 0;
+                            newArray[index] = parsePriceInput(e.target.value);
                             return newArray;
                           })
                         }
@@ -331,7 +337,7 @@ const PageAddListing8: FC<PageAddListing8Props> = () => {
                         onChange={(e) =>
                           setWeeklyDiscount((prev) => {
                             const newArray = [...prev];
-                            newArray[index] = parseInt(e.target.value) || 0;
+                            newArray[index] = parsePriceInput(e.target.value);
                             return newArray;
                           })
                         }
@@ -395,7 +401,7 @@ const PageAddListing8: FC<PageAddListing8Props> = () => {
                         onChange={(e) =>
                           setBasePriceLongTerm((prev) => {
                             const newArray = [...prev];
-                            newArray[index] = parseInt(e.target.value) || 0;
+                            newArray[index] = parsePriceInput(e.target.value);
                             return newArray;
                           })
                         }
@@ -419,7 +425,7 @@ const PageAddListing8: FC<PageAddListing8Props> = () => {
                         onChange={(e) =>
                           setMonthlyDiscount((prev) => {
                             const newArray = [...prev];
-                            newArray[index] = parseInt(e.target.value) || 0;
+                            newArray[index] = parsePriceInput(e.target.value);
                             return newArray;
                           })
                         }

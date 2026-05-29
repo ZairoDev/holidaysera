@@ -20,11 +20,11 @@ export default function LayoutClient({ children }: LayoutClientProps) {
     if (user?.id) {
       if (!socket.connected) {
         socket.connect();
-        console.log("[Socket.io] 🔐 User logged in, socket connected");
+        // console.log("[Socket.io] 🔐 User logged in, socket connected");
       }
     } else {
       socket.disconnect();
-      console.log("[Socket.io] 🔌 User logged out, socket disconnected");
+      // console.log("[Socket.io] 🔌 User logged out, socket disconnected");
     }
   }, [user?.id]);
 

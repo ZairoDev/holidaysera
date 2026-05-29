@@ -101,7 +101,6 @@ export const bookingRouter = router({
           };
 
           const emitSuccess = emitToOwner(String(property.userId), "booking-request-received", emitPayload);
-          console.log(`[Booking] Notification created ${notification._id} and emitted to owner ${property.userId}: ${emitSuccess}`);
         } catch (err) {
           console.warn("[Booking] Failed to persist/emit notification to owner", err);
         }
@@ -188,7 +187,6 @@ export const bookingRouter = router({
           };
 
           const emitSuccess = emitToTraveller(String(booking.travellerId), "booking-approved-notification", emitPayload);
-          console.log(`[Booking] Approval notification created ${notification._id} and emitted to traveller ${booking.travellerId}: ${emitSuccess}`);
         } catch (err) {
           console.warn("[Booking] Failed to persist/emit approval notification", err);
         }
@@ -268,7 +266,6 @@ export const bookingRouter = router({
           };
 
           const emitSuccess = emitToTraveller(String(booking.travellerId), "booking-rejected-notification", emitPayload);
-          console.log(`[Booking] Rejection notification created ${notification._id} and emitted to traveller ${booking.travellerId}: ${emitSuccess}`);
         } catch (err) {
           console.warn("[Booking] Failed to persist/emit rejection notification", err);
         }
@@ -536,7 +533,6 @@ export const bookingRouter = router({
           };
 
           const emitSuccess = emitToOwner(String(booking.ownerId), "payment-received", emitPayload);
-          console.log(`[Booking] Payment notification created ${notification._id} and emitted to owner ${booking.ownerId}: ${emitSuccess}`);
         } catch (err) {
           console.warn("[Booking] Failed to persist/emit payment notification", err);
         }

@@ -6,6 +6,57 @@ import bcrypt from "bcrypt";
 import crypto from "crypto";
 import { sendMail } from '../utils/gmailMailer';
 
+const PASSWORD_RESET_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+const PASSWORD_RESET_REQUEST_LIMIT = 5; // per email per hour (in-memory best-effort)
+const passwordResetRequestLog = new Map<string, number[]>();
+
+function sha256Hex(input: string): string {
+  return crypto.createHash("sha256").update(input).digest("hex");
+}
+
+function normalizeEmail(email: string): string {
+  return email.trim().toLowerCase();
+}
+
+function escapeRegex(input: string): string {
+  return input.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function pruneOld(timestamps: number[], now: number, windowMs: number): number[] {
+  return timestamps.filter((t) => now - t < windowMs);
+}
+
+function enforceRateLimit(key: string, limit: number, windowMs: number) {
+  const now = Date.now();
+  const existing = passwordResetRequestLog.get(key) ?? [];
+  const pruned = pruneOld(existing, now, windowMs);
+  if (pruned.length >= limit) {
+    throw new TRPCError({
+      code: "TOO_MANY_REQUESTS",
+      message: "Too many requests. Please try again later.",
+    });
+  }
+  pruned.push(now);
+  passwordResetRequestLog.set(key, pruned);
+}
+
+const strongPasswordSchema = z
+  .string()
+  .min(8, "Password must be at least 8 characters")
+  .max(128, "Password must be at most 128 characters")
+  .refine((val) => /[a-z]/.test(val), {
+    message: "Password must include a lowercase letter",
+  })
+  .refine((val) => /[A-Z]/.test(val), {
+    message: "Password must include an uppercase letter",
+  })
+  .refine((val) => /\d/.test(val), {
+    message: "Password must include a number",
+  })
+  .refine((val) => /[^A-Za-z0-9]/.test(val), {
+    message: "Password must include a symbol",
+  });
+
 export const authRouter = router({
   signup: publicProcedure
     .input(
@@ -129,7 +180,15 @@ export const authRouter = router({
             message: `This account is registered as ${user.role}. Please select the correct role.`,
           });
         }
-        
+
+        if (!user.password) {
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message:
+              "This account uses Google sign-in and has no password yet. Use Forgot Password to set one, or sign in with Google.",
+          });
+        }
+
         const isPasswordValid = await bcrypt.compare(
           input.password,
           user.password
@@ -277,7 +336,19 @@ export const authRouter = router({
     )
     .mutation(async ({ input }) => {
       try {
-        const user = await Users.findOne({ email: input.email });
+        const email = normalizeEmail(input.email);
+
+        // Best-effort rate limit (prevents spam; still does not reveal account existence)
+        enforceRateLimit(
+          `forgot-password:${email}`,
+          PASSWORD_RESET_REQUEST_LIMIT,
+          PASSWORD_RESET_WINDOW_MS
+        );
+
+        // Find case-insensitively (older records may have mixed-case emails)
+        const user = await Users.findOne({
+          email: { $regex: new RegExp(`^${escapeRegex(email)}$`, "i") },
+        });
 
         // Don't reveal if email exists or not for security
         if (!user) {
@@ -288,26 +359,37 @@ export const authRouter = router({
           };
         }
 
-        // Check if user has a password (OAuth users can't reset password)
-        if (!user.password) {
-          return {
-            success: true,
-            message: "If an account with that email exists, we've sent a password reset link.",
-          };
-        }
+        const isPasswordSetup = !user.password;
 
         // Generate reset token
-        const resetToken = crypto.randomBytes(32).toString("hex");
+        const resetToken = crypto.randomBytes(32).toString("hex"); // raw token (only emailed)
+        const resetTokenHash = sha256Hex(resetToken);
         const resetTokenExpiry = new Date();
         resetTokenExpiry.setHours(resetTokenExpiry.getHours() + 1); // Token expires in 1 hour
 
-        // Save token to user
-        user.forgotPasswordToken = resetToken;
+        // Save ONLY hash to DB (prevents token theft via DB leak)
+        user.forgotPasswordToken = resetTokenHash;
         user.forgotPasswordTokenExpiry = resetTokenExpiry;
         await user.save();
 
         // Create reset link
-        const resetLink = `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/reset-password?token=${resetToken}`;
+        // Prefer NEXT_PUBLIC_APP_URL (used in this repo), fallback to NEXT_PUBLIC_BASE_URL if present.
+        const appUrl =
+          process.env.NEXT_PUBLIC_APP_URL ||
+          process.env.NEXT_PUBLIC_BASE_URL ||
+          "http://localhost:3000";
+        const resetLink = `${appUrl}/reset-password?token=${resetToken}`;
+
+        const emailTitle = isPasswordSetup
+          ? "Set Your Password"
+          : "Reset Your Password";
+        const emailIntro = isPasswordSetup
+          ? "You signed up with Google and requested to set a password for your Holidays Era account. Click the button below to create one:"
+          : "We received a request to reset your password for your Holidays Era account. Click the button below to reset your password:";
+        const emailButton = isPasswordSetup ? "Set Password" : "Reset Password";
+        const emailNote = isPasswordSetup
+          ? "After setting a password, you can sign in with email and password or continue using Google."
+          : "Your password will remain unchanged if you don't click the link.";
 
         // Send email
         const emailHtml = `
@@ -329,16 +411,16 @@ export const authRouter = router({
           <body>
             <div class="container">
               <div class="header">
-                <h1>🔐 Password Reset Request</h1>
-                <p>We received a request to reset your password</p>
+                <h1>🔐 ${emailTitle}</h1>
+                <p>${isPasswordSetup ? "Create a password for your account" : "We received a request to reset your password"}</p>
               </div>
               <div class="content">
                 <p>Hi there,</p>
                 
-                <p>We received a request to reset your password for your Holidays Era account. Click the button below to reset your password:</p>
+                <p>${emailIntro}</p>
                 
                 <div style="text-align: center;">
-                  <a href="${resetLink}" class="button">Reset Password</a>
+                  <a href="${resetLink}" class="button">${emailButton}</a>
                 </div>
                 
                 <p>Or copy and paste this link into your browser:</p>
@@ -349,7 +431,7 @@ export const authRouter = router({
                   <ul style="margin: 10px 0 0 20px; padding: 0;">
                     <li>This link will expire in 1 hour</li>
                     <li>If you didn't request this, please ignore this email</li>
-                    <li>Your password will remain unchanged if you don't click the link</li>
+                    <li>${emailNote}</li>
                   </ul>
                 </div>
                 
@@ -367,10 +449,9 @@ export const authRouter = router({
         // Send reset link email
         await sendMail({
           to: user.email,
-          subject: "Reset Your Password - Holidays Era",
+          subject: `${emailTitle} - Holidays Era`,
           html: emailHtml,
         });
-
         // Send confirmation email
         const confirmationHtml = `
           <!DOCTYPE html>
@@ -433,8 +514,16 @@ export const authRouter = router({
           success: true,
           message: "If an account with that email exists, we've sent a password reset link.",
         };
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error("Forgot password error:", error);
+        // Rate limit errors should not leak account existence; return same generic response
+        if (error instanceof TRPCError && error.code === "TOO_MANY_REQUESTS") {
+          return {
+            success: true,
+            message:
+              "If an account with that email exists, we've sent a password reset link.",
+          };
+        }
         // Still return success to prevent email enumeration
         return {
           success: true,
@@ -451,8 +540,9 @@ export const authRouter = router({
     )
     .query(async ({ input }) => {
       try {
+        const tokenHash = sha256Hex(input.token);
         const user = await Users.findOne({
-          forgotPasswordToken: input.token,
+          forgotPasswordToken: tokenHash,
           forgotPasswordTokenExpiry: { $gt: new Date() },
         });
 
@@ -466,8 +556,9 @@ export const authRouter = router({
         return {
           valid: true,
           email: user.email,
+          isPasswordSetup: !user.password,
         };
-      } catch (error: any) {
+      } catch (error: unknown) {
         if (error instanceof TRPCError) {
           throw error;
         }
@@ -482,7 +573,7 @@ export const authRouter = router({
     .input(
       z.object({
         token: z.string().min(1, "Token is required"),
-        password: z.string().min(6, "Password must be at least 6 characters"),
+        password: strongPasswordSchema,
         confirmPassword: z.string(),
       })
       .refine((data) => data.password === data.confirmPassword, {
@@ -492,8 +583,9 @@ export const authRouter = router({
     )
     .mutation(async ({ input }) => {
       try {
+        const tokenHash = sha256Hex(input.token);
         const user = await Users.findOne({
-          forgotPasswordToken: input.token,
+          forgotPasswordToken: tokenHash,
           forgotPasswordTokenExpiry: { $gt: new Date() },
         });
 
@@ -506,6 +598,7 @@ export const authRouter = router({
 
         // Hash new password
         const hashedPassword = await bcrypt.hash(input.password, 10);
+        const wasPasswordSetup = !user.password;
 
         // Update password and clear reset token
         user.password = hashedPassword;
@@ -531,13 +624,13 @@ export const authRouter = router({
           <body>
             <div class="container">
               <div class="header">
-                <h1>✅ Password Reset Successful</h1>
-                <p>Your password has been changed</p>
+                <h1>✅ ${wasPasswordSetup ? "Password Created Successfully" : "Password Reset Successful"}</h1>
+                <p>${wasPasswordSetup ? "You can now sign in with email and password" : "Your password has been changed"}</p>
               </div>
               <div class="content">
                 <p>Hi there,</p>
                 
-                <p>Your password has been successfully reset for your Holidays Era account.</p>
+                <p>${wasPasswordSetup ? "Your password has been set for your Holidays Era account. You can sign in with email and password or continue using Google." : "Your password has been successfully reset for your Holidays Era account."}</p>
                 
                 <div class="info-box">
                   <p style="margin: 0;"><strong>📅 Changed on:</strong> ${new Date().toLocaleString()}</p>
@@ -558,7 +651,9 @@ export const authRouter = router({
 
         await sendMail({
           to: user.email,
-          subject: "Password Reset Successful - Holidays Era",
+          subject: wasPasswordSetup
+            ? "Password Created Successfully - Holidays Era"
+            : "Password Reset Successful - Holidays Era",
           html: emailHtml,
         });
 
@@ -566,14 +661,14 @@ export const authRouter = router({
           success: true,
           message: "Password has been reset successfully",
         };
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error("Reset password error:", error);
         if (error instanceof TRPCError) {
           throw error;
         }
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
-          message: error.message || "Failed to reset password",
+          message: error instanceof Error ? error.message : "Failed to reset password",
         });
       }
     }),

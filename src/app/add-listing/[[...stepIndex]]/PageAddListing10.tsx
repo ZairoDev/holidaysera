@@ -6,8 +6,33 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { trpc } from "@/trpc/client";
+import { TRPCClientError } from "@trpc/client";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import {
+  firstPositivePrice,
+  normalizeRentalType,
+  resolveListingPrices,
+} from "@/lib/listing-pricing";
+
+function getPublishErrorMessage(error: unknown): string {
+  if (error instanceof TRPCClientError) {
+    try {
+      const parsed = JSON.parse(error.message) as Array<{ message?: string }>;
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        const messages = parsed
+          .map((issue) => issue.message)
+          .filter((msg): msg is string => Boolean(msg));
+        if (messages.length > 0) return messages.join(". ");
+      }
+    } catch {
+      // fall through
+    }
+    if (error.message) return error.message;
+  }
+  if (error instanceof Error && error.message) return error.message;
+  return "Failed to publish property. Please check all fields and try again.";
+}
 
 export interface PageAddListing10Props {
   searchParams?: { [key: string]: string | string[] | undefined };
@@ -136,14 +161,6 @@ const PageAddListing10: FC<PageAddListing10Props> = ({ searchParams }) => {
       }
       return acc;
     }, {});
-  };
-  const getRentalType = (
-    value: unknown
-  ): "Short Term" | "Long Term" | "Both" => {
-    if (value === "Short Term" || value === "Long Term" || value === "Both") {
-      return value;
-    }
-    return "Short Term";
   };
   const getDatesPerPortion = (value: unknown): string[] => {
     if (!Array.isArray(value)) return [];
@@ -276,18 +293,19 @@ const PageAddListing10: FC<PageAddListing10Props> = ({ searchParams }) => {
         }
         
         if (page8Data) {
-          const page8 = parseStorageValue<{ basePrice?: Array<number | string> }>(
-            "page8",
+          const page8 = parseStorageValue<Record<string, unknown>>("page8", {});
+          const page1ForPrice = parseStorageValue<Record<string, unknown>>(
+            "page1",
             {}
           );
-          const firstBasePrice = page8.basePrice?.[0];
-          if (typeof firstBasePrice === "number") {
-            setBasePrice(firstBasePrice);
-          } else if (typeof firstBasePrice === "string") {
-            const parsedBasePrice = parseInt(firstBasePrice, 10);
-            if (!Number.isNaN(parsedBasePrice)) {
-              setBasePrice(parsedBasePrice);
-            }
+          const rentalType = normalizeRentalType(page1ForPrice.rentalType);
+          const resolved = resolveListingPrices({
+            rentalType,
+            basePrice: firstPositivePrice(page8.basePrice),
+            basePriceLongTerm: firstPositivePrice(page8.basePriceLongTerm),
+          });
+          if (resolved.basePrice > 0) {
+            setBasePrice(resolved.basePrice);
           }
         }
       } catch (error) {
@@ -318,14 +336,20 @@ const PageAddListing10: FC<PageAddListing10Props> = ({ searchParams }) => {
         []
       );
 
+      const rentalType = normalizeRentalType(page1.rentalType);
+      const resolvedPrices = resolveListingPrices({
+        rentalType,
+        basePrice: firstPositivePrice(page8.basePrice),
+        basePriceLongTerm: firstPositivePrice(page8.basePriceLongTerm),
+      });
+
       // Build listing object with all necessary fields
-      // Update the handleGoLive function to send correct data types
       const listingData = {
         // Basic Info (Page 1)
         propertyType: getString(page1.propertyType, "House"),
         propertyName: getString(page1.placeName, "Untitled Property"),
         placeName: getString(page1.placeName, ""),
-        rentalType: getRentalType(page1.rentalType),
+        rentalType,
         rentalForm: getString(page1.rentalForm, ""),
 
         // Location (Page 2)
@@ -369,11 +393,11 @@ const PageAddListing10: FC<PageAddListing10Props> = ({ searchParams }) => {
             ? storedPropertyPictureUrls
             : getStringArray(page7.propertyPictureUrls),
 
-        // Pricing (Page 8) - EXTRACT FIRST VALUES
-        basePrice: getNumberArray(page8.basePrice)[0] || 0,
+        // Pricing (Page 8) — server also normalizes from basePriceLongTerm for long-term
+        basePrice: resolvedPrices.basePrice,
         weekendPrice: getNumberArray(page8.weekendPrice)[0],
         weeklyDiscount: getNumberArray(page8.weeklyDiscount)[0],
-        basePriceLongTerm: getNumberArray(page8.basePriceLongTerm)[0],
+        basePriceLongTerm: resolvedPrices.basePriceLongTerm,
         monthlyDiscount: getNumberArray(page8.monthlyDiscount)[0],
         currency: getString(page8.currency, "USD"),
 
@@ -388,7 +412,7 @@ const PageAddListing10: FC<PageAddListing10Props> = ({ searchParams }) => {
         isLive: true,
       };
 
-      console.log("Publishing property with data:", listingData);
+      // console.log("Publishing property with data:", listingData);
 
       // Check searchParams for edit mode (wrapper forwards searchParams to all steps)
       const editParam = searchParams?.edit;
@@ -403,9 +427,7 @@ const PageAddListing10: FC<PageAddListing10Props> = ({ searchParams }) => {
       }
     } catch (error) {
       console.error("Error publishing property:", error);
-      toast.error("Error", {
-        description: "Failed to publish property. Please check all fields and try again.",
-      });
+      toast.error("Error", { description: getPublishErrorMessage(error) });
       setIsLoading(false);
     }
   };

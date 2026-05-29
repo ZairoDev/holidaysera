@@ -523,10 +523,6 @@ export const subscriptionRouter = router({
           razorpayOrderId: freeOrderId,
           snapshot,
         });
-        console.info("[Holidaysera Payment] pending.created.free", {
-          userId: String(userId),
-          propertiesAllowedSnapshot: snapshot.propertiesAllowedSnapshot,
-        });
 
         const { subscription, startDate, endDate, granted } =
           await activateSubscriptionForUser({
@@ -545,10 +541,6 @@ export const subscriptionRouter = router({
           });
         if (granted) {
           await incrementCouponUsage(appliedCoupon.code);
-          console.info("[Holidaysera Payment] entitlement.granted.free", {
-            userId: String(userId),
-            propertiesAllowedSnapshot: snapshot.propertiesAllowedSnapshot,
-          });
         }
 
         return {
@@ -617,11 +609,6 @@ export const subscriptionRouter = router({
           couponCode: appliedCoupon?.code ?? null,
           razorpayOrderId: order.id,
           snapshot,
-        });
-        console.info("[Holidaysera Payment] pending.created", {
-          userId: String(userId),
-          orderId: order.id,
-          propertiesAllowedSnapshot: snapshot.propertiesAllowedSnapshot,
         });
 
         return {
@@ -765,11 +752,6 @@ export const subscriptionRouter = router({
         });
       if (granted) {
         await incrementCouponUsage(normalizedCouponCode);
-        console.info("[Holidaysera Payment] entitlement.granted.verify", {
-          userId: String(userId),
-          orderId: razorpay_order_id,
-          propertiesAllowedSnapshot: snapshot.propertiesAllowedSnapshot,
-        });
       }
 
       return {

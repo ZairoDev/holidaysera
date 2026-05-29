@@ -22,6 +22,7 @@ function ResetPasswordContent() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [email, setEmail] = useState<string | null>(null);
+  const [isPasswordSetup, setIsPasswordSetup] = useState(false);
   const [isValidToken, setIsValidToken] = useState<boolean | null>(null);
 
   // Verify token on mount
@@ -38,6 +39,7 @@ function ResetPasswordContent() {
     if (verifyData) {
       setIsValidToken(true);
       setEmail(verifyData.email);
+      setIsPasswordSetup(verifyData.isPasswordSetup ?? false);
     } else if (verifyError) {
       setIsValidToken(false);
     }
@@ -45,7 +47,11 @@ function ResetPasswordContent() {
 
   const resetPasswordMutation = trpc.auth.resetPassword.useMutation({
     onSuccess: () => {
-      toast.success("Password reset successfully! Redirecting to login...");
+      toast.success(
+        isPasswordSetup
+          ? "Password set successfully! Redirecting to login..."
+          : "Password reset successfully! Redirecting to login..."
+      );
       setTimeout(() => {
         router.push("/login");
       }, 2000);
@@ -175,10 +181,16 @@ function ResetPasswordContent() {
             </div>
           </Link>
           <h1 className="mb-2 text-3xl font-bold text-gray-900">
-            Reset Password
+            {isPasswordSetup ? "Set Password" : "Reset Password"}
           </h1>
           <p className="text-gray-600">
-            {email ? `Enter a new password for ${email}` : "Enter your new password"}
+            {email
+              ? isPasswordSetup
+                ? `Create a password for ${email} so you can sign in with email and password`
+                : `Enter a new password for ${email}`
+              : isPasswordSetup
+                ? "Create a password for your account"
+                : "Enter your new password"}
           </p>
         </div>
 
@@ -195,9 +207,9 @@ function ResetPasswordContent() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="pl-10 pr-10"
-                  placeholder="Enter new password (min. 6 characters)"
+                  placeholder="Min. 8 chars with upper, lower, number & symbol"
                   required
-                  minLength={6}
+                  minLength={8}
                 />
                 <button
                   type="button"
@@ -226,7 +238,7 @@ function ResetPasswordContent() {
                   className="pl-10 pr-10"
                   placeholder="Confirm new password"
                   required
-                  minLength={6}
+                  minLength={8}
                 />
                 <button
                   type="button"
@@ -248,7 +260,13 @@ function ResetPasswordContent() {
               className="w-full bg-sky-600 hover:bg-sky-700"
               size="lg"
             >
-              {resetPasswordMutation.isPending ? "Resetting..." : "Reset Password"}
+              {resetPasswordMutation.isPending
+                ? isPasswordSetup
+                  ? "Setting..."
+                  : "Resetting..."
+                : isPasswordSetup
+                  ? "Set Password"
+                  : "Reset Password"}
             </Button>
           </form>
 

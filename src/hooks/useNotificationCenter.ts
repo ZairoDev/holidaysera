@@ -123,7 +123,6 @@ export const useNotificationCenter = create<NotificationStore>()(
           };
         });
 
-        console.log("[Notifications] Added:", newNotification);
       },
 
       setNotifications: (notes) => {
@@ -214,13 +213,8 @@ export function useNotificationSocketListener(isAuthenticated: boolean = false) 
   useEffect(() => {
     // Skip if already set up or socket not connected
     if (listenersSetup.current || !socket.connected) {
-      if (!socket.connected) {
-        console.log("[Notifications] Socket not connected, skipping listener setup");
-      }
       return;
     }
-
-    console.log("[Notifications] Initializing socket event listeners");
 
     // Load persisted notifications from server on first mount
     if (notificationsQuery.data && notificationsQuery.data.items) {
@@ -324,7 +318,6 @@ export function useNotificationSocketListener(isAuthenticated: boolean = false) 
     // Define all handlers with proper typing
     const handlers = {
       bookingRequest: (data: BookingRequestPayload) => {
-        console.log("[Notifications] booking-request-received:", data);
         addNotification({
           id: (data as any).notificationId,
           type: "booking-request",
@@ -336,7 +329,6 @@ export function useNotificationSocketListener(isAuthenticated: boolean = false) 
       },
 
       bookingApproved: (data: BookingApprovedPayload) => {
-        console.log("[Notifications] booking-approved-notification:", data);
         addNotification({
           id: (data as any).notificationId,
           type: "booking-approved",
@@ -348,7 +340,6 @@ export function useNotificationSocketListener(isAuthenticated: boolean = false) 
       },
 
       bookingRejected: (data: BookingRejectedPayload) => {
-        console.log("[Notifications] booking-rejected-notification:", data);
         addNotification({
           id: (data as any).notificationId,
           type: "booking-rejected",
@@ -360,7 +351,6 @@ export function useNotificationSocketListener(isAuthenticated: boolean = false) 
       },
 
       paymentReceived: (data: PaymentReceivedPayload) => {
-        console.log("[Notifications] payment-received:", data);
         addNotification({
           id: (data as any).notificationId,
           type: "payment-received",
@@ -380,7 +370,6 @@ export function useNotificationSocketListener(isAuthenticated: boolean = false) 
     socket.on("payment-received", handlers.paymentReceived);
 
     listenersSetup.current = true;
-    console.log("[Notifications] ✅ Socket listeners attached successfully");
 
     // Cleanup on unmount
     return () => {
@@ -389,7 +378,6 @@ export function useNotificationSocketListener(isAuthenticated: boolean = false) 
         socket.off("booking-approved-notification", handlersRef.current.bookingApproved);
         socket.off("booking-rejected-notification", handlersRef.current.bookingRejected);
         socket.off("payment-received", handlersRef.current.paymentReceived);
-        console.log("[Notifications] 🧹 Cleaned up socket listeners");
       }
       listenersSetup.current = false;
     };

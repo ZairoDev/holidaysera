@@ -35,10 +35,6 @@ export function emitToOwner(ownerId: string, event: string, data: any) {
   }
   
   const roomId = `owner-${ownerId}`;
-  const socketsInRoom = io.sockets.adapter.rooms.get(roomId);
-  const recipientCount = socketsInRoom?.size || 0;
-  
-  console.log(`[Socket] Emitting "${event}" to owner room "${roomId}" (${recipientCount} recipient(s))`);
   io.to(roomId).emit(event, data);
   
   return true;
@@ -52,10 +48,6 @@ export function emitToTraveller(travellerId: string, event: string, data: any) {
   }
   
   const roomId = `traveller-${travellerId}`;
-  const socketsInRoom = io.sockets.adapter.rooms.get(roomId);
-  const recipientCount = socketsInRoom?.size || 0;
-  
-  console.log(`[Socket] Emitting "${event}" to traveller room "${roomId}" (${recipientCount} recipient(s))`);
   io.to(roomId).emit(event, data);
   
   return true;

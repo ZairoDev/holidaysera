@@ -158,7 +158,6 @@ function BookingPaymentContent() {
         modal: {
           // called when user closes the checkout without paying
           ondismiss: () => {
-            console.log("Razorpay modal closed by user");
           },
         },
         handler: async (response: any) => {

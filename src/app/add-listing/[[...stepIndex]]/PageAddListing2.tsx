@@ -66,7 +66,7 @@ const PageAddListing2: FC = () => {
   // Debug: Check if API key is loaded (only log first few chars for security)
   useEffect(() => {
     if (googleMapsApiKey) {
-      console.log("✅ Google Maps API Key loaded:", googleMapsApiKey.substring(0, 10) + "...");
+      // console.log("✅ Google Maps API Key loaded:", googleMapsApiKey.substring(0, 10) + "...");
     } else {
       console.error("❌ NEXT_PUBLIC_GOOGLE_MAPS_API_KEY is not set in environment variables");
       console.error("Environment check:", {
@@ -132,7 +132,7 @@ const PageAddListing2: FC = () => {
   }, [country, street, city, state, postalCode, center, isLoading]);
 
   const handlePlaceSelected = (place: any) => {
-    console.log("Place selected:", place);
+    // console.log("Place selected:", place);
     setAddress(place.address);
     setCountry(place.country || country);
     setState(place.state || "");

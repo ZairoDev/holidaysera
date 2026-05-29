@@ -24,20 +24,20 @@ app.prepare().then(() => {
   (globalThis as any).io = io;// <-- so emitToOwner() can access it
 
   io.on("connection", (socket) => {
-    console.log("🟢 Socket connected:", socket.id);
+    // console.log("🟢 Socket connected:", socket.id);
 
     socket.on("join-owner-room", (ownerId) => {
       socket.join(`owner-${ownerId}`);
-      console.log(`🏠 Owner room joined: owner-${ownerId}`);
+      // console.log(`🏠 Owner room joined: owner-${ownerId}`);
     });
 
     socket.on("join-traveller-room", (travellerId) => {
       socket.join(`traveller-${travellerId}`);
-      console.log(`🧳 Traveller room joined: traveller-${travellerId}`);
+      // console.log(`🧳 Traveller room joined: traveller-${travellerId}`);
     });
 
     socket.on("disconnect", () => {
-      console.log("🔴 Socket disconnected:", socket.id);
+      // console.log("🔴 Socket disconnected:", socket.id);
     });
   });
 

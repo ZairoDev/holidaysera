@@ -176,7 +176,7 @@ const PageAddListing1: FC<PageAddListing1Props> = ({ searchParams }) => {
   };
 
   const handleRentalTypeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    console.log(e.target.id);
+    // console.log(e.target.id);
     setRentalType(e.target.id);
   }
 

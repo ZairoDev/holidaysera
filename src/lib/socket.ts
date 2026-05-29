@@ -20,15 +20,11 @@ export const socket = io(socketUrl, {
   reconnectionAttempts: 5,
 });
 
-console.log("[Socket.io] 🔌 Initialized at:", socketUrl);
-
 // Connection logging
 socket.on("connect", () => {
-  console.log("[Socket.io] ✅ Connected - Socket ID:", socket.id);
 });
 
 socket.on("disconnect", (reason) => {
-  console.log("[Socket.io] 🔴 Disconnected - Reason:", reason);
 });
 
 socket.on("connect_error", (error) => {
@@ -36,9 +32,7 @@ socket.on("connect_error", (error) => {
 });
 
 socket.on("reconnect", (attemptNumber) => {
-  console.log("[Socket.io] 🔄 Reconnected after", attemptNumber, "attempts");
 });
 
 socket.on("reconnect_attempt", () => {
-  console.log("[Socket.io] 🔄 Attempting to reconnect...");
 });

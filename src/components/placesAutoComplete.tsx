@@ -52,7 +52,7 @@ const PlacesAutocomplete: React.FC<PlacesAutocompleteProps> = ({
         const place = autocompleteRef.current?.getPlace();
 
         if (!place || !place.geometry) {
-          console.log("No place details available");
+          // console.log("No place details available");
           return;
         }
 

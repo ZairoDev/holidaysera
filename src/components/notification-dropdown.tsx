@@ -17,7 +17,7 @@ export function NotificationDropdown() {
     setIsMounted(true);
   }, []);
 
-  console.log("NotificationDropdown: notifications=", notifications, "unreadCount=", unreadCount);
+  // console.log("NotificationDropdown: notifications=", notifications, "unreadCount=", unreadCount);
 
   // Close dropdown when clicking outside
   useEffect(() => {

@@ -17,7 +17,6 @@ export function useSocket(userId?: string, userType?: 'owner' | 'traveller') {
 
       // Skip if already joined this exact room
       if (roomJoinedRef.current && currentRoomRef.current === roomId) {
-        console.log(`[Socket] Already in room: ${roomId}`);
         return;
       }
 
@@ -26,7 +25,6 @@ export function useSocket(userId?: string, userType?: 'owner' | 'traveller') {
       
       roomJoinedRef.current = true;
       currentRoomRef.current = roomId;
-      console.log(`[Socket] ✅ Joined ${userType} room: ${roomId}`);
     };
 
     // If already connected, join immediately
@@ -35,7 +33,6 @@ export function useSocket(userId?: string, userType?: 'owner' | 'traveller') {
     } else if (!socket.connected) {
       // Otherwise join when connected
       const onConnect = () => {
-        console.log(`[Socket] 🔌 Socket connected: ${socket.id}`);
         joinRoom();
       };
       socket.once('connect', onConnect);
@@ -49,12 +46,10 @@ export function useSocket(userId?: string, userType?: 'owner' | 'traveller') {
   // Handle connection state separately
   useEffect(() => {
     const handleConnect = () => {
-      console.log('[Socket] ✅ Connected:', socket.id);
       setIsConnected(true);
     };
 
     const handleDisconnect = () => {
-      console.log('[Socket] 🔴 Disconnected');
       setIsConnected(false);
       roomJoinedRef.current = false;  // Reset room state on disconnect
     };

@@ -11,7 +11,7 @@ interface FeaturedPropertiesProps {
 }
 
 export function FeaturedProperties({ properties }: FeaturedPropertiesProps) {
-  console.log("FeaturedProperties received:", properties);
+  // console.log("FeaturedProperties received:", properties);
 
   if (!properties || properties.length === 0) {
     return (

@@ -2,11 +2,20 @@ import nodemailer from "nodemailer";
 
 // Gmail transporter configuration
 const createTransporter = () => {
+  const user = process.env.GMAIL_USER?.trim();
+  const pass = process.env.GMAIL_APP_PASSWORD?.trim();
+
+  if (!user || !pass) {
+    throw new Error(
+      "Email is not configured. Please set GMAIL_USER and GMAIL_APP_PASSWORD."
+    );
+  }
+
   return nodemailer.createTransport({
     service: "gmail",
     auth: {
-      user: process.env.GMAIL_USER || "zairo.developer@gmail.com",
-      pass: process.env.GMAIL_APP_PASSWORD || "gwlz rnrv gpio uzcp",
+      user,
+      pass,
     },
   });
 };
@@ -43,7 +52,6 @@ export const sendMail = async (options: EmailOptions) => {
     };
 
     const result = await transporter.sendMail(mailOptions);
-    console.log("Email sent successfully:", result.messageId);
     return { success: true, messageId: result.messageId };
   } catch (error) {
     console.error("Error sending email:", error);

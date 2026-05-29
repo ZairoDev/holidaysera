@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useSearchStore } from '@/lib/store';
 import { DateRangePicker } from '@/components/date-range-picker';
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Dialog,
   DialogContent,
@@ -58,6 +59,12 @@ interface TopLocation {
   propertyCount: number;
 }
 
+type PortalPosition = {
+  top: number;
+  left: number;
+  width: number;
+};
+
 export function SearchBar({ variant = 'compact' }: SearchBarProps) {
   const router = useRouter();
   const { location, checkIn, checkOut, guests, setLocation, setCheckIn, setCheckOut, setGuests } = useSearchStore();
@@ -74,6 +81,8 @@ export function SearchBar({ variant = 'compact' }: SearchBarProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const [portalPosition, setPortalPosition] = useState<PortalPosition | null>(null);
+  const [isClient, setIsClient] = useState(false);
 
   // Fetch top locations
   const { data: topLocations, isLoading: isLoadingTopLocations } = trpc.property.getTopLocations.useQuery(
@@ -205,6 +214,55 @@ export function SearchBar({ variant = 'compact' }: SearchBarProps) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  const shouldShowDropdown = useMemo(() => {
+    return (
+      variant === 'hero' &&
+      (Boolean(error) ||
+        (showTopLocations && Boolean(topLocations?.length) && !location.trim()) ||
+        (showSuggestions && (autocompleteResults.length > 0 || (location.length >= 2 && !isLoading))))
+    );
+  }, [
+    variant,
+    error,
+    showTopLocations,
+    topLocations,
+    location,
+    showSuggestions,
+    autocompleteResults.length,
+    isLoading,
+  ]);
+
+  const updatePortalPosition = useCallback(() => {
+    const el = inputRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    // 8px spacing below input (mt-2 equivalent)
+    setPortalPosition({
+      top: rect.bottom + 8,
+      left: rect.left,
+      width: rect.width,
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!shouldShowDropdown) return;
+    updatePortalPosition();
+
+    const onScroll = () => updatePortalPosition();
+    const onResize = () => updatePortalPosition();
+
+    window.addEventListener('scroll', onScroll, true);
+    window.addEventListener('resize', onResize);
+    return () => {
+      window.removeEventListener('scroll', onScroll, true);
+      window.removeEventListener('resize', onResize);
+    };
+  }, [shouldShowDropdown, updatePortalPosition]);
+
   // Cleanup debounce timer
   useEffect(() => {
     return () => {
@@ -255,94 +313,133 @@ export function SearchBar({ variant = 'compact' }: SearchBarProps) {
                     <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 animate-spin" />
                   )}
 
-                  {/* Top Locations Suggestions */}
-                  <AnimatePresence>
-                    {showTopLocations && topLocations && topLocations.length > 0 && !location.trim() && (
-                      <motion.div
-                        ref={suggestionsRef}
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 max-h-64 overflow-y-auto"
-                      >
-                        <div className="px-4 py-2 border-b border-gray-200 bg-gray-50">
-                          <h3 className="text-sm font-semibold text-gray-700">Popular Destinations</h3>
-                        </div>
-                        {topLocations.map((topLocation, index) => (
-                          <button
-                            key={`${topLocation.city}-${topLocation.country}-${index}`}
-                            onClick={() => handleTopLocationClick(topLocation)}
-                            className="w-full px-4 py-3 text-left hover:bg-sky-50 transition-colors border-b border-gray-100 last:border-b-0 flex items-start gap-3"
-                          >
-                            <MapPin className="w-5 h-5 text-sky-600 mt-0.5 flex-shrink-0" />
-                            <div className="flex-1 min-w-0">
-                              <div className="font-medium text-gray-900 truncate">
-                                {topLocation.city}
+                  {/* Suggestions are rendered in a portal to avoid z-index/overflow clipping */}
+                  {isClient && shouldShowDropdown && portalPosition
+                    ? createPortal(
+                        <AnimatePresence>
+                          {(showTopLocations &&
+                            topLocations &&
+                            topLocations.length > 0 &&
+                            !location.trim()) && (
+                            <motion.div
+                              ref={suggestionsRef}
+                              initial={{ opacity: 0, y: -10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, y: -10 }}
+                              style={{
+                                position: 'fixed',
+                                top: portalPosition.top,
+                                left: portalPosition.left,
+                                width: portalPosition.width,
+                                zIndex: 999999,
+                              }}
+                              className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-2xl ring-1 ring-black/5"
+                            >
+                              <div className="px-4 py-2 border-b border-gray-200 bg-gray-50">
+                                <h3 className="text-sm font-semibold text-gray-700">Popular Destinations</h3>
                               </div>
-                              <div className="text-sm text-gray-500 truncate">
-                                {topLocation.country}
+                              <div className="max-h-64 overflow-y-auto">
+                                {topLocations.map((topLocation, index) => (
+                                  <button
+                                    key={`${topLocation.city}-${topLocation.country}-${index}`}
+                                    onClick={() => handleTopLocationClick(topLocation)}
+                                    className="w-full px-4 py-3 text-left hover:bg-sky-50 transition-colors border-b border-gray-100 last:border-b-0 flex items-start gap-3"
+                                  >
+                                    <MapPin className="w-5 h-5 text-sky-600 mt-0.5 flex-shrink-0" />
+                                    <div className="flex-1 min-w-0">
+                                      <div className="font-medium text-gray-900 truncate">
+                                        {topLocation.city}
+                                      </div>
+                                      <div className="text-sm text-gray-500 truncate">
+                                        {topLocation.country}
+                                      </div>
+                                    </div>
+                                  </button>
+                                ))}
                               </div>
-                            </div>
-                          </button>
-                        ))}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                            </motion.div>
+                          )}
 
-                  {/* Autocomplete Suggestions */}
-                  <AnimatePresence>
-                    {showSuggestions && autocompleteResults.length > 0 && (
-                      <motion.div
-                        ref={suggestionsRef}
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 max-h-64 overflow-y-auto"
-                      >
-                        {autocompleteResults.map((prediction) => (
-                          <button
-                            key={prediction.place_id}
-                            onClick={() => handleSuggestionClick(prediction)}
-                            className="w-full px-4 py-3 text-left hover:bg-sky-50 transition-colors border-b border-gray-100 last:border-b-0 flex items-start gap-3"
-                          >
-                            <MapPin className="w-5 h-5 text-sky-600 mt-0.5 flex-shrink-0" />
-                            <div className="flex-1 min-w-0">
-                              <div className="font-medium text-gray-900 truncate">
-                                {prediction.structured_formatting.main_text}
+                          {(showSuggestions && autocompleteResults.length > 0) && (
+                            <motion.div
+                              ref={suggestionsRef}
+                              initial={{ opacity: 0, y: -10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, y: -10 }}
+                              style={{
+                                position: 'fixed',
+                                top: portalPosition.top,
+                                left: portalPosition.left,
+                                width: portalPosition.width,
+                                zIndex: 999999,
+                              }}
+                              className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-2xl ring-1 ring-black/5"
+                            >
+                              <div className="max-h-64 overflow-y-auto">
+                                {autocompleteResults.map((prediction) => (
+                                  <button
+                                    key={prediction.place_id}
+                                    onClick={() => handleSuggestionClick(prediction)}
+                                    className="w-full px-4 py-3 text-left hover:bg-sky-50 transition-colors border-b border-gray-100 last:border-b-0 flex items-start gap-3"
+                                  >
+                                    <MapPin className="w-5 h-5 text-sky-600 mt-0.5 flex-shrink-0" />
+                                    <div className="flex-1 min-w-0">
+                                      <div className="font-medium text-gray-900 truncate">
+                                        {prediction.structured_formatting.main_text}
+                                      </div>
+                                      {prediction.structured_formatting.secondary_text && (
+                                        <div className="text-sm text-gray-500 truncate">
+                                          {prediction.structured_formatting.secondary_text}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </button>
+                                ))}
                               </div>
-                              {prediction.structured_formatting.secondary_text && (
-                                <div className="text-sm text-gray-500 truncate">
-                                  {prediction.structured_formatting.secondary_text}
-                                </div>
-                              )}
-                            </div>
-                          </button>
-                        ))}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                            </motion.div>
+                          )}
 
-                  {/* Empty State */}
-                  {showSuggestions && !isLoading && autocompleteResults.length === 0 && location.length >= 2 && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 p-4 text-center text-gray-500"
-                    >
-                      No places found
-                    </motion.div>
-                  )}
+                          {(showSuggestions &&
+                            !isLoading &&
+                            autocompleteResults.length === 0 &&
+                            location.length >= 2 &&
+                            !error) && (
+                            <motion.div
+                              initial={{ opacity: 0, y: -10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              style={{
+                                position: 'fixed',
+                                top: portalPosition.top,
+                                left: portalPosition.left,
+                                width: portalPosition.width,
+                                zIndex: 999999,
+                              }}
+                              className="rounded-xl border border-gray-200 bg-white shadow-2xl ring-1 ring-black/5 p-4 text-center text-gray-500"
+                            >
+                              No places found
+                            </motion.div>
+                          )}
 
-                  {/* Error State */}
-                  {error && (
-                    <motion.div
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="absolute top-full left-0 right-0 mt-2 bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-600 z-50"
-                    >
-                      {error}
-                    </motion.div>
-                  )}
+                          {error && (
+                            <motion.div
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              style={{
+                                position: 'fixed',
+                                top: portalPosition.top,
+                                left: portalPosition.left,
+                                width: portalPosition.width,
+                                zIndex: 999999,
+                              }}
+                              className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-600 shadow-lg"
+                            >
+                              {error}
+                            </motion.div>
+                          )}
+                        </AnimatePresence>,
+                        document.body
+                      )
+                    : null}
                 </div>
               </div>
 

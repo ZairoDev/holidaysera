@@ -58,7 +58,8 @@ export function ForgotPasswordDialog({
                 Forgot Password
               </DialogTitle>
               <DialogDescription>
-                Enter your email address and we'll send you a link to reset your password
+                Enter your email address and we&apos;ll send you a link to reset your password.
+                If you signed up with Google, you can use this to set a password for email login.
               </DialogDescription>
             </DialogHeader>
 
@@ -106,14 +107,14 @@ export function ForgotPasswordDialog({
                 Check Your Email
               </DialogTitle>
               <DialogDescription>
-                We've sent a password reset link to your email address
+                We&apos;ve sent a password reset link to your email address
               </DialogDescription>
             </DialogHeader>
 
             <div className="space-y-4">
               <div className="rounded-lg bg-green-50 p-4 border border-green-200">
                 <p className="text-sm text-green-800">
-                  If an account with the email <strong>{email}</strong> exists, we've sent a password reset link.
+                  If an account with the email <strong>{email}</strong> exists, we&apos;ve sent a password reset link.
                 </p>
                 <p className="text-xs text-green-700 mt-2">
                   Please check your inbox and click the link to reset your password. The link will expire in 1 hour.

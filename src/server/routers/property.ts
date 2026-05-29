@@ -6,8 +6,41 @@ import Users from "@/models/users";
 import mongoose from "mongoose";
 import z from "zod";
 import axios from "axios";
+import {
+  normalizeRentalType,
+  resolveListingPrices,
+} from "@/lib/listing-pricing";
 
 const APPROVAL_ALLOWED_ROLES = new Set(["SuperAdmin", "HAdmin", "HeadAdmin"]);
+
+function escapeRegex(input: string): string {
+  // Escape user-provided tokens for safe RegExp construction.
+  return input.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function tokenizeLocationInput(input: string): string[] {
+  const trimmed = input.trim();
+  if (!trimmed) return [];
+
+  // Google predictions often look like "City, State, Country".
+  const parts = trimmed
+    .split(",")
+    .map((p) => p.trim())
+    .filter(Boolean);
+
+  const tokens = parts.length > 0 ? parts : [trimmed];
+
+  // Remove duplicates (case-insensitive), keep order.
+  const seen = new Set<string>();
+  const unique: string[] = [];
+  for (const t of tokens) {
+    const key = t.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    unique.push(t);
+  }
+  return unique;
+}
 
 function ensurePropertyApproverRole(userRole: unknown) {
   const role = typeof userRole === "string" ? userRole : "";
@@ -163,7 +196,7 @@ export const propertyRouter = router({
         .lean()
         .limit(12);
 
-      console.log("Raw featured from DB:", featured.length, "properties");
+      // console.log("Raw featured from DB:", featured.length, "properties");
 
       // 🔥 CRITICAL: Convert ObjectId to string for Client Components
       // This is what fixes the "Objects with toJSON methods" error
@@ -182,7 +215,6 @@ export const propertyRouter = router({
         reviews: doc.reviews ?? null,
       }));
 
-      console.log("Serialized properties:", serializedProperties.length);
 
       return serializedProperties;
     } catch (error) {
@@ -221,13 +253,17 @@ export const propertyRouter = router({
 
         // Location search
         if (input.location) {
-          const regex = new RegExp(input.location, "i");
-          filter.$or = [
+          const tokens = tokenizeLocationInput(input.location);
+          const regexes = tokens.map((t) => new RegExp(escapeRegex(t), "i"));
+
+          // Match if ANY token matches ANY location-ish field.
+          filter.$or = regexes.flatMap((regex) => [
             { city: regex },
+            { state: regex },
             { country: regex },
             { placeName: regex },
             { propertyName: regex },
-          ];
+          ]);
         }
 
         // Price range
@@ -631,24 +667,76 @@ export const propertyRouter = router({
         propertyCoverFileUrl: z.string().optional(),
         propertyPictureUrls: z.array(z.string()).optional(),
   
-        // Pricing (Page 8) - CHANGED TO NUMBERS
-        basePrice: z.number().positive("Base price must be greater than 0"),
+        // Pricing (Page 8) - validated by rental type below
+        basePrice: z.number().nonnegative(),
         weekendPrice: z.number().optional(),
         weeklyDiscount: z.number().optional(),
         basePriceLongTerm: z.number().optional(),
         monthlyDiscount: z.number().optional(),
         currency: z.string().default("USD"),
-  
+
         // Availability (Page 9) - CHANGED datesPerPortion
         night: z.array(z.number()).optional(),
         time: z.array(z.number()).optional(),
         datesPerPortion: z.array(z.string()).optional(),
         icalLinks: z.record(z.string(), z.string()).optional(),
-  
+
         // Additional fields
         isInstantBooking: z.boolean().optional(),
         isLive: z.boolean().default(true),
         hostedBy: z.string().optional(),
+      })
+      .transform((data) => {
+        const rentalType = normalizeRentalType(data.rentalType);
+        const resolved = resolveListingPrices({
+          rentalType,
+          basePrice: data.basePrice,
+          basePriceLongTerm: data.basePriceLongTerm,
+        });
+        return {
+          ...data,
+          rentalType,
+          basePrice: resolved.basePrice,
+          basePriceLongTerm: resolved.basePriceLongTerm,
+        };
+      })
+      .superRefine((data, ctx) => {
+        if (data.rentalType === "Short Term") {
+          if (data.basePrice <= 0) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: "Base price must be greater than 0",
+              path: ["basePrice"],
+            });
+          }
+          return;
+        }
+
+        if (data.rentalType === "Long Term") {
+          if (data.basePrice <= 0) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: "Monthly price must be greater than 0",
+              path: ["basePriceLongTerm"],
+            });
+          }
+          return;
+        }
+
+        if (data.basePrice <= 0) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Short-term base price must be greater than 0",
+            path: ["basePrice"],
+          });
+        }
+        if ((data.basePriceLongTerm ?? 0) <= 0) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Long-term monthly price must be greater than 0",
+            path: ["basePriceLongTerm"],
+          });
+        }
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -660,14 +748,7 @@ export const propertyRouter = router({
             message: "Missing required property information",
           });
         }
-  
-        if (input.basePrice <= 0) {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: "Base price must be greater than 0",
-          });
-        }
-  
+
         const reserved = await Users.findOneAndUpdate(
           {
             _id: ctx.user.id,
@@ -683,6 +764,12 @@ export const propertyRouter = router({
               "You\u2019ve reached your property listing limit. Please upgrade or purchase additional slots to add more properties.",
           });
         }
+
+        const pricing = resolveListingPrices({
+          rentalType: input.rentalType,
+          basePrice: input.basePrice,
+          basePriceLongTerm: input.basePriceLongTerm,
+        });
 
         const newProperty = await (async () => {
           try {
@@ -735,11 +822,11 @@ export const propertyRouter = router({
         // Keep legacy propertyImages in sync with propertyPictureUrls
         propertyImages: input.propertyPictureUrls || [],
   
-          // Pricing - NOW NUMBERS
-          basePrice: input.basePrice,
+          // Pricing (resolved for long-term monthly rate)
+          basePrice: pricing.basePrice,
           weekendPrice: input.weekendPrice,
           weeklyDiscount: input.weeklyDiscount,
-          basePriceLongTerm: input.basePriceLongTerm,
+          basePriceLongTerm: pricing.basePriceLongTerm,
           monthlyDiscount: input.monthlyDiscount,
           currency: input.currency,
   
@@ -779,12 +866,7 @@ export const propertyRouter = router({
           });
         }
   
-        console.log("Property created successfully:", mappedProperty._id);
-        console.info("[Holidaysera Listing] created", {
-          userId: ctx.user.id,
-          propertyId: mappedProperty._id,
-        });
-  
+
         return {
           success: true,
           property: mappedProperty,
@@ -916,8 +998,8 @@ export const propertyRouter = router({
             });
           }
 
-          console.log("Property updated successfully:", mappedProperty._id);
-
+    
+ 
           return {
             success: true,
             property: mappedProperty,
