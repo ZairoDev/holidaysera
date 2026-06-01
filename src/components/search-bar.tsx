@@ -159,11 +159,23 @@ export function SearchBar({ variant = 'compact' }: SearchBarProps) {
 
   // Handle top location click
   const handleTopLocationClick = useCallback((topLocation: TopLocation) => {
-    // Only use city name to avoid search errors
-    setLocation(topLocation.city);
+    const label = [topLocation.city, topLocation.country]
+      .filter(Boolean)
+      .join(", ");
+    setLocation(label);
     setShowTopLocations(false);
     setShowSuggestions(false);
   }, [setLocation]);
+
+  const getSearchLocationLabel = useCallback(
+    (prediction: AutocompletePrediction): string => {
+      const main = prediction.structured_formatting?.main_text?.trim();
+      const secondary = prediction.structured_formatting?.secondary_text?.trim();
+      if (main && secondary) return `${main}, ${secondary}`;
+      return prediction.description.trim();
+    },
+    []
+  );
 
   // Fetch place details
   const fetchPlaceDetails = useCallback(async (placeId: string) => {
@@ -181,7 +193,23 @@ export function SearchBar({ variant = 'compact' }: SearchBarProps) {
 
       setSelectedPlace(data);
       setShowDetailsModal(true);
-      setLocation(data.name || data.address);
+
+      const components = Array.isArray(data.addressComponents)
+        ? data.addressComponents
+        : [];
+      const getComponent = (...types: string[]) => {
+        const match = components.find((c: { types?: string[] }) =>
+          types.some((t) => c.types?.includes(t))
+        );
+        return typeof match?.long_name === "string" ? match.long_name : "";
+      };
+      const city =
+        getComponent("locality", "postal_town", "administrative_area_level_2") ||
+        "";
+      const state = getComponent("administrative_area_level_1");
+      const country = getComponent("country");
+      const locationLabel = [city, state, country].filter(Boolean).join(", ");
+      setLocation(locationLabel || data.address || data.name || "");
     } catch (err) {
       console.error('Place details error:', err);
       setError(err instanceof Error ? err.message : 'Failed to load place details');
@@ -190,8 +218,10 @@ export function SearchBar({ variant = 'compact' }: SearchBarProps) {
     }
   }, [setLocation]);
 
-  // Handle suggestion click
+  // Handle suggestion click — set searchable location text immediately
   const handleSuggestionClick = (prediction: AutocompletePrediction) => {
+    setLocation(getSearchLocationLabel(prediction));
+    setShowSuggestions(false);
     fetchPlaceDetails(prediction.place_id);
   };
 
@@ -273,7 +303,13 @@ export function SearchBar({ variant = 'compact' }: SearchBarProps) {
   }, []);
 
   const handleSearch = () => {
-    router.push('/properties');
+    const params = new URLSearchParams();
+    const trimmedLocation = location.trim();
+    if (trimmedLocation) {
+      params.set("location", trimmedLocation);
+    }
+    const query = params.toString();
+    router.push(query ? `/properties?${query}` : "/properties");
   };
 
   if (variant === 'hero') {

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Filter, X, SlidersHorizontal, Loader2, Minus, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -18,10 +19,22 @@ import { useSearchStore } from "@/lib/store";
 import { trpc } from "@/trpc/client";
 import { useInView } from "react-intersection-observer";
 import { Property } from "@/lib/type";
+import {
+  DEFAULT_PRICE_RANGE,
+  isDefaultPriceRange,
+} from "@/lib/search-filters";
 
-export default function PropertiesPage() {
+function PropertiesPageContent() {
+  const searchParams = useSearchParams();
   const [showFilters, setShowFilters] = useState(false);
-  const { location } = useSearchStore();
+  const { location, setLocation } = useSearchStore();
+
+  useEffect(() => {
+    const locationParam = searchParams?.get("location");
+    if (locationParam?.trim()) {
+      setLocation(locationParam.trim());
+    }
+  }, [searchParams, setLocation]);
   
   // Local state for input values (to prevent filtering while typing)
   const [bedroomsInput, setBedroomsInput] = useState<string>("");
@@ -44,10 +57,12 @@ export default function PropertiesPage() {
   const stepperGuestsRef = useRef(0);
   
   // Local state for slider value (for immediate UI feedback)
-  const [sliderValue, setSliderValue] = useState<[number, number]>([0, 1000]);
+  const [sliderValue, setSliderValue] = useState<[number, number]>(
+    DEFAULT_PRICE_RANGE
+  );
   
   const [filters, setFilters] = useState({
-    priceRange: [0, 1000] as [number, number],
+    priceRange: DEFAULT_PRICE_RANGE,
     propertyTypes: [] as string[],
     minBedrooms: 0,
     minBathrooms: 0,
@@ -205,8 +220,10 @@ export default function PropertiesPage() {
   const { data, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage } =
     trpc.property.getFiltered.useInfiniteQuery(
       {
-        location,
-        priceRange: filters.priceRange,
+        location: location.trim() || undefined,
+        priceRange: isDefaultPriceRange(filters.priceRange)
+          ? undefined
+          : filters.priceRange,
         propertyTypes:
           filters.propertyTypes.length > 0 ? filters.propertyTypes : undefined,
         minBedrooms: filters.minBedrooms > 0 ? filters.minBedrooms : undefined,
@@ -243,8 +260,7 @@ export default function PropertiesPage() {
   const hasActiveFilters = () => {
     return (
       location ||
-      filters.priceRange[0] !== 0 ||
-      filters.priceRange[1] !== 1000 ||
+      !isDefaultPriceRange(filters.priceRange) ||
       filters.propertyTypes.length > 0 ||
       filters.minBedrooms > 0 ||
       filters.minBathrooms > 0 ||
@@ -276,7 +292,7 @@ export default function PropertiesPage() {
 
   const resetFilters = () => {
     setFilters({
-      priceRange: [0, 1000],
+      priceRange: DEFAULT_PRICE_RANGE,
       propertyTypes: [],
       minBedrooms: 0,
       minBathrooms: 0,
@@ -634,7 +650,7 @@ export default function PropertiesPage() {
                   )}
                   {!hasNextPage && properties.length > 0 && (
                     <p className="text-gray-600">
-                      You've reached the end of the list
+                      You&apos;ve reached the end of the list
                     </p>
                   )}
                 </div>
@@ -655,5 +671,19 @@ export default function PropertiesPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function PropertiesPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-[50vh] items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-sky-600" />
+        </div>
+      }
+    >
+      <PropertiesPageContent />
+    </Suspense>
   );
 }

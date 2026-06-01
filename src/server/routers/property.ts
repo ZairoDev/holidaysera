@@ -52,11 +52,62 @@ function ensurePropertyApproverRole(userRole: unknown) {
   }
 }
 
+function getPublicApprovalOrClause(): Record<string, unknown>[] {
+  return [
+    { approvalStatus: "approved" },
+    { approvalStatus: { $exists: false } },
+  ];
+}
+
 function buildPublicPropertyFilter(extraFilter: Record<string, any> = {}): Record<string, any> {
   return {
     ...extraFilter,
     isLive: true,
-    $or: [{ approvalStatus: "approved" }, { approvalStatus: { $exists: false } }],
+    $or: getPublicApprovalOrClause(),
+  };
+}
+
+/** One search token must match at least one location field (city, state, country, etc.). */
+function buildLocationTokenClause(token: string): Record<string, unknown> {
+  const regex = new RegExp(escapeRegex(token), "i");
+  return {
+    $or: [
+      { city: regex },
+      { state: regex },
+      { country: regex },
+      { street: regex },
+      { placeName: regex },
+      { propertyName: regex },
+    ],
+  };
+}
+
+/**
+ * Comma-separated queries (e.g. "Lefkada, Greece") require every token to match.
+ * Previously any token matching anywhere showed the listing, so "Greece" alone
+ * returned all properties in Greece.
+ */
+function buildLocationAndClauses(location: string): Record<string, unknown>[] {
+  return tokenizeLocationInput(location).map((token) =>
+    buildLocationTokenClause(token)
+  );
+}
+
+/** Base filter for public listings; location is ANDed without clobbering approval rules. */
+function buildPublicListingFilter(options?: { location?: string }): Record<string, any> {
+  const andClauses: Record<string, unknown>[] = [
+    { $or: getPublicApprovalOrClause() },
+  ];
+
+  const trimmedLocation = options?.location?.trim();
+  if (trimmedLocation) {
+    andClauses.push(...buildLocationAndClauses(trimmedLocation));
+  }
+
+  return {
+    isLive: true,
+    rentalType: "Short Term",
+    $and: andClauses,
   };
 }
 
@@ -249,32 +300,21 @@ export const propertyRouter = router({
       try {
         const { cursor, limit } = input;
 
-        const filter: Record<string, any> = buildPublicPropertyFilter();
+        const filter: Record<string, any> = buildPublicListingFilter({
+          location: input.location,
+        });
 
-        // Location search
-        if (input.location) {
-          const tokens = tokenizeLocationInput(input.location);
-          const regexes = tokens.map((t) => new RegExp(escapeRegex(t), "i"));
-
-          // Match if ANY token matches ANY location-ish field.
-          filter.$or = regexes.flatMap((regex) => [
-            { city: regex },
-            { state: regex },
-            { country: regex },
-            { placeName: regex },
-            { propertyName: regex },
-          ]);
-        }
-
-        // Price range
+        // Price range — skip default [0, 1000] so long-term / premium listings are not hidden
         if (input.priceRange) {
-          filter.basePrice = {
-            $gte: input.priceRange[0],
-            $lte: input.priceRange[1],
-          };
+          const [minPrice, maxPrice] = input.priceRange;
+          const isDefaultRange = minPrice === 0 && maxPrice === 1000;
+          if (!isDefaultRange) {
+            filter.basePrice = {
+              $gte: minPrice,
+              $lte: maxPrice,
+            };
+          }
         }
-
-        filter.rentalType = "Short Term";
 
         // Property type
         if (input.propertyTypes?.length) {
@@ -1090,8 +1130,7 @@ export const propertyRouter = router({
         const topLocations = await Properties.aggregate([
           {
             $match: {
-              ...buildPublicPropertyFilter(),
-              rentalType: "Short Term",
+              ...buildPublicListingFilter(),
               city: { $exists: true, $ne: "" },
               country: { $exists: true, $ne: "" },
             },
