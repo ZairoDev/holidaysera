@@ -331,7 +331,7 @@ export default function TermsPage() {
             <div className="relative">
               <h3 className="text-3xl font-bold mb-4">Have Questions?</h3>
               <p className="text-slate-300 text-lg mb-8 max-w-2xl mx-auto leading-relaxed">
-                If you have any questions about these Terms of Service, please don't hesitate to contact us. We're here to help clarify any concerns you may have.
+                If you have any questions about these Terms of Service, please don&apos;t hesitate to contact us. We&apos;re here to help clarify any concerns you may have.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link href="/contact" className="group relative px-8 py-4 bg-white text-slate-900 font-bold rounded-xl hover:bg-blue-50 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-1 inline-block">

@@ -455,6 +455,7 @@ const PageAddListing10: FC<PageAddListing10Props> = ({ searchParams }) => {
           {/* Image Section */}
           <div className="md:col-span-1 h-80 md:h-auto flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900">
             {propertyCoverFileUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element -- preview URL from listing upload
               <img
                 src={propertyCoverFileUrl}
                 alt="Property cover"

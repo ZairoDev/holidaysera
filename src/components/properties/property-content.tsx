@@ -700,7 +700,7 @@ export function PropertyContent({
             </Button>
 
             <p className="mt-4 text-center text-xs text-gray-600">
-              You won't be charged yet
+              You won&apos;t be charged yet
             </p>
 
             {property.isInstantBooking && (

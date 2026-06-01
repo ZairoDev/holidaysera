@@ -38,7 +38,7 @@ export function CallToAction() {
                 variant="outline"
                 className="border-white text-white bg-white/5 hover:bg-white/10"
               >
-                 "Explore More" 
+                 &ldquo;Explore More&rdquo;
               </Button>
             </Link>
           </div>

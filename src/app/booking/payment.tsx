@@ -226,7 +226,7 @@ function BookingPaymentContent() {
           </p>
           <p className="text-yellow-700 mt-2">
             Your booking request has been sent to the property owner. Once they approve
-            it, you'll be able to complete your payment.
+            it, you&apos;ll be able to complete your payment.
           </p>
         </Card>
       ) : (

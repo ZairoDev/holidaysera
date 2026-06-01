@@ -270,10 +270,7 @@ export const propertyRouter = router({
       return serializedProperties;
     } catch (error) {
       console.error("Error fetching featured properties:", error);
-      throw new TRPCError({
-        code: "INTERNAL_SERVER_ERROR",
-        message: "Failed to fetch featured properties",
-      });
+      return [];
     }
   }),
   getFiltered: publicProcedure

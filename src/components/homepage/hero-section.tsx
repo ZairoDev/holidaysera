@@ -89,6 +89,7 @@ export function HeroSection() {
             className="relative h-[350px] md:h-[450px] lg:h-[600px] rounded-2xl overflow-visible shadow-elegant"
           >
             <div className="relative w-full h-full rounded-2xl overflow-hidden">
+              {/* eslint-disable-next-line @next/next/no-img-element -- external hero image URL */}
               <img
                 src="https://images.pexels.com/photos/258154/pexels-photo-258154.jpeg"
                 alt="Luxury hotel pool"

@@ -929,7 +929,7 @@ const ListPropertyPage: React.FC = () => {
                       ))}
                     </div>
                     <p className="text-gray-700 mb-6 leading-relaxed">
-                      "{testimonial.text}"
+                      &ldquo;{testimonial.text}&rdquo;
                     </p>
                     <div className="flex items-center gap-3">
                       <div className="w-12 h-12 rounded-full bg-sky-500 flex items-center justify-center text-white font-bold">
@@ -964,7 +964,7 @@ const ListPropertyPage: React.FC = () => {
                 viewport={{ once: true }}
                 className="text-4xl font-bold text-gray-900 mb-8 text-center"
               >
-                What You'll Need
+                What You&apos;ll Need
               </motion.h2>
               <div className="grid md:grid-cols-2 gap-4">
                 {requirements.map((req, index) => (

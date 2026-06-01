@@ -103,7 +103,7 @@ const PageAddListing4: FC<PageAddListing4Props> = () => {
       "Hypoallergenic": amenitiesState?.generalAmenities?.["Hypoallergenic"] || false,
       "Lake View": amenitiesState?.generalAmenities?.["Lake View"] || false,
     }),
-    [savedAmenities]
+    [amenitiesState?.generalAmenities]
   );
 
 
@@ -195,7 +195,7 @@ const PageAddListing4: FC<PageAddListing4Props> = () => {
       "Carbon Monoxide Detector": amenitiesState?.otherAmenities?.["Carbon Monoxide Detector"] || false,
       "Hearths": amenitiesState?.otherAmenities?.["Hearths"] || false,
     }),
-    [savedAmenities]
+    [amenitiesState?.otherAmenities]
   );
 
 	
@@ -206,7 +206,7 @@ const PageAddListing4: FC<PageAddListing4Props> = () => {
       "Antitheft Key": amenitiesState?.safeAmenities?.["Antitheft Key"] || false,
       "Safe Vault": amenitiesState?.safeAmenities?.["Safe Vault"] || false,
     }),
-    [savedAmenities]
+    [amenitiesState?.safeAmenities]
   );
 
   const initialState: MainState = {

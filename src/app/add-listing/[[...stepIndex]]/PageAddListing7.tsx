@@ -396,6 +396,7 @@ const PageAddListing7: FC<PageAddListing7Props> = () => {
         <div className="flex flex-col items-center gap-4">
           <Check className="w-10 h-10 text-emerald-600" />
           {!isMultiple ? (
+            // eslint-disable-next-line @next/next/no-img-element -- blob/upload preview URL
             <img
               src={imageUrl}
               alt="Uploaded"
@@ -405,6 +406,7 @@ const PageAddListing7: FC<PageAddListing7Props> = () => {
             <div className="flex flex-wrap gap-3">
               {images.map((img, i) => (
                 img && (
+                  // eslint-disable-next-line @next/next/no-img-element -- blob/upload preview URL
                   <img
                     key={i}
                     src={img}

@@ -604,7 +604,7 @@ const AboutPage: React.FC = () => {
                     supportive community.
                   </p>
                   <p className="text-xl text-gray-600 leading-relaxed">
-                    Our vision extends beyond transactions – we're creating a
+                    Our vision extends beyond transactions – we&apos;re creating a
                     global community of hosts and guests who share meaningful
                     experiences, respect local cultures, and contribute to
                     sustainable tourism practices worldwide.
@@ -677,7 +677,7 @@ const AboutPage: React.FC = () => {
               <span className="text-sky-600">Journey</span>
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              From a small startup to a global platform - here's how we've grown
+              From a small startup to a global platform - here&apos;s how we&apos;ve grown
             </p>
           </div>
           <div className="space-y-16">
@@ -721,7 +721,7 @@ const AboutPage: React.FC = () => {
                 Why Choose HolidaysEra?
               </h2>
               <p className="text-lg text-sky-100 max-w-2xl mx-auto leading-relaxed">
-                We're not just a booking platform – we're your partner in
+                We&apos;re not just a booking platform – we&apos;re your partner in
                 creating unforgettable vacation experiences with personalized
                 service, verified properties, and unwavering commitment to your
                 satisfaction.
@@ -773,8 +773,8 @@ const AboutPage: React.FC = () => {
               <span className="text-sky-600">Community?</span>
             </h2>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto mb-10">
-              Whether you're looking to list your property or find your perfect
-              vacation rental, we're here to help you every step of the way.
+              Whether you&apos;re looking to list your property or find your perfect
+              vacation rental, we&apos;re here to help you every step of the way.
             </p>
             <div className="flex flex-wrap justify-center gap-4">
               <Link

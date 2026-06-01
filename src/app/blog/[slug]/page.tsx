@@ -63,6 +63,7 @@ export default function BlogDetailPage() {
           {/* Featured Image */}
           {blog.image && (
             <div className="mb-12 rounded-2xl overflow-hidden shadow-lg">
+              {/* eslint-disable-next-line @next/next/no-img-element -- static blog asset path */}
               <img
                 src={blog.image}
                 alt={blog.title}

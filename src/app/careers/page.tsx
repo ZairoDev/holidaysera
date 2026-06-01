@@ -320,7 +320,7 @@ const CareersPage: React.FC = () => {
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 rounded-full border border-blue-200 mb-6">
             <span className="w-2 h-2 bg-blue-600 rounded-full animate-pulse" />
             <span className="text-sm font-semibold text-blue-700">
-              We're Hiring! Join Our Growing Team
+              We&apos;re Hiring! Join Our Growing Team
             </span>
           </div>
           <h1 className="text-6xl md:text-7xl font-black text-gray-900 mb-6 leading-tight">
@@ -330,7 +330,7 @@ const CareersPage: React.FC = () => {
             </span>
           </h1>
           <p className="text-2xl text-gray-600 max-w-4xl mx-auto leading-relaxed mb-12">
-            Join a passionate team revolutionizing vacation rentals. We're
+            Join a passionate team revolutionizing vacation rentals. We&apos;re
             looking for talented individuals who want to make a real impact.
           </p>
 
@@ -590,11 +590,11 @@ const CareersPage: React.FC = () => {
         <div className="max-w-7xl mx-auto">
           <div className="bg-white rounded-3xl shadow-2xl p-16 text-center">
             <h2 className="text-5xl font-black text-gray-900 mb-6">
-              Don't See the Right Role?
+              Don&apos;t See the Right Role?
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-10">
-              We're always looking for talented people. Send us your resume and
-              let us know how you'd like to contribute to Holiday Sera.
+              We&apos;re always looking for talented people. Send us your resume and
+              let us know how you&apos;d like to contribute to Holiday Sera.
             </p>
             <div className="flex flex-wrap justify-center gap-4">
               <button className="px-10 py-5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold text-lg shadow-xl hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-300">
@@ -605,7 +605,7 @@ const CareersPage: React.FC = () => {
               </button>
             </div>
             <p className="text-sm text-gray-500 mt-8">
-              We're an equal opportunity employer committed to diversity and
+              We&apos;re an equal opportunity employer committed to diversity and
               inclusion
             </p>
           </div>

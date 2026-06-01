@@ -204,13 +204,13 @@ function BookingConfirmPageContent() {
 
           <Card className="mb-6 bg-sky-50 p-6">
             <h2 className="mb-3 text-lg font-semibold text-gray-900">
-              What's Next?
+              What&apos;s Next?
             </h2>
             <div className="space-y-2 text-sm text-gray-700">
-              <p>✓ You'll receive a confirmation email shortly</p>
+              <p>✓ You&apos;ll receive a confirmation email shortly</p>
               <p>✓ The host will contact you within 24 hours</p>
               <p>✓ Check-in details will be sent 3 days before arrival</p>
-              <p>✓ Don't forget to review the house rules</p>
+              <p>✓ Don&apos;t forget to review the house rules</p>
             </div>
           </Card>
 

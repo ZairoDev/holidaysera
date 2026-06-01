@@ -381,5 +381,12 @@ export function useNotificationSocketListener(isAuthenticated: boolean = false) 
       }
       listenersSetup.current = false;
     };
-  }, [addNotification, notificationsQuery.data, setNotifications]);
+  }, [
+    addNotification,
+    notificationsQuery.data,
+    setNotifications,
+    markAllAsReadMutation,
+    markAsReadMutation,
+    removeNotificationMutation,
+  ]);
 }

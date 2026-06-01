@@ -145,7 +145,7 @@ const PageAddListing3: FC<PageAddListing3Props> = () => {
           Tell us about your spaces
         </h2>
         <p className="text-lg text-gray-600 dark:text-gray-300">
-          Add details about each {myArray.length > 1 ? "portion" : "space"} you're renting out
+          Add details about each {myArray.length > 1 ? "portion" : "space"} you&apos;re renting out
         </p>
       </div>
 

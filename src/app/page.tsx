@@ -8,10 +8,19 @@ import { Property } from "@/lib/type";
 import { appRouter } from "@/server/routers/_app";
 import { createContext } from "@/server/trpc";
 
+/** Featured listings come from MongoDB — do not prerender at build time (CI has no DB during collect). */
+export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const caller = appRouter.createCaller(await createContext({req: new Request("http://localhost:3001")}));
-  const featured:Property[] = await caller.property.getFeatured();
+  let featured: Property[] = [];
+  try {
+    const caller = appRouter.createCaller(
+      await createContext({ req: new Request("http://localhost:3001") })
+    );
+    featured = await caller.property.getFeatured();
+  } catch (error) {
+    console.error("Homepage: failed to load featured properties", error);
+  }
   // console.log("featured");
   return (
     <div className="min-h-screen">

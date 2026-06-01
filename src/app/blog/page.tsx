@@ -13,6 +13,7 @@ function BlogCard({ blog }: { blog: BlogPost }) {
           {/* Image */}
           <div className="relative h-64 w-full overflow-hidden bg-gray-200">
             {blog.image ? (
+              // eslint-disable-next-line @next/next/no-img-element -- static blog asset path
               <img
                 src={blog.image}
                 alt={blog.title}

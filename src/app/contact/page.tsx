@@ -185,7 +185,7 @@ const ContactPage: React.FC = () => {
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-sky-50 rounded-full border border-sky-200 mb-6">
             <span className="w-2 h-2 bg-sky-600 rounded-full" />
             <span className="text-sm font-semibold text-sky-600">
-              We're Here to Help 24/7
+              We&apos;re Here to Help 24/7
             </span>
           </div>
           <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-gray-900 mb-6 leading-tight">

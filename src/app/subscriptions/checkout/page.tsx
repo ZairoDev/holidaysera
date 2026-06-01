@@ -289,7 +289,7 @@ function CheckoutContent() {
         setCouponLoading(false);
       }
     },
-    [listingCount, plan, validateCouponMutation.mutateAsync],
+    [listingCount, plan, validateCouponMutation],
   );
 
   const handleApplyCoupon = useCallback(async () => {
