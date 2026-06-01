@@ -8,22 +8,7 @@ import { emitToOwner, emitToTraveller, getSocketIO } from "../socket";
 import Notifications from "@/models/notification";
 import crypto from "crypto";
 
-// Lazy require Razorpay to avoid startup errors when package isn't installed
-let Razorpay: any = null;
-try {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  Razorpay = require("razorpay");
-} catch (err) {
-  Razorpay = null;
-}
-
-function getRazorpayInstance() {
-  if (!Razorpay) throw new Error("Razorpay package not installed. Run 'npm install razorpay'");
-  const key_id = process.env.RAZORPAY_API_KEY;
-  const key_secret = process.env.RAZORPAY_API_SECRET;
-  if (!key_id || !key_secret) throw new Error("Razorpay API keys not configured in environment variables");
-  return new Razorpay({ key_id, key_secret });
-}
+import { getRazorpayInstance } from "@/server/utils/razorpay";
 
 export const bookingRouter = router({
   // Create a booking request (traveller initiates)
@@ -388,7 +373,7 @@ export const bookingRouter = router({
           amount,
           currency: "EUR",
           receipt: String(booking._id),
-          payment_capture: 1,
+          payment_capture: true,
         });
 
         return {

@@ -1,15 +1,10 @@
 import { z } from "zod";
 import { protectedProcedure, publicProcedure, router, TRPCError } from "../trpc";
-import Razorpay from "razorpay";
 import crypto from "crypto";
 import Coupon from "@/models/coupon";
 import Subscription from "@/models/subscription";
 import Users from "@/models/users";
-
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_API_KEY!,
-  key_secret: process.env.RAZORPAY_API_SECRET!,
-});
+import { getRazorpayInstance } from "@/server/utils/razorpay";
 
 // Plan durations in months
 const planDurations: Record<string, number> = {
@@ -597,7 +592,7 @@ export const subscriptionRouter = router({
       };
 
       try {
-        const order = await razorpay.orders.create(options);
+        const order = await getRazorpayInstance().orders.create(options);
         await createPendingSubscription({
           userId: String(userId),
           userEmail: user.email ?? "",
