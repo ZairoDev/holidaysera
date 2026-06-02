@@ -2,19 +2,13 @@
 
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, MapPin, Users, Loader2, X, Star, Phone, Globe, ExternalLink, Clock } from 'lucide-react';
+import { Search, MapPin, Users, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useSearchStore } from '@/lib/store';
 import { DateRangePicker } from '@/components/date-range-picker';
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import { trpc } from '@/trpc/client';
 
 interface SearchBarProps {
@@ -28,29 +22,6 @@ interface AutocompletePrediction {
     main_text: string;
     secondary_text: string;
   };
-}
-
-interface PlaceDetails {
-  name: string;
-  rating?: number;
-  address: string;
-  phone?: string;
-  website?: string;
-  mapUrl?: string;
-  types: string[];
-  openingHours: string[];
-  isOpen?: boolean;
-  photos: Array<{
-    photoReference: string;
-    width: number;
-    height: number;
-    url: string;
-  }>;
-  location?: {
-    lat: number;
-    lng: number;
-  };
-  addressComponents: any[];
 }
 
 interface TopLocation {
@@ -74,10 +45,7 @@ export function SearchBar({ variant = 'compact' }: SearchBarProps) {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [showTopLocations, setShowTopLocations] = useState(false);
   const [isInputFocused, setIsInputFocused] = useState(false);
-  const [selectedPlace, setSelectedPlace] = useState<PlaceDetails | null>(null);
-  const [isDetailsLoading, setIsDetailsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showDetailsModal, setShowDetailsModal] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -157,7 +125,19 @@ export function SearchBar({ variant = 'compact' }: SearchBarProps) {
     }, 300);
   }, [setLocation, searchAutocomplete, isInputFocused]);
 
-  // Handle top location click
+  // Navigate to the results page for a given location string.
+  const goToResults = useCallback(
+    (rawLocation: string) => {
+      const trimmed = rawLocation.trim();
+      const params = new URLSearchParams();
+      if (trimmed) params.set("location", trimmed);
+      const query = params.toString();
+      router.push(query ? `/properties?${query}` : "/properties");
+    },
+    [router]
+  );
+
+  // Handle top location click — fill input and navigate to results.
   const handleTopLocationClick = useCallback((topLocation: TopLocation) => {
     const label = [topLocation.city, topLocation.country]
       .filter(Boolean)
@@ -165,64 +145,35 @@ export function SearchBar({ variant = 'compact' }: SearchBarProps) {
     setLocation(label);
     setShowTopLocations(false);
     setShowSuggestions(false);
-  }, [setLocation]);
+    setIsInputFocused(false);
+    goToResults(label);
+  }, [setLocation, goToResults]);
 
+  // Build the exact, canonical text Google shows for a prediction.
+  // We use `description` (e.g. "Lefkada, Greece") so the selected text never
+  // drifts/changes spelling — no follow-up Place Details lookup is needed.
   const getSearchLocationLabel = useCallback(
     (prediction: AutocompletePrediction): string => {
+      const description = prediction.description?.trim();
+      if (description) return description;
       const main = prediction.structured_formatting?.main_text?.trim();
       const secondary = prediction.structured_formatting?.secondary_text?.trim();
       if (main && secondary) return `${main}, ${secondary}`;
-      return prediction.description.trim();
+      return main || "";
     },
     []
   );
 
-  // Fetch place details
-  const fetchPlaceDetails = useCallback(async (placeId: string) => {
-    setIsDetailsLoading(true);
-    setError(null);
-    setShowSuggestions(false);
-
-    try {
-      const response = await fetch(`/api/places/details?place_id=${encodeURIComponent(placeId)}`);
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to fetch place details');
-      }
-
-      setSelectedPlace(data);
-      setShowDetailsModal(true);
-
-      const components = Array.isArray(data.addressComponents)
-        ? data.addressComponents
-        : [];
-      const getComponent = (...types: string[]) => {
-        const match = components.find((c: { types?: string[] }) =>
-          types.some((t) => c.types?.includes(t))
-        );
-        return typeof match?.long_name === "string" ? match.long_name : "";
-      };
-      const city =
-        getComponent("locality", "postal_town", "administrative_area_level_2") ||
-        "";
-      const state = getComponent("administrative_area_level_1");
-      const country = getComponent("country");
-      const locationLabel = [city, state, country].filter(Boolean).join(", ");
-      setLocation(locationLabel || data.address || data.name || "");
-    } catch (err) {
-      console.error('Place details error:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load place details');
-    } finally {
-      setIsDetailsLoading(false);
-    }
-  }, [setLocation]);
-
-  // Handle suggestion click — set searchable location text immediately
+  // Handle suggestion click — set the canonical text and go straight to results.
+  // No Place Details fetch (that was overwriting the chosen text and racing).
   const handleSuggestionClick = (prediction: AutocompletePrediction) => {
-    setLocation(getSearchLocationLabel(prediction));
+    const label = getSearchLocationLabel(prediction);
+    setLocation(label);
+    setAutocompleteResults([]);
     setShowSuggestions(false);
-    fetchPlaceDetails(prediction.place_id);
+    setShowTopLocations(false);
+    setIsInputFocused(false);
+    goToResults(label);
   };
 
   // Close suggestions when clicking outside
@@ -303,13 +254,7 @@ export function SearchBar({ variant = 'compact' }: SearchBarProps) {
   }, []);
 
   const handleSearch = () => {
-    const params = new URLSearchParams();
-    const trimmedLocation = location.trim();
-    if (trimmedLocation) {
-      params.set("location", trimmedLocation);
-    }
-    const query = params.toString();
-    router.push(query ? `/properties?${query}` : "/properties");
+    goToResults(location);
   };
 
   if (variant === 'hero') {

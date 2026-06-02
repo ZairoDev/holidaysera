@@ -67,30 +67,61 @@ function buildPublicPropertyFilter(extraFilter: Record<string, any> = {}): Recor
   };
 }
 
+// Common country name/abbreviation aliases so "USA" also matches "United States", etc.
+const COUNTRY_ALIASES: Record<string, string[]> = {
+  usa: ["United States", "USA", "US"],
+  us: ["United States", "USA", "US"],
+  "united states": ["United States", "USA", "US"],
+  "united states of america": ["United States", "USA", "US"],
+  uk: ["United Kingdom", "UK", "Britain", "England"],
+  "united kingdom": ["United Kingdom", "UK", "Britain"],
+  uae: ["United Arab Emirates", "UAE"],
+  "united arab emirates": ["United Arab Emirates", "UAE"],
+};
+
+function expandLocationToken(token: string): string[] {
+  const key = token.trim().toLowerCase();
+  return COUNTRY_ALIASES[key] ?? [token];
+}
+
 /** One search token must match at least one location field (city, state, country, etc.). */
 function buildLocationTokenClause(token: string): Record<string, unknown> {
-  const regex = new RegExp(escapeRegex(token), "i");
-  return {
-    $or: [
+  const variants = expandLocationToken(token);
+  const orClauses = variants.flatMap((variant) => {
+    const regex = new RegExp(escapeRegex(variant), "i");
+    return [
       { city: regex },
       { state: regex },
       { country: regex },
       { street: regex },
       { placeName: regex },
       { propertyName: regex },
-    ],
-  };
+    ];
+  });
+  return { $or: orClauses };
 }
 
 /**
- * Comma-separated queries (e.g. "Lefkada, Greece") require every token to match.
- * Previously any token matching anywhere showed the listing, so "Greece" alone
- * returned all properties in Greece.
+ * Build location match clauses from a query like "Lefkada, Greece".
+ *
+ * We require the FIRST token (most specific, usually the city) and, when there
+ * are multiple parts, the LAST token (usually the country) to match. Middle
+ * tokens (e.g. "Lefkada Regional Unit") are intentionally skipped — Google often
+ * formats them in ways that never match a stored field, which previously made
+ * valid searches return zero results. This keeps city precision (so "Lefkada,
+ * Greece" does NOT return all of Greece) while staying robust.
  */
 function buildLocationAndClauses(location: string): Record<string, unknown>[] {
-  return tokenizeLocationInput(location).map((token) =>
-    buildLocationTokenClause(token)
-  );
+  const tokens = tokenizeLocationInput(location);
+  if (tokens.length === 0) return [];
+  if (tokens.length === 1) return [buildLocationTokenClause(tokens[0])];
+
+  const required = [tokens[0]];
+  const last = tokens[tokens.length - 1];
+  if (last.toLowerCase() !== tokens[0].toLowerCase()) {
+    required.push(last);
+  }
+  return required.map((token) => buildLocationTokenClause(token));
 }
 
 /** Base filter for public listings; location is ANDed without clobbering approval rules. */
