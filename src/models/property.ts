@@ -128,6 +128,13 @@ const PropertySchema = new Schema(
   { timestamps: true }
 );
 
+// Indexes for public search & homepage queries
+// - Public filter always includes isLive + approvalStatus + rentalType
+// - Top locations groups by city/country
+PropertySchema.index({ isLive: 1, approvalStatus: 1, rentalType: 1 });
+PropertySchema.index({ isLive: 1, approvalStatus: 1, rentalType: 1, city: 1, country: 1 });
+PropertySchema.index({ isLive: 1, approvalStatus: 1, rentalType: 1, basePrice: 1 });
+
 // ✅ FIXED MODEL NAME
 export const Properties =
   mongoose.models.Property || mongoose.model("Property", PropertySchema);

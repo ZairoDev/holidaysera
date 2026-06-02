@@ -4,16 +4,50 @@ import { Property } from "@/lib/type";
 import { PropertyCard } from "../property-card";
 import { ArrowUpRight } from "lucide-react";
 import Link from "next/link";
+import { trpc } from "@/trpc/client";
 
 
 interface FeaturedPropertiesProps {
-  properties: Property[];
+  /** Optional preloaded featured properties (SSR). */
+  properties?: Property[];
 }
 
 export function FeaturedProperties({ properties }: FeaturedPropertiesProps) {
-  // console.log("FeaturedProperties received:", properties);
+  const featuredQuery = trpc.property.getFeatured.useQuery(undefined, {
+    // If SSR props exist, keep UI stable and avoid a loading flash.
+    initialData: properties && properties.length > 0 ? properties : undefined,
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+  });
 
-  if (!properties || properties.length === 0) {
+  const items = featuredQuery.data ?? properties ?? [];
+
+  if (featuredQuery.isLoading && items.length === 0) {
+    return (
+      <section className="pt-8 px-4 bg-gray-50">
+        <div className="container mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+              Featured Properties
+            </h2>
+            <p className="text-gray-600 max-w-2xl mx-auto">
+              Loading featured properties…
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div
+                key={i}
+                className="h-80 rounded-xl border bg-white animate-pulse"
+              />
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (!items || items.length === 0) {
     return (
       <section className="py-8 px-4">
         <div className="container mx-auto">
@@ -41,7 +75,7 @@ export function FeaturedProperties({ properties }: FeaturedPropertiesProps) {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {properties.map((property) => (
+          {items.map((property) => (
             <PropertyCard key={property._id} property={property} />
           ))}
         </div>

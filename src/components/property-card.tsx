@@ -8,6 +8,7 @@ import { motion } from "framer-motion";
 import { Heart, MapPin, Star, Users, Bath, Bed, Crown, ChevronLeft, ChevronRight } from "lucide-react";
 import { trpc } from "@/trpc/client";
 import { Property } from "@/lib/type";
+import { resolvePropertyImageUrls } from "@/lib/image-urls";
 import { toast } from "sonner";
 import { useUserStore } from "@/lib/store";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -35,7 +36,6 @@ export function PropertyCard({ property }: PropertyCardProps) {
   });
 
   const [imageIndex, setImageIndex] = useState(0);
-  const [imageError, setImageError] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [isManuallyNavigating, setIsManuallyNavigating] = useState(false);
 
@@ -68,16 +68,10 @@ export function PropertyCard({ property }: PropertyCardProps) {
     return generateRandomRating();
   }, [property.reviews, property._id]);
 
-  const pictureUrls =
-    property.propertyPictureUrls
-      ?.filter(Boolean)
-      .filter((url) => typeof url === "string" && url.trim() !== "") || [];
-  const fallbackImages = property.propertyImages || [];
-  const allImages = pictureUrls.length ? pictureUrls : fallbackImages;
-  const activeImage =
-    !imageError && allImages.length
-      ? allImages[imageIndex]
-      : "/placeholder.jpg";
+  const allImages = resolvePropertyImageUrls(
+    property.propertyPictureUrls,
+    property.propertyImages
+  );
 
   // Auto-slide images on hover (only if not manually navigating)
   React.useEffect(() => {
@@ -123,7 +117,6 @@ export function PropertyCard({ property }: PropertyCardProps) {
     e.stopPropagation();
     setIsManuallyNavigating(true);
     setImageIndex(index);
-    setImageError(false);
   };
 
   const handleFavoriteClick = (e: React.MouseEvent) => {
@@ -192,10 +185,8 @@ export function PropertyCard({ property }: PropertyCardProps) {
                       src={image}
                       alt={`${property.propertyName || "Property"} - Image ${idx + 1}`}
                       fill
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                       unoptimized
-                      onError={() => {
-                        if (idx === imageIndex) setImageError(true);
-                      }}
                       className="object-cover"
                     />
                   </motion.div>

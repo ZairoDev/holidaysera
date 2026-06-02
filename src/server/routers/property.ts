@@ -10,6 +10,7 @@ import {
   normalizeRentalType,
   resolveListingPrices,
 } from "@/lib/listing-pricing";
+import { filterValidImageUrls } from "@/lib/image-urls";
 
 const APPROVAL_ALLOWED_ROLES = new Set(["SuperAdmin", "HAdmin", "HeadAdmin"]);
 
@@ -253,9 +254,24 @@ export function mapPropertyDocument(doc: any) {
   };
 }
 
+type CacheEntry<T> = { value: T; expiresAt: number };
+
+const FEATURED_TTL_MS = 60_000; // 1 minute
+const TOP_LOCATIONS_TTL_MS = 5 * 60_000; // 5 minutes
+
+type TopLocation = { city: string; country: string; propertyCount: number };
+
+let featuredCache: CacheEntry<Property[]> | null = null;
+let topLocationsCache: CacheEntry<TopLocation[]> | null = null;
+
 export const propertyRouter = router({
   getFeatured: publicProcedure.query(async () => {
     try {
+      const now = Date.now();
+      if (featuredCache && featuredCache.expiresAt > now) {
+        return featuredCache.value;
+      }
+
       // Fetch only necessary fields for PropertyCard
       const featured = await Properties.find(
         buildPublicPropertyFilter({ rentalType: "Short Term" }),
@@ -288,8 +304,8 @@ export const propertyRouter = router({
         propertyName: doc.propertyName ?? "Untitled Property",
         city: doc.city ?? "",
         country: doc.country ?? "",
-        propertyImages: doc.propertyImages ?? [],
-        propertyPictureUrls: doc.propertyPictureUrls ?? [],
+        propertyImages: filterValidImageUrls(doc.propertyImages),
+        propertyPictureUrls: filterValidImageUrls(doc.propertyPictureUrls),
         basePrice: doc.basePrice ?? 0,
         guests: doc.guests ?? 0,
         bedrooms: doc.bedrooms ?? 0,
@@ -297,7 +313,7 @@ export const propertyRouter = router({
         reviews: doc.reviews ?? null,
       }));
 
-
+      featuredCache = { value: serializedProperties, expiresAt: now + FEATURED_TTL_MS };
       return serializedProperties;
     } catch (error) {
       console.error("Error fetching featured properties:", error);
@@ -1152,6 +1168,11 @@ export const propertyRouter = router({
     )
     .query(async ({ input, ctx }) => {
       try {
+        const now = Date.now();
+        if (topLocationsCache && topLocationsCache.expiresAt > now) {
+          return topLocationsCache.value.slice(0, input.limit);
+        }
+
         const { limit } = input;
 
         // Aggregate properties by city and country to get top locations
@@ -1188,6 +1209,7 @@ export const propertyRouter = router({
           },
         ]);
 
+        topLocationsCache = { value: topLocations, expiresAt: now + TOP_LOCATIONS_TTL_MS };
         return topLocations;
       } catch (error) {
         console.error("Error fetching top locations:", error);

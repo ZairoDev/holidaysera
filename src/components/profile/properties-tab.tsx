@@ -131,11 +131,12 @@ export function PropertiesTab({ isOwner }: PropertiesTabProps) {
                   <div className="flex flex-col sm:flex-row gap-4 p-4 sm:p-5">
                     {/* Property Image */}
                     <div className="relative h-56 sm:h-40 w-full sm:w-64 flex-shrink-0 overflow-hidden rounded-lg">
-                      {property.propertyCoverFileUrl ? (
+                      {property.propertyCoverFileUrl?.trim() ? (
                         <Image
                           src={property.propertyCoverFileUrl}
                           alt={property.propertyName}
                           fill
+                          sizes="(max-width: 640px) 100vw, 256px"
                           className="object-cover transition-transform duration-300 group-hover:scale-110"
                         />
                       ) : (

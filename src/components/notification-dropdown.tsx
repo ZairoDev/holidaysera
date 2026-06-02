@@ -4,68 +4,72 @@ import { useState, useRef, useEffect } from "react";
 import { Bell, X, Trash2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNotificationCenter } from "@/hooks/useNotificationCenter";
+import { trpc } from "@/trpc/client";
 import { Button } from "@/components/ui/button";
 
 export function NotificationDropdown() {
   const [isOpen, setIsOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const { notifications, unreadCount, removeNotification, markAsRead, clearAll } = useNotificationCenter();
 
-  // Ensure component only renders after hydration
+  const {
+    notifications,
+    unreadCount,
+    removeNotification,
+    markAsRead,
+    markAllRead,
+    clearAll,
+  } = useNotificationCenter();
+
+  // tRPC mutations for server-side persistence (fire-and-forget – local state
+  // is updated immediately; server failure is non-fatal)
+  const markAsReadMutation = trpc.notifications.markAsRead.useMutation();
+  const removeMutation = trpc.notifications.removeNotification.useMutation();
+  const markAllMutation = trpc.notifications.markAllAsRead.useMutation();
+
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
-  // console.log("NotificationDropdown: notifications=", notifications, "unreadCount=", unreadCount);
-
-  // Close dropdown when clicking outside
   useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+    if (!isOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setIsOpen(false);
       }
-    }
-
-    if (isOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-      return () => document.removeEventListener("mousedown", handleClickOutside);
-    }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isOpen]);
+
+  const handleMarkAsRead = (id: string) => {
+    markAsRead(id);
+    markAsReadMutation.mutate({ id });
+  };
+
+  const handleRemove = (id: string) => {
+    removeNotification(id);
+    removeMutation.mutate({ id });
+  };
+
+  const handleClearAll = () => {
+    markAllRead();
+    markAllMutation.mutate();
+  };
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
-      case "booking-request":
-        return "🎉";
-      case "booking-approved":
-        return "✅";
-      case "booking-rejected":
-        return "❌";
-      case "payment-received":
-        return "💰";
-      default:
-        return "📢";
-    }
-  };
-
-  const getNotificationColor = (type: string) => {
-    switch (type) {
-      case "booking-request":
-        return "bg-blue-50 border-blue-200";
-      case "booking-approved":
-        return "bg-green-50 border-green-200";
-      case "booking-rejected":
-        return "bg-red-50 border-red-200";
-      case "payment-received":
-        return "bg-emerald-50 border-emerald-200";
-      default:
-        return "bg-gray-50 border-gray-200";
+      case "booking-request": return "🎉";
+      case "booking-approved": return "✅";
+      case "booking-rejected": return "❌";
+      case "payment-received": return "💰";
+      default: return "📢";
     }
   };
 
   return (
     <div className="relative" ref={dropdownRef}>
-      {/* Bell Icon Button */}
+      {/* Bell Icon */}
       <motion.button
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.95 }}
@@ -74,9 +78,7 @@ export function NotificationDropdown() {
         aria-label="Notifications"
       >
         <Bell className="h-5 w-5 text-gray-700" />
-        
-        {/* Unread Badge */}
-        {unreadCount > 0 && (
+        {isMounted && unreadCount > 0 && (
           <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
@@ -87,7 +89,7 @@ export function NotificationDropdown() {
         )}
       </motion.button>
 
-      {/* Dropdown Menu */}
+      {/* Dropdown */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -104,7 +106,7 @@ export function NotificationDropdown() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={clearAll}
+                  onClick={handleClearAll}
                   className="text-xs hover:bg-red-50"
                 >
                   <Trash2 className="h-4 w-4 mr-1" />
@@ -113,7 +115,7 @@ export function NotificationDropdown() {
               )}
             </div>
 
-            {/* Notifications List */}
+            {/* List */}
             <div className="overflow-y-auto flex-1">
               {notifications.length === 0 ? (
                 <div className="p-8 text-center text-gray-500">
@@ -133,17 +135,14 @@ export function NotificationDropdown() {
                       }`}
                       onClick={() => {
                         if (!notification.read) {
-                          markAsRead(notification.id);
+                          handleMarkAsRead(notification.id);
                         }
                       }}
                     >
                       <div className="flex gap-3">
-                        {/* Icon */}
                         <div className="text-xl flex-shrink-0 mt-1">
                           {getNotificationIcon(notification.type)}
                         </div>
-
-                        {/* Content */}
                         <div className="flex-1 min-w-0">
                           <p className="font-semibold text-sm text-gray-900">
                             {notification.message}
@@ -158,8 +157,6 @@ export function NotificationDropdown() {
                             })}
                           </p>
                         </div>
-
-                        {/* Unread Badge + Close Button */}
                         <div className="flex gap-2 flex-shrink-0">
                           {!notification.read && (
                             <div className="w-2 h-2 bg-red-500 rounded-full mt-2" />
@@ -167,7 +164,7 @@ export function NotificationDropdown() {
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              removeNotification(notification.id);
+                              handleRemove(notification.id);
                             }}
                             className="p-1 hover:bg-gray-200 rounded transition-colors text-gray-400 hover:text-gray-600"
                             aria-label="Remove notification"

@@ -2,12 +2,13 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-
 import { useEffect, useRef } from "react";
 import { socket } from "@/lib/socket";
 import { trpc } from "@/trpc/client";
 
-interface Notification {
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+export interface Notification {
   id: string;
   type:
     | "booking-request"
@@ -24,57 +25,44 @@ interface Notification {
 
 interface NotificationStore {
   notifications: Notification[];
-  addNotification: (notification: Partial<Notification> & { type: Notification["type"] }) => void;
+  unreadCount: number;
+  addNotification: (
+    notification: Partial<Notification> & { type: Notification["type"] }
+  ) => void;
   removeNotification: (id: string) => void;
   markAsRead: (id: string) => void;
+  markAllRead: () => void;
   clearAll: () => void;
-  unreadCount: number;
   setNotifications: (notes: Notification[]) => void;
 }
 
 interface BookingRequestPayload {
   bookingId: string;
-  propertyId: string;
   propertyName: string;
-  travellerId: string;
   travelerName: string;
-  startDate: string;
-  endDate: string;
-  guests: number;
-  price: number;
-  serviceCharge: number;
-  timestamp: Date;
   notificationId?: string;
 }
 
 interface BookingApprovedPayload {
   bookingId: string;
-  propertyId: string;
   propertyName: string;
-  serviceCharge: number;
-  totalPrice: number;
-  message: string;
-  timestamp: Date;
   notificationId?: string;
 }
 
 interface BookingRejectedPayload {
   bookingId: string;
-  propertyName: string;
+  propertyName?: string;
   reason: string;
-  timestamp: Date;
   notificationId?: string;
 }
 
 interface PaymentReceivedPayload {
   bookingId: string;
-  propertyId: string;
-  travellerId: string;
   amount: number;
-  transactionId: string;
-  timestamp: Date;
   notificationId?: string;
 }
+
+// ─── Store ────────────────────────────────────────────────────────────────────
 
 export const useNotificationCenter = create<NotificationStore>()(
   persist(
@@ -99,62 +87,50 @@ export const useNotificationCenter = create<NotificationStore>()(
         };
 
         set((state) => {
-          // Prevent duplicate by ID
           if (state.notifications.some((n) => n.id === newNotification.id)) {
-            console.warn("[Notifications] Duplicate (id) prevented:", newNotification.id);
             return state;
           }
 
-          // Prevent duplicate notifications for same booking within 1 second
           const isSimilar = state.notifications.some(
-            (n) => n.bookingId === newNotification.bookingId &&
-                   n.type === newNotification.type &&
-                   Date.now() - new Date(n.timestamp).getTime() < 1000
+            (n) =>
+              n.bookingId === newNotification.bookingId &&
+              n.type === newNotification.type &&
+              Date.now() - new Date(n.timestamp).getTime() < 1000
           );
-
-          if (isSimilar) {
-            console.warn("[Notifications] Similar notification prevented:", newNotification);
-            return state;
-          }
+          if (isSimilar) return state;
 
           return {
             notifications: [newNotification, ...state.notifications],
             unreadCount: read ? state.unreadCount : state.unreadCount + 1,
           };
         });
-
       },
 
       setNotifications: (notes) => {
         set((state) => {
           const existingById = new Map(state.notifications.map((n) => [n.id, n]));
           for (const n of notes) {
-            if (!existingById.has(n.id)) {
-              existingById.set(n.id, n);
-            }
+            if (!existingById.has(n.id)) existingById.set(n.id, n);
           }
-
-          const merged = Array.from(existingById.values()).sort((a, b) =>
-            new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+          const merged = Array.from(existingById.values()).sort(
+            (a, b) =>
+              new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
           );
-
-          const unread = merged.filter((m) => !m.read).length;
-
           return {
             notifications: merged,
-            unreadCount: unread,
+            unreadCount: merged.filter((m) => !m.read).length,
           };
         });
       },
 
       removeNotification: (id) => {
         set((state) => {
-          const notification = state.notifications.find((n) => n.id === id);
+          const n = state.notifications.find((x) => x.id === id);
           return {
-            notifications: state.notifications.filter((n) => n.id !== id),
+            notifications: state.notifications.filter((x) => x.id !== id),
             unreadCount:
-              notification && !notification.read
-                ? state.unreadCount - 1
+              n && !n.read
+                ? Math.max(0, state.unreadCount - 1)
                 : state.unreadCount,
           };
         });
@@ -162,23 +138,26 @@ export const useNotificationCenter = create<NotificationStore>()(
 
       markAsRead: (id) => {
         set((state) => {
-          const notification = state.notifications.find((n) => n.id === id);
-          if (!notification || notification.read) return state;
-
+          const n = state.notifications.find((x) => x.id === id);
+          if (!n || n.read) return state;
           return {
-            notifications: state.notifications.map((n) =>
-              n.id === id ? { ...n, read: true } : n
+            notifications: state.notifications.map((x) =>
+              x.id === id ? { ...x, read: true } : x
             ),
-            unreadCount: state.unreadCount - 1,
+            unreadCount: Math.max(0, state.unreadCount - 1),
           };
         });
       },
 
-      clearAll: () => {
-        set({
-          notifications: [],
+      markAllRead: () => {
+        set((state) => ({
+          notifications: state.notifications.map((n) => ({ ...n, read: true })),
           unreadCount: 0,
-        });
+        }));
+      },
+
+      clearAll: () => {
+        set({ notifications: [], unreadCount: 0 });
       },
     }),
     {
@@ -191,35 +170,23 @@ export const useNotificationCenter = create<NotificationStore>()(
   )
 );
 
-/*******************
- * 🚀 SOCKET LISTENERS FOR NOTIFICATIONS
- ********************/
+// ─── Socket listener hook ────────────────────────────────────────────────────
+
 export function useNotificationSocketListener(isAuthenticated: boolean = false) {
   const { addNotification, setNotifications } = useNotificationCenter();
-  const notificationsQuery = trpc.notifications.getNotifications.useQuery({}, { enabled: isAuthenticated });
-  const listenersSetup = useRef(false);
-  const handlersRef = useRef<{
-    bookingRequest: (data: BookingRequestPayload) => void;
-    bookingApproved: (data: BookingApprovedPayload) => void;
-    bookingRejected: (data: BookingRejectedPayload) => void;
-    paymentReceived: (data: PaymentReceivedPayload) => void;
-  } | null>(null);
 
-  // TRPC mutations must be called at the top-level of this custom hook
-  const markAsReadMutation = trpc.notifications.markAsRead.useMutation();
-  const removeNotificationMutation = trpc.notifications.removeNotification.useMutation();
-  const markAllAsReadMutation = trpc.notifications.markAllAsRead.useMutation();
+  // Fetch server-persisted notifications once authenticated
+  const notificationsQuery = trpc.notifications.getNotifications.useQuery(
+    {},
+    { enabled: isAuthenticated, staleTime: 60_000 }
+  );
 
+  // Sync server notifications into local store
   useEffect(() => {
-    // Skip if already set up or socket not connected
-    if (listenersSetup.current || !socket.connected) {
-      return;
-    }
-
-    // Load persisted notifications from server on first mount
-    if (notificationsQuery.data && notificationsQuery.data.items) {
-      try {
-        const serverNotes = notificationsQuery.data.items.map((i: any) => ({
+    if (!notificationsQuery.data?.items) return;
+    try {
+      const serverNotes: Notification[] = notificationsQuery.data.items.map(
+        (i: any) => ({
           id: i.id,
           type: i.type,
           message: i.data?.message ?? "",
@@ -228,98 +195,27 @@ export function useNotificationSocketListener(isAuthenticated: boolean = false) 
           read: !!i.read,
           bookingId: i.bookingId,
           propertyName: i.data?.propertyName,
-        }));
-        setNotifications(serverNotes);
-      } catch (err) {
-        console.warn("[Notifications] Failed to map server notifications", err);
-      }
+        })
+      );
+      setNotifications(serverNotes);
+    } catch {
+      // Non-fatal – local state still works
     }
+  }, [notificationsQuery.data, setNotifications]);
 
-    // Override store actions to call server then update local state
+  // Wire socket events
+  const handlersRef = useRef<{
+    bookingRequest: (d: BookingRequestPayload) => void;
+    bookingApproved: (d: BookingApprovedPayload) => void;
+    bookingRejected: (d: BookingRejectedPayload) => void;
+    paymentReceived: (d: PaymentReceivedPayload) => void;
+  } | null>(null);
 
-    // Override store actions to call server then update local state
-    try {
-      // markAsRead
-      useNotificationCenter.setState({
-        markAsRead: async (id: string) => {
-          // call server
-          try {
-            await markAsReadMutation.mutateAsync({ id });
-            // update local store
-            useNotificationCenter.setState((state: any) => {
-              const exists = state.notifications.find((n: any) => n.id === id);
-              if (!exists || exists.read) return state;
-              return {
-                notifications: state.notifications.map((n: any) => (n.id === id ? { ...n, read: true } : n)),
-                unreadCount: Math.max(0, state.unreadCount - 1),
-              };
-            });
-          } catch (err) {
-            console.warn("[Notifications] markAsRead failed, applying locally", err);
-            useNotificationCenter.setState((state: any) => {
-              const exists = state.notifications.find((n: any) => n.id === id);
-              if (!exists || exists.read) return state;
-              return {
-                notifications: state.notifications.map((n: any) => (n.id === id ? { ...n, read: true } : n)),
-                unreadCount: Math.max(0, state.unreadCount - 1),
-              };
-            });
-          }
-        },
-      });
-
-      // removeNotification
-      useNotificationCenter.setState({
-        removeNotification: async (id: string) => {
-          try {
-            await removeNotificationMutation.mutateAsync({ id });
-            useNotificationCenter.setState((state: any) => {
-              const notification = state.notifications.find((n: any) => n.id === id);
-              return {
-                notifications: state.notifications.filter((n: any) => n.id !== id),
-                unreadCount: notification && !notification.read ? Math.max(0, state.unreadCount - 1) : state.unreadCount,
-              };
-            });
-          } catch (err) {
-            console.warn("[Notifications] removeNotification failed, removing locally", err);
-            useNotificationCenter.setState((state: any) => {
-              const notification = state.notifications.find((n: any) => n.id === id);
-              return {
-                notifications: state.notifications.filter((n: any) => n.id !== id),
-                unreadCount: notification && !notification.read ? Math.max(0, state.unreadCount - 1) : state.unreadCount,
-              };
-            });
-          }
-        },
-      });
-
-      // clearAll -> mark all as read on server and locally
-      useNotificationCenter.setState({
-        clearAll: async () => {
-          try {
-            await markAllAsReadMutation.mutateAsync();
-            useNotificationCenter.setState((state: any) => ({
-              notifications: state.notifications.map((n: any) => ({ ...n, read: true })),
-              unreadCount: 0,
-            }));
-          } catch (err) {
-            console.warn("[Notifications] markAllAsRead failed, marking locally", err);
-            useNotificationCenter.setState((state: any) => ({
-              notifications: state.notifications.map((n: any) => ({ ...n, read: true })),
-              unreadCount: 0,
-            }));
-          }
-        },
-      });
-    } catch (err) {
-      console.warn("[Notifications] Failed to wire persistence mutations", err);
-    }
-
-    // Define all handlers with proper typing
+  useEffect(() => {
     const handlers = {
       bookingRequest: (data: BookingRequestPayload) => {
         addNotification({
-          id: (data as any).notificationId,
+          id: data.notificationId,
           type: "booking-request",
           message: "New Booking Request",
           description: `${data.travelerName} requested ${data.propertyName}`,
@@ -327,35 +223,32 @@ export function useNotificationSocketListener(isAuthenticated: boolean = false) 
           propertyName: data.propertyName,
         });
       },
-
       bookingApproved: (data: BookingApprovedPayload) => {
         addNotification({
-          id: (data as any).notificationId,
+          id: data.notificationId,
           type: "booking-approved",
-          message: "Booking Approved ✅",
+          message: "Booking Approved",
           description: `Your booking for ${data.propertyName} is approved! Complete payment to confirm.`,
           bookingId: data.bookingId,
           propertyName: data.propertyName,
         });
       },
-
       bookingRejected: (data: BookingRejectedPayload) => {
         addNotification({
-          id: (data as any).notificationId,
+          id: data.notificationId,
           type: "booking-rejected",
-          message: "Booking Rejected ❌",
+          message: "Booking Rejected",
           description: data.reason || "Your booking was rejected.",
           bookingId: data.bookingId,
           propertyName: data.propertyName,
         });
       },
-
       paymentReceived: (data: PaymentReceivedPayload) => {
         addNotification({
-          id: (data as any).notificationId,
+          id: data.notificationId,
           type: "payment-received",
-          message: "Payment Received 💰",
-          description: `Payment of $${data.amount.toFixed(2)} received for booking ${data.bookingId}`,
+          message: "Payment Received",
+          description: `Payment of $${data.amount?.toFixed(2)} received for booking ${data.bookingId}`,
           bookingId: data.bookingId,
         });
       },
@@ -363,30 +256,27 @@ export function useNotificationSocketListener(isAuthenticated: boolean = false) 
 
     handlersRef.current = handlers;
 
-    // Attach listeners
-    socket.on("booking-request-received", handlers.bookingRequest);
-    socket.on("booking-approved-notification", handlers.bookingApproved);
-    socket.on("booking-rejected-notification", handlers.bookingRejected);
-    socket.on("payment-received", handlers.paymentReceived);
+    const attach = () => {
+      socket.on("booking-request-received", handlers.bookingRequest);
+      socket.on("booking-approved-notification", handlers.bookingApproved);
+      socket.on("booking-rejected-notification", handlers.bookingRejected);
+      socket.on("payment-received", handlers.paymentReceived);
+    };
 
-    listenersSetup.current = true;
+    if (socket.connected) {
+      attach();
+    } else {
+      socket.once("connect", attach);
+    }
 
-    // Cleanup on unmount
     return () => {
+      socket.off("connect", attach);
       if (handlersRef.current) {
         socket.off("booking-request-received", handlersRef.current.bookingRequest);
         socket.off("booking-approved-notification", handlersRef.current.bookingApproved);
         socket.off("booking-rejected-notification", handlersRef.current.bookingRejected);
         socket.off("payment-received", handlersRef.current.paymentReceived);
       }
-      listenersSetup.current = false;
     };
-  }, [
-    addNotification,
-    notificationsQuery.data,
-    setNotifications,
-    markAllAsReadMutation,
-    markAsReadMutation,
-    removeNotificationMutation,
-  ]);
+  }, [addNotification]);
 }

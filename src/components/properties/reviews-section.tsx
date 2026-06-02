@@ -127,6 +127,7 @@ export function ReviewsSection({ propertyId }: ReviewsSectionProps) {
                           src={review.userAvatar}
                           alt={review.userName}
                           fill
+                          sizes="48px"
                           className="object-cover"
                           unoptimized
                         />

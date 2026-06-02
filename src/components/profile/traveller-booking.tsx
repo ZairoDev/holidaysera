@@ -44,11 +44,12 @@ export function TravellerBookings() {
               <div className="flex flex-col sm:flex-row gap-4 p-5">
                 {/* Booking Image */}
                 <div className="relative h-40 w-full sm:w-56 flex-shrink-0 rounded-lg overflow-hidden">
-                  {booking.propertyCoverFileUrl ? (
+                  {booking.propertyCoverFileUrl?.trim() ? (
                     <Image
                       src={booking.propertyCoverFileUrl}
                       alt={booking.propertyName}
                       fill
+                      sizes="(max-width: 640px) 100vw, 224px"
                       className="object-cover transition-transform duration-300 group-hover:scale-110"
                     />
                   ) : (

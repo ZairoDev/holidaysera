@@ -2,7 +2,7 @@
 
 import { Upload, Building2, User } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { motion } from "framer-motion";
 
 interface ProfileHeaderProps {
@@ -60,7 +60,6 @@ export function ProfileHeader({ user, profileData }: ProfileHeaderProps) {
             transition={{ delay: 0.1 }}
           >
             <Avatar className="h-28 w-28 sm:h-36 sm:w-36 lg:h-40 lg:w-40 border-4 border-white shadow-2xl ring-4 ring-sky-100">
-              <AvatarImage src="" alt={displayName} />
               <AvatarFallback className="bg-gradient-to-br from-sky-400 via-blue-500 to-indigo-500 text-3xl sm:text-4xl lg:text-5xl text-white font-bold">
                 {initials}
               </AvatarFallback>

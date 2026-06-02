@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useUserStore } from "@/lib/store";
 import { trpc } from "@/trpc/client";
@@ -20,9 +20,17 @@ function OAuthCallbackContent() {
   const token = searchParams?.get("token");
   const redirect = searchParams?.get("redirect") || "/";
 
+  const [tokenStored, setTokenStored] = useState(false);
+
+  useEffect(() => {
+    if (!token) return;
+    localStorage.setItem("token", token);
+    setTokenStored(true);
+  }, [token]);
+
   // Fetch user data after OAuth login
-  const { data: userData, isLoading } = trpc.auth.me.useQuery(undefined, {
-    enabled: !!token,
+  const { data: userData, isLoading, isError } = trpc.auth.me.useQuery(undefined, {
+    enabled: !!token && tokenStored,
     retry: false,
   });
 
@@ -31,9 +39,12 @@ function OAuthCallbackContent() {
       router.push("/login?error=no_token");
       return;
     }
-
-    // Store the token
-    localStorage.setItem("token", token);
+    if (isError) {
+      // Token exists but we couldn't fetch the session user.
+      localStorage.removeItem("token");
+      router.push("/login?error=no_token");
+      return;
+    }
 
     // Once we have user data, store it and redirect
     if (userData && !isLoading) {
@@ -49,7 +60,7 @@ function OAuthCallbackContent() {
 
       router.push(redirect);
     }
-  }, [token, userData, isLoading, router, redirect, setUser]);
+  }, [token, userData, isLoading, isError, router, redirect, setUser]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-sky-50 to-blue-100">
