@@ -1,178 +1,129 @@
-name: CI
+name: Deploy to VPS (Near Zero Downtime)
 
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
-  workflow_dispatch:
-
-concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
-env:
-  MONGO_URL: mongodb://127.0.0.1:27017/holidaysera-ci
-  JWT_SECRET: ci-jwt-secret-not-for-production-use
-  NEXT_PUBLIC_APP_URL: http://localhost:3000
+push:
+branches: [main]
+workflow_dispatch:
 
 jobs:
-  typecheck:
-    name: TypeScript
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+deploy:
+runs-on: ubuntu-latest
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-          cache: npm
+```
+steps:
+  - name: Deploy to VPS
+    uses: appleboy/ssh-action@v1.0.3
+    with:
+      host: ${{ secrets.VPS_HOST }}
+      username: ${{ secrets.VPS_USERNAME }}
+      key: ${{ secrets.VPS_SSH_KEY }}
+      port: 22
+      command_timeout: 30m
 
-      - run: npm ci
-      - run: npm run typecheck
+      script: |
+        set -e
 
-  build:
-    name: Production build
-    runs-on: ubuntu-latest
-    needs: typecheck
-    steps:
-      - uses: actions/checkout@v4
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo "Starting Deployment"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-          cache: npm
+        DEPLOY_DIR="/var/www/holidaysera"
+        NEW_BUILD_DIR="/var/www/holidaysera_new_build"
+        OLD_DIR="/var/www/holidaysera_old"
+        PM2_APP_NAME="holidaysera"
+        APP_PORT=3001
+        REPO_URL="https://github.com/Zairodev/holidaysera.git"
 
-      - run: npm ci
-      - run: npm run build
-        env:
-          MONGO_URL: mongodb://127.0.0.1:27017/holidaysera-ci
-          JWT_SECRET: ci-jwt-secret-not-for-production-use
-          NEXT_PUBLIC_APP_URL: http://localhost:3000
+        echo "Current PM2 Status:"
+        sudo -u jenkins pm2 list || true
 
-  deploy:
-    name: Deploy to VPS
-    runs-on: ubuntu-latest
-    needs: build
-    if: |
-      needs.build.result == 'success' &&
-      (
-        github.event_name == 'workflow_dispatch' ||
-        (github.event_name == 'push' && github.ref == 'refs/heads/main')
-      )
+        echo ""
+        echo "Cleaning previous build directory..."
+        rm -rf ${NEW_BUILD_DIR}
+        mkdir -p ${NEW_BUILD_DIR}
 
-    steps:
-      - name: Check VPS secrets
-        id: vps_secrets
-        run: |
-          if [ -n "${{ secrets.VPS_HOST }}" ] && [ -n "${{ secrets.VPS_USERNAME }}" ] && [ -n "${{ secrets.VPS_SSH_KEY }}" ]; then
-            echo "ready=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "ready=false" >> "$GITHUB_OUTPUT"
-            echo "::notice title=Deploy skipped::Add repository secrets VPS_HOST, VPS_USERNAME, and VPS_SSH_KEY to enable automatic deployment."
-          fi
+        echo ""
+        echo "Cloning latest code..."
+        git clone --depth 1 --branch main ${REPO_URL} ${NEW_BUILD_DIR}
 
-      - name: Deploy to VPS
-        if: steps.vps_secrets.outputs.ready == 'true'
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USERNAME }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          port: 22
-          command_timeout: 30m
-          script: |
-            set -e
+        cd ${NEW_BUILD_DIR}
 
-            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-            echo "Starting zero-downtime deployment"
-            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo ""
+        echo "Copying environment files..."
 
-            DEPLOY_DIR="/var/www/holidaysera"
-            NEW_BUILD_DIR="/var/www/holidaysera_new_build"
-            PM2_APP_NAME="holidaysera"
-            APP_PORT=3001
-            REPO_URL="https://github.com/Zairodev/holidaysera.git"
+        if [ -f "${DEPLOY_DIR}/.env.local" ]; then
+          cp "${DEPLOY_DIR}/.env.local" .
+        fi
 
-            pm2 list | grep ${PM2_APP_NAME} || echo "App not running"
+        if [ -f "${DEPLOY_DIR}/.env.production" ]; then
+          cp "${DEPLOY_DIR}/.env.production" .
+        fi
 
-            sudo rm -rf ${NEW_BUILD_DIR}
-            sudo mkdir -p ${NEW_BUILD_DIR}
-            sudo chown -R jenkins:jenkins ${NEW_BUILD_DIR}
+        echo ""
+        echo "Installing dependencies..."
+        npm ci
 
-            cd ${NEW_BUILD_DIR}
-            git clone --depth 1 --branch main ${REPO_URL} .
-            sudo chown -R jenkins:jenkins ${NEW_BUILD_DIR}
+        echo ""
+        echo "Building application..."
+        npm run build
 
-            if [ -f "${DEPLOY_DIR}/.env.production" ]; then
-              cp "${DEPLOY_DIR}/.env.production" .
-            fi
-            if [ -f "${DEPLOY_DIR}/.env.local" ]; then
-              cp "${DEPLOY_DIR}/.env.local" .
-            fi
-            if [ ! -f ".env.local" ] && [ -f ".env.production" ]; then
-              cp .env.production .env.local
-            fi
+        if [ ! -d ".next" ]; then
+          echo "ERROR: Build failed (.next missing)"
+          exit 1
+        fi
 
-            if [ -f ".env.local" ]; then
-              set -a
-              . ./.env.local
-              set +a
-            elif [ -f ".env.production" ]; then
-              set -a
-              . ./.env.production
-              set +a
-            fi
+        echo ""
+        echo "Build completed successfully"
+        echo "Build size: $(du -sh .next | cut -f1)"
 
-            if [ -z "${MONGO_URL:-}" ]; then
-              echo "ERROR: MONGO_URL is not set in .env.local on the server"
-              exit 1
-            fi
-            if [ -z "${JWT_SECRET:-}" ]; then
-              echo "ERROR: JWT_SECRET is not set in .env.local on the server"
-              exit 1
-            fi
+        echo ""
+        echo "Swapping releases..."
 
-            export NEXT_PUBLIC_APP_URL="${NEXT_PUBLIC_APP_URL:-http://localhost:${APP_PORT}}"
+        rm -rf ${OLD_DIR}
+        mv ${DEPLOY_DIR} ${OLD_DIR}
+        mv ${NEW_BUILD_DIR} ${DEPLOY_DIR}
 
-            npm ci
-            sudo rm -rf .next
-            npm run build
+        echo ""
+        echo "Reloading PM2..."
 
-            if [ ! -d ".next" ]; then
-              echo "Build output missing (.next)"
-              exit 1
-            fi
+        sudo -u jenkins pm2 reload ${PM2_APP_NAME} --update-env || \
+        sudo -u jenkins pm2 restart ${PM2_APP_NAME} --update-env
 
-            sudo chown -R jenkins:jenkins ${NEW_BUILD_DIR}
+        sudo -u jenkins pm2 save
 
-            pm2 delete ${PM2_APP_NAME} 2>/dev/null || true
-            TEMP_OLD="${DEPLOY_DIR}_old"
-            sudo rm -rf ${TEMP_OLD}
-            sudo mv ${DEPLOY_DIR} ${TEMP_OLD} 2>/dev/null || true
-            sudo mv ${NEW_BUILD_DIR} ${DEPLOY_DIR}
-            sudo chown -R jenkins:jenkins ${DEPLOY_DIR}
+        echo ""
+        echo "Waiting for application..."
+        sleep 15
 
-            cd ${DEPLOY_DIR}
-            pm2 start npm --name ${PM2_APP_NAME} --update-env -- start
-            pm2 save
+        HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:${APP_PORT} || echo "000")
 
-            sleep 15
-            HEALTH_OK=false
-            if pm2 describe ${PM2_APP_NAME} | grep -q "status.*online"; then
-              sleep 10
-              HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "http://127.0.0.1:${APP_PORT}" || echo "000")
-              if [ "${HTTP_CODE}" != "000" ]; then
-                HEALTH_OK=true
-              fi
-            fi
+        if [ "$HTTP_CODE" != "200" ]; then
+          echo "Health check failed. HTTP Status: $HTTP_CODE"
 
-            if [ "${HEALTH_OK}" = false ]; then
-              echo "Health check failed"
-              pm2 logs ${PM2_APP_NAME} --lines 30 --nostream || true
-              exit 1
-            fi
+          echo "Rolling back..."
 
-            sudo rm -rf ${TEMP_OLD}
-            echo "Deployment successful"
-            pm2 list
+          rm -rf ${DEPLOY_DIR}
+          mv ${OLD_DIR} ${DEPLOY_DIR}
+
+          sudo -u jenkins pm2 restart ${PM2_APP_NAME}
+          exit 1
+        fi
+
+        echo ""
+        echo "Deployment successful"
+
+        rm -rf ${OLD_DIR}
+
+        echo "Current commit:"
+        cd ${DEPLOY_DIR}
+        git rev-parse --short HEAD
+
+        echo ""
+        echo "PM2 Status:"
+        sudo -u jenkins pm2 list
+
+        echo ""
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo "Deployment Finished Successfully"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+```
