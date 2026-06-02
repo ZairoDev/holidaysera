@@ -1,129 +1,125 @@
 name: Deploy to VPS (Near Zero Downtime)
 
 on:
-push:
-branches: [main]
-workflow_dispatch:
+  push:
+    branches: [main]
+  workflow_dispatch:
 
 jobs:
-deploy:
-runs-on: ubuntu-latest
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: 22
+          command_timeout: 30m
+          script: |
+            set -e
 
-```
-steps:
-  - name: Deploy to VPS
-    uses: appleboy/ssh-action@v1.0.3
-    with:
-      host: ${{ secrets.VPS_HOST }}
-      username: ${{ secrets.VPS_USERNAME }}
-      key: ${{ secrets.VPS_SSH_KEY }}
-      port: 22
-      command_timeout: 30m
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "Starting Deployment"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-      script: |
-        set -e
+            DEPLOY_DIR="/var/www/holidaysera"
+            NEW_BUILD_DIR="/var/www/holidaysera_new_build"
+            OLD_DIR="/var/www/holidaysera_old"
+            PM2_APP_NAME="holidaysera"
+            APP_PORT=3001
+            REPO_URL="https://github.com/Zairodev/holidaysera.git"
 
-        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        echo "Starting Deployment"
-        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "Current PM2 Status:"
+            sudo -u jenkins pm2 list || true
 
-        DEPLOY_DIR="/var/www/holidaysera"
-        NEW_BUILD_DIR="/var/www/holidaysera_new_build"
-        OLD_DIR="/var/www/holidaysera_old"
-        PM2_APP_NAME="holidaysera"
-        APP_PORT=3001
-        REPO_URL="https://github.com/Zairodev/holidaysera.git"
+            echo ""
+            echo "Cleaning previous build directory..."
+            rm -rf ${NEW_BUILD_DIR}
+            mkdir -p ${NEW_BUILD_DIR}
 
-        echo "Current PM2 Status:"
-        sudo -u jenkins pm2 list || true
+            echo ""
+            echo "Cloning latest code..."
+            git clone --depth 1 --branch main ${REPO_URL} ${NEW_BUILD_DIR}
 
-        echo ""
-        echo "Cleaning previous build directory..."
-        rm -rf ${NEW_BUILD_DIR}
-        mkdir -p ${NEW_BUILD_DIR}
+            cd ${NEW_BUILD_DIR}
 
-        echo ""
-        echo "Cloning latest code..."
-        git clone --depth 1 --branch main ${REPO_URL} ${NEW_BUILD_DIR}
+            echo ""
+            echo "Copying environment files..."
 
-        cd ${NEW_BUILD_DIR}
+            if [ -f "${DEPLOY_DIR}/.env.local" ]; then
+              cp "${DEPLOY_DIR}/.env.local" .
+            fi
 
-        echo ""
-        echo "Copying environment files..."
+            if [ -f "${DEPLOY_DIR}/.env.production" ]; then
+              cp "${DEPLOY_DIR}/.env.production" .
+            fi
 
-        if [ -f "${DEPLOY_DIR}/.env.local" ]; then
-          cp "${DEPLOY_DIR}/.env.local" .
-        fi
+            echo ""
+            echo "Installing dependencies..."
+            npm ci
 
-        if [ -f "${DEPLOY_DIR}/.env.production" ]; then
-          cp "${DEPLOY_DIR}/.env.production" .
-        fi
+            echo ""
+            echo "Building application..."
+            npm run build
 
-        echo ""
-        echo "Installing dependencies..."
-        npm ci
+            if [ ! -d ".next" ]; then
+              echo "ERROR: Build failed (.next missing)"
+              exit 1
+            fi
 
-        echo ""
-        echo "Building application..."
-        npm run build
+            echo ""
+            echo "Build completed successfully"
+            echo "Build size: $(du -sh .next | cut -f1)"
 
-        if [ ! -d ".next" ]; then
-          echo "ERROR: Build failed (.next missing)"
-          exit 1
-        fi
+            echo ""
+            echo "Swapping releases..."
 
-        echo ""
-        echo "Build completed successfully"
-        echo "Build size: $(du -sh .next | cut -f1)"
+            rm -rf ${OLD_DIR}
+            mv ${DEPLOY_DIR} ${OLD_DIR}
+            mv ${NEW_BUILD_DIR} ${DEPLOY_DIR}
 
-        echo ""
-        echo "Swapping releases..."
+            echo ""
+            echo "Reloading PM2..."
 
-        rm -rf ${OLD_DIR}
-        mv ${DEPLOY_DIR} ${OLD_DIR}
-        mv ${NEW_BUILD_DIR} ${DEPLOY_DIR}
+            sudo -u jenkins pm2 reload ${PM2_APP_NAME} --update-env || \
+            sudo -u jenkins pm2 restart ${PM2_APP_NAME} --update-env
 
-        echo ""
-        echo "Reloading PM2..."
+            sudo -u jenkins pm2 save
 
-        sudo -u jenkins pm2 reload ${PM2_APP_NAME} --update-env || \
-        sudo -u jenkins pm2 restart ${PM2_APP_NAME} --update-env
+            echo ""
+            echo "Waiting for application..."
+            sleep 15
 
-        sudo -u jenkins pm2 save
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:${APP_PORT} || echo "000")
 
-        echo ""
-        echo "Waiting for application..."
-        sleep 15
+            if [ "$HTTP_CODE" != "200" ]; then
+              echo "Health check failed. HTTP Status: $HTTP_CODE"
 
-        HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:${APP_PORT} || echo "000")
+              echo "Rolling back..."
 
-        if [ "$HTTP_CODE" != "200" ]; then
-          echo "Health check failed. HTTP Status: $HTTP_CODE"
+              rm -rf ${DEPLOY_DIR}
+              mv ${OLD_DIR} ${DEPLOY_DIR}
 
-          echo "Rolling back..."
+              sudo -u jenkins pm2 restart ${PM2_APP_NAME}
+              exit 1
+            fi
 
-          rm -rf ${DEPLOY_DIR}
-          mv ${OLD_DIR} ${DEPLOY_DIR}
+            echo ""
+            echo "Deployment successful"
 
-          sudo -u jenkins pm2 restart ${PM2_APP_NAME}
-          exit 1
-        fi
+            rm -rf ${OLD_DIR}
 
-        echo ""
-        echo "Deployment successful"
+            echo "Current commit:"
+            cd ${DEPLOY_DIR}
+            git rev-parse --short HEAD
 
-        rm -rf ${OLD_DIR}
+            echo ""
+            echo "PM2 Status:"
+            sudo -u jenkins pm2 list
 
-        echo "Current commit:"
-        cd ${DEPLOY_DIR}
-        git rev-parse --short HEAD
-
-        echo ""
-        echo "PM2 Status:"
-        sudo -u jenkins pm2 list
-
-        echo ""
-        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        echo "Deployment Finished Successfully"
-        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-```
+            echo ""
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "Deployment Finished Successfully"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
